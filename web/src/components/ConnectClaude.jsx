@@ -5,7 +5,6 @@ import {
   Copy,
   Download,
   ListChecks,
-  Lock,
   MessageSquare,
   PlusCircle,
   RefreshCw,
@@ -87,28 +86,15 @@ export default function ConnectClaude() {
     <div className="connect">
       <section className="connect-hero">
         <div>
-          <span className="eyebrow">Claude Desktop extension</span>
-          <h2>Manage FIST PMS by just asking Claude</h2>
+          <h2>Use FIST PMS from Claude</h2>
           <p>
-            Check what’s due, move issues along, comment and create new work — in plain language, from a Claude
-            chat. Works with your own PMS login, on every Claude plan including Free.
+            Install this extension in Claude Desktop to check, update and create PMS issues from a chat. It uses your
+            own PMS login and works on any Claude plan.
           </p>
-          <a className="primary-btn hero-btn" href="/api/extension" download="fist-pms.mcpb">
-            <Download size={17} /> Download fist-pms.mcpb
-          </a>
         </div>
-        <div className="hero-chat" aria-hidden="true">
-          <div className="bubble user">What’s overdue for me in PMS?</div>
-          <div className="bubble claude">
-            You have 2 overdue issues:
-            <br />• <strong>BMS-1</strong> Complete Screen Development — due 11 Sep
-            <br />• <strong>BMS-2</strong> Scope Rework — due 23 Sep
-          </div>
-          <div className="bubble user">Move BMS-2 to In progress</div>
-          <div className="bubble claude">
-            <CheckCircle2 size={14} /> BMS-2 moved from New to In progress.
-          </div>
-        </div>
+        <a className="primary-btn hero-btn" href="/api/extension" download="fist-pms.mcpb">
+          <Download size={16} /> Download extension
+        </a>
       </section>
 
       <section className="connect-section">
@@ -217,10 +203,6 @@ export default function ConnectClaude() {
         </div>
       </section>
 
-      <p className="connect-foot">
-        <Lock size={13} /> Unofficial tool — it reads the PMS pages the same way your browser does. If the PMS layout
-        changes, it may need an update.
-      </p>
     </div>
   );
 }
