@@ -45,6 +45,7 @@ const isBackOnPms = (url) =>
 async function openLoginWindow() {
   fs.mkdirSync(PROFILE_DIR, { recursive: true });
   const context = await chromium.launchPersistentContext(PROFILE_DIR, {
+    channel: 'msedge', // the Microsoft Edge installed on Windows
     headless: false,
     viewport: null,
   });
