@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "express": "^5.2.1",
+    "multer": "^2.4.0",
     "node-html-parser": "^9.0.4",
     "playwright": "^1.63.0"
   },

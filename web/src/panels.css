@@ -207,3 +207,19 @@ textarea.input { resize: vertical; line-height: 1.55; }
   .properties, .field-row { grid-template-columns: 1fr; }
   .drawer-body, .modal-body { padding-left: 18px; padding-right: 18px; }
 }
+
+/* ---------- file picker ---------- */
+.file-picker { display: flex; flex-direction: column; gap: 10px; }
+.drop-zone {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  width: 100%; padding: 18px 16px;
+  border: 1.5px dashed #d6d3e6; border-radius: 10px;
+  background: #fcfcfe; color: var(--text-2); font-size: 13px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.drop-zone svg { color: var(--accent); margin-bottom: 2px; }
+.drop-zone strong { color: var(--accent); font-weight: 600; }
+.drop-zone .muted { font-size: 12px; }
+.drop-zone:hover:not(:disabled), .drop-zone.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop-zone:disabled { opacity: 0.6; }
+.attachment-list.picked li { padding: 6px 6px 6px 12px; }

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Readable } from 'node:stream';
 import express from 'express';
+import multer from 'multer';
 import { WEB_DIST_DIR } from './config.js';
 import {
   LayoutChangedError,
@@ -20,6 +21,15 @@ import { textToHtml } from './text-to-html.js';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_PAGES = 50;
 const PRIORITIES = ['urgent', 'high', 'medium', 'low', 'none'];
+const MAX_FILES = 10;
+const MAX_FILE_MB = 25;
+
+// Files are held in memory only long enough to forward them to the PMS.
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { files: MAX_FILES, fileSize: MAX_FILE_MB * 1024 * 1024 },
+  defParamCharset: 'utf8', // keep non-ASCII file names intact
+});
 
 class BadRequestError extends Error {
   constructor(code, message) {
@@ -177,9 +187,15 @@ export function createApp() {
     res.json(form);
   });
 
-  app.post('/api/projects/:id/issues', async (req, res) => {
+  // Multipart: a `data` field with the issue as JSON, plus optional `files`.
+  app.post('/api/projects/:id/issues', upload.array('files', MAX_FILES), async (req, res) => {
     const projectId = requireUuid(req.params.id, 'project id');
-    const input = req.body ?? {};
+    let input;
+    try {
+      input = req.is('multipart/form-data') ? JSON.parse(req.body.data ?? '{}') : (req.body ?? {});
+    } catch {
+      throw new BadRequestError('bad_request', 'Invalid issue data');
+    }
     const parentId = input.parentId ? requireUuid(input.parentId, 'parent issue id') : null;
     const form = parseIssueForm(await pms.get(newIssuePath(projectId, parentId)));
 
@@ -210,8 +226,19 @@ export function createApp() {
     data.append('targetDate', date(input.targetDate, 'target date'));
     data.append('assigneeId', oneOf(input.assigneeId, form.assignees, 'assignee'));
     for (const labelId of labelIds) data.append('labelIds', labelId);
+    for (const file of req.files ?? []) {
+      data.append('files', new Blob([file.buffer], { type: file.mimetype }), file.originalname);
+    }
 
-    const location = await pms.postMultipart(form.action, data);
+    let location;
+    try {
+      location = await pms.postMultipart(form.action, data);
+    } catch (err) {
+      if (err instanceof pms.PmsError && req.files?.length) {
+        throw new pms.PmsError(`${err.message}. The PMS may not accept files this large.`);
+      }
+      throw err;
+    }
     const id = location.match(/\/issues\/([0-9a-f-]{36})/i)?.[1] ?? null;
     if (!id && location.includes('/issues/new')) throw new pms.PmsError('The PMS did not accept the new issue');
     res.status(201).json({ id });
@@ -229,6 +256,13 @@ export function createApp() {
 
   app.use((err, req, res, next) => {
     if (err instanceof SessionExpiredError) return res.status(401).json({ error: 'session_expired' });
+    if (err instanceof multer.MulterError) {
+      const message = {
+        LIMIT_FILE_SIZE: `Each file must be under ${MAX_FILE_MB} MB`,
+        LIMIT_FILE_COUNT: `You can attach up to ${MAX_FILES} files`,
+      }[err.code];
+      return res.status(400).json({ error: 'bad_request', message: message ?? err.message });
+    }
     if (err instanceof BadRequestError) return res.status(400).json({ error: err.code, message: err.message });
     if (err instanceof LayoutChangedError) {
       return res.status(502).json({ error: 'layout_changed', message: err.message });

@@ -18,10 +18,11 @@ export function errorMessage(err) {
 async function call(path, { method = 'GET', body } = {}) {
   let res;
   try {
+    const isForm = body instanceof FormData; // browser sets the multipart header itself
     res = await fetch(path, {
       method,
-      headers: body ? { 'Content-Type': 'application/json' } : undefined,
-      body: body ? JSON.stringify(body) : undefined,
+      headers: body && !isForm ? { 'Content-Type': 'application/json' } : undefined,
+      body: body && !isForm ? JSON.stringify(body) : body,
     });
   } catch {
     throw new ApiError('network');
@@ -45,7 +46,12 @@ export const api = {
   projects: () => call('/api/projects'),
   issueForm: (projectId, parentId) =>
     call(`/api/projects/${projectId}/issue-form${parentId ? `?parentId=${parentId}` : ''}`),
-  createIssue: (projectId, input) => call(`/api/projects/${projectId}/issues`, { method: 'POST', body: input }),
+  createIssue: (projectId, input, files = []) => {
+    const body = new FormData();
+    body.append('data', JSON.stringify(input));
+    for (const file of files) body.append('files', file);
+    return call(`/api/projects/${projectId}/issues`, { method: 'POST', body });
+  },
 };
 
 export const attachmentUrl = (id, download = false) => `/api/attachments/${id}${download ? '?dl=1' : ''}`;

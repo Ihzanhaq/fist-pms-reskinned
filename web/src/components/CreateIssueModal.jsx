@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2, X } from 'lucide-react';
 import { api, errorMessage } from '../api.js';
+import FilePicker from './FilePicker.jsx';
 
 const PRIORITIES = ['urgent', 'high', 'medium', 'low', 'none'];
 const LAST_PROJECT_KEY = 'pms-dashboard:last-project';
@@ -23,6 +24,7 @@ export default function CreateIssueModal({ parent, userName, onClose, onCreated,
   const [form, setForm] = useState(null); // options for the chosen project
   const [formError, setFormError] = useState(null);
   const [values, setValues] = useState(EMPTY);
+  const [files, setFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
@@ -87,7 +89,7 @@ export default function CreateIssueModal({ parent, userName, onClose, onCreated,
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const { id } = await api.createIssue(projectId, { ...values, parentId: parent?.id ?? null });
+      const { id } = await api.createIssue(projectId, { ...values, parentId: parent?.id ?? null }, files);
       if (!parent) localStorage.setItem(LAST_PROJECT_KEY, projectId);
       onCreated(id, values.name.trim());
     } catch (err) {
@@ -230,6 +232,11 @@ export default function CreateIssueModal({ parent, userName, onClose, onCreated,
               )}
             </>
           )}
+
+          <div className="field">
+            <span>Attachments</span>
+            <FilePicker files={files} onChange={setFiles} disabled={submitting} />
+          </div>
 
           {submitError && <p className="form-error">Could not create the issue: {errorMessage(submitError)}</p>}
         </div>
