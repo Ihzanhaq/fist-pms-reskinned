@@ -1,8 +1,9 @@
-import { ExternalLink, ListChecks, Sparkles } from 'lucide-react';
+import { ExternalLink, ListChecks } from 'lucide-react';
+import ClaudeIcon from './ClaudeIcon.jsx';
 
 const NAV = [
   { id: 'issues', label: 'My Issues', icon: ListChecks },
-  { id: 'claude', label: 'Connect to Claude', icon: Sparkles },
+  { id: 'claude', label: 'Connect to Claude', icon: ClaudeIcon },
 ];
 
 export default function Sidebar({ view, onNavigate }) {
