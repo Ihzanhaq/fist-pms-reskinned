@@ -8,6 +8,7 @@ import { ROOT_DIR, WEB_DIST_DIR } from './config.js';
 import { LayoutChangedError } from './parse.js';
 import { SessionExpiredError } from './pms-client.js';
 import * as insights from './insights.js';
+import { leaderboard } from './leaderboard.js';
 import * as service from './service.js';
 import { BadRequestError } from './service.js';
 
@@ -39,6 +40,9 @@ export function createApp() {
   app.post('/api/logout', (req, res) => res.json(service.logout()));
 
   app.get('/api/dashboard', async (req, res) => res.json(await insights.dashboard(req.query.days)));
+  app.get('/api/leaderboard', async (req, res) =>
+    res.json(await leaderboard({ period: req.query.period || 'week', projectId: req.query.project || null })),
+  );
   app.get('/api/report', async (req, res) => res.json(await insights.dailyReport(req.query.date || undefined)));
 
   app.get('/api/issues', async (req, res) => res.json({ issues: await service.listMyIssues(req.query.scope) }));

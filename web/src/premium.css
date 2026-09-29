@@ -223,3 +223,12 @@ button.crumb:hover { color: var(--text); }
 @media (max-width: 1100px) {
   .dash-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* logged out: no sidebar, content spans full width */
+.shell.no-sidebar { grid-template-columns: minmax(0, 1fr); grid-template-rows: 60px minmax(0, 1fr); }
+.shell.no-sidebar .topbar, .shell.no-sidebar .page { grid-column: 1; }
+@media (max-width: 960px) {
+  .shell.no-sidebar { grid-template-rows: 52px minmax(0, 1fr); }
+  .shell.no-sidebar .topbar { grid-row: 1; }
+  .shell.no-sidebar .page { grid-row: 2; }
+}

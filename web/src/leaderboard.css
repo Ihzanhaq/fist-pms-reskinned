@@ -1,0 +1,115 @@
+/* Leaderboard: summary strip, top-three podium, rankings table. */
+
+.leaderboard { display: flex; flex-direction: column; gap: 20px; }
+.lb-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.lb-controls .segmented button { height: 34px; }
+.lb-controls .sel-compact { min-width: 170px; }
+
+.avatar.large { width: 68px; height: 68px; font-size: 24px; flex-shrink: 0; }
+.you-pill {
+  display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; vertical-align: 2px;
+  background: var(--accent-soft); color: var(--accent-ink); font-size: 10.5px; font-weight: 600; letter-spacing: 0.02em;
+}
+
+/* summary */
+.lb-summary {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-sm);
+}
+.lb-summary > div { display: flex; flex-direction: column; gap: 2px; padding: 16px 20px; }
+.lb-summary > div + div { border-left: 1px solid var(--border); }
+.lb-summary strong { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
+.lb-summary span { font-size: 12px; color: var(--muted); }
+.lb-me strong { color: var(--accent); }
+
+/* podium: 2nd | 1st | 3rd, with 1st raised */
+.podium {
+  --gold: #e8b53d; --silver: #aab4c3; --bronze: #c98753;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 16px;
+}
+.podium.count-1 { grid-template-columns: minmax(0, 360px); justify-content: center; }
+.podium.count-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.podium .place-1 { order: 2; }
+.podium .place-2 { order: 1; }
+.podium .place-3 { order: 3; }
+.podium.count-2 .place-1 { order: 1; }
+.podium.count-2 .place-2 { order: 2; }
+
+.podium-card {
+  --medal: var(--silver);
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 26px 18px 22px; border-radius: 18px; text-align: center;
+  background:
+    radial-gradient(120% 60% at 50% 0%, color-mix(in srgb, var(--medal) 16%, transparent), transparent 70%),
+    var(--surface);
+  box-shadow: var(--shadow-sm), inset 0 2px 0 color-mix(in srgb, var(--medal) 55%, transparent);
+}
+.podium-card.gold { --medal: var(--gold); padding-top: 38px; padding-bottom: 30px; }
+.podium-card.silver { --medal: var(--silver); }
+.podium-card.bronze { --medal: var(--bronze); }
+.podium-badge {
+  position: absolute; top: 12px; left: 12px; display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.03em;
+  color: color-mix(in srgb, var(--medal) 70%, var(--text)); background: color-mix(in srgb, var(--medal) 18%, transparent);
+}
+.podium-avatar {
+  padding: 3px; margin-bottom: 8px; border-radius: 50%;
+  background: conic-gradient(from 200deg, var(--medal), color-mix(in srgb, var(--medal) 35%, transparent), var(--medal));
+}
+.podium-avatar .avatar { box-shadow: 0 0 0 3px var(--surface); }
+.podium-card.gold .podium-avatar .avatar { width: 84px; height: 84px; font-size: 30px; }
+.podium-name { max-width: 100%; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.podium-score { margin-top: 6px; font-size: 40px; font-weight: 600; line-height: 1; letter-spacing: -0.04em; }
+.podium-card.gold .podium-score { font-size: 52px; }
+.podium-label { font-size: 12px; color: var(--muted); }
+.podium-meta { margin-top: 8px; font-size: 12px; color: var(--text-2); }
+
+/* rankings */
+.lb-table { display: flex; flex-direction: column; gap: 8px; }
+.lb-head, .lb-row {
+  display: grid; align-items: center; gap: 14px;
+  grid-template-columns: 34px minmax(180px, 1.4fr) minmax(150px, 1.2fr) repeat(5, minmax(52px, 0.5fr));
+}
+.lb-head { padding: 0 20px 2px; font-size: 12px; font-weight: 500; color: var(--muted); }
+.lb-head span:nth-child(n + 4) { text-align: right; }
+.lb-row {
+  min-height: 56px; padding: 8px 20px; border-radius: 10px;
+  background: var(--surface); box-shadow: var(--shadow-sm); font-size: 13px;
+  transition: box-shadow 0.18s, transform 0.18s;
+}
+.lb-row:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.lb-row.me { box-shadow: 0 0 0 1px var(--accent-border), var(--shadow-sm); background: linear-gradient(90deg, var(--accent-soft), transparent 60%), var(--surface); }
+.lb-rank { font-family: var(--font-mono); font-size: 13px; color: var(--muted); text-align: center; }
+.lb-person { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.lb-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-completed { display: flex; align-items: center; gap: 10px; }
+.lb-completed strong { min-width: 22px; text-align: right; font-family: var(--font-mono); font-weight: 600; }
+.lb-bar { flex: 1; height: 6px; border-radius: 3px; background: var(--accent-wash); box-shadow: inset 0 0 0 1px var(--border); overflow: hidden; }
+.lb-bar span { display: block; height: 100%; border-radius: 3px; background: var(--accent); min-width: 2px; }
+.lb-num { text-align: right; font-family: var(--font-mono); color: var(--text-2); }
+.lb-note { margin: 0; font-size: 12px; }
+
+:root[data-theme='glass'] :is(.lb-summary, .podium-card, .lb-row) {
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+}
+
+@media (max-width: 1100px) {
+  .lb-head, .lb-row { grid-template-columns: 30px minmax(150px, 1fr) minmax(120px, 1fr) repeat(2, 56px); }
+  .lb-head span:nth-child(n + 6), .lb-row > :nth-child(n + 6) { display: none; }
+}
+@media (max-width: 760px) {
+  .podium { grid-template-columns: 1fr; }
+  .podium .place-1, .podium .place-2, .podium .place-3 { order: 0; }
+  .lb-summary { grid-template-columns: repeat(2, 1fr); }
+  .lb-summary > div:nth-child(3) { border-left: 0; }
+}
+
+/* Letter avatars on the podium: solid, medal-tinted, so the ring doesn't show through. */
+.podium-avatar span.avatar {
+  background: color-mix(in srgb, var(--medal) 22%, var(--surface));
+  color: color-mix(in srgb, var(--medal) 75%, var(--text));
+  font-weight: 700;
+}
+:root[data-theme='glass'] .podium-avatar span.avatar { background: color-mix(in srgb, var(--medal) 30%, #1a1c26); }
+:root[data-theme='glass'][data-mode='light'] .podium-avatar span.avatar { background: color-mix(in srgb, var(--medal) 25%, #ffffff); }

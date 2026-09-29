@@ -6,6 +6,7 @@ import { THEMES, useAppearance } from './theme.js';
 import BulkBar from './components/BulkBar.jsx';
 import ConnectClaude from './components/ConnectClaude.jsx';
 import SettingsView from './components/SettingsView.jsx';
+import LeaderboardView from './components/LeaderboardView.jsx';
 import DailyReport from './components/DailyReport.jsx';
 import DashboardView from './components/DashboardView.jsx';
 import { formatShort, todayIso } from './dates.js';
@@ -288,7 +289,7 @@ export default function App() {
       return next;
     });
 
-  const SECTION = { dashboard: 'Dashboard', issues: 'My Issues', projects: 'Projects', report: 'Daily report', claude: 'Connect to Claude', settings: 'Settings' };
+  const SECTION = { dashboard: 'Dashboard', issues: 'My Issues', projects: 'Projects', report: 'Daily report', claude: 'Connect to Claude', settings: 'Settings', leaderboard: 'Leaderboard' };
   const crumbs = [
     { label: 'FIST PMS' },
     { label: SECTION[view], onClick: view === 'projects' && openProject ? () => setOpenProject(null) : undefined },
@@ -297,13 +298,15 @@ export default function App() {
   ];
 
   return (
-    <div className="shell">
-      <Sidebar
-        view={view}
-        onNavigate={navigate}
-        user={session.loggedIn ? { id: session.userId, name: session.userName } : null}
-        onLogout={logout}
-      />
+    <div className={session.loggedIn ? 'shell' : 'shell no-sidebar'}>
+      {session.loggedIn && (
+        <Sidebar
+          view={view}
+          onNavigate={navigate}
+          user={{ id: session.userId, name: session.userName }}
+          onLogout={logout}
+        />
+      )}
       <TopBar
         crumbs={crumbs}
         themes={THEMES}
@@ -313,7 +316,15 @@ export default function App() {
         onRefresh={view === 'issues' && session.loggedIn ? loadIssues : null}
       />
 
-      {view === 'settings' ? (
+      {view === 'leaderboard' ? (
+        <main className="page">
+          {!session.checked ? null : !session.loggedIn ? (
+            <LoginBanner expired={session.expired} loggingIn={loggingIn} onLogin={login} />
+          ) : (
+            <LeaderboardView userName={session.userName} onError={handlePanelError} />
+          )}
+        </main>
+      ) : view === 'settings' ? (
         <main className="page">
           <SettingsView appearance={appearance} />
         </main>

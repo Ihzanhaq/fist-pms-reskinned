@@ -5,13 +5,14 @@
 //   /projects/:id       one project
 //   /report?date=…      daily report (defaults to today)
 //   /claude             Connect to Claude
+//   /leaderboard        team leaderboard
 //   /settings           appearance settings
 //   ?issue=:id          detail panel open on top of any page
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const idOrNull = (value) => (UUID.test(value ?? '') ? value : null);
-const VIEWS = { issues: 'issues', projects: 'projects', report: 'report', claude: 'claude', settings: 'settings' };
+const VIEWS = { issues: 'issues', projects: 'projects', report: 'report', claude: 'claude', settings: 'settings', leaderboard: 'leaderboard' };
 
 export function parseRoute(location = window.location) {
   const [section, id] = location.pathname.split('/').filter(Boolean);
