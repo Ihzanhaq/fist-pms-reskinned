@@ -7,6 +7,7 @@ import { useDropUp } from '../useDropUp.js';
 //   options: [{ value, label, dot?: color, hint?: string }]
 //   variant: 'filter' (toolbar), 'input' (forms), 'prop' (detail panel), 'compact' (pagination)
 //   searchable: shows a filter box; defaults to on for long lists.
+//   iconOnly: the trigger shows just the prefix (e.g. an icon); the menu still lists labels.
 export default function Select({
   value,
   onChange,
@@ -18,6 +19,7 @@ export default function Select({
   disabled = false,
   className = '',
   prefix,
+  iconOnly = false,
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
@@ -106,7 +108,7 @@ export default function Select({
   };
 
   return (
-    <div className={`sel sel-${variant} ${className}`} ref={rootRef}>
+    <div className={`sel sel-${variant}${iconOnly ? ' sel-icon-only' : ''} ${className}`} ref={rootRef}>
       <button
         ref={triggerRef}
         type="button"
@@ -117,13 +119,18 @@ export default function Select({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
-        aria-label={ariaLabel}
+        aria-label={iconOnly && selected ? `${ariaLabel}: ${selected.label}` : ariaLabel}
+        title={iconOnly && selected ? `${ariaLabel}: ${selected.label}` : undefined}
       >
         {prefix && <span className="sel-prefix">{prefix}</span>}
+        {!iconOnly && (
+          <>
         {selected?.dot && <span className="dot" style={{ background: selected.dot }} />}
         {selected?.person && <Avatar id={selected.person.id} name={selected.person.name} />}
         <span className={selected ? 'sel-value' : 'sel-value placeholder'}>{selected?.label ?? placeholder}</span>
         <ChevronDown size={15} className="sel-chevron" />
+          </>
+        )}
       </button>
 
       {open && (

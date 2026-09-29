@@ -279,7 +279,7 @@
 .range-field input { accent-color: var(--accent); }
 .image-controls .secondary-btn { height: 36px; color: var(--text); }
 
-.theme-picker { min-width: 150px; }
+.theme-picker { min-width: 0; }
 
 @media (max-width: 700px) {
   .settings-row { grid-template-columns: 1fr; gap: 8px; }

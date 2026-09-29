@@ -35,9 +35,10 @@ export default function TopBar({ crumbs, themes, theme, onThemeChange, refreshin
         )}
         <Select
           variant="compact"
+          iconOnly
           className="theme-picker"
           ariaLabel="Theme"
-          prefix={<Palette size={15} />}
+          prefix={<Palette size={17} />}
           value={theme}
           onChange={onThemeChange}
           options={themes.map((t) => ({ value: t.id, label: t.name, dot: t.preview?.accent ?? GLASS_DOT }))}

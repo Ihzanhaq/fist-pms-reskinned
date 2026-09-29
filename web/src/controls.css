@@ -116,3 +116,10 @@
 .cal-day:disabled { color: var(--faint); cursor: not-allowed; }
 .cal-foot { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
 .cal-foot .link-btn:disabled { color: var(--muted); text-decoration: none; cursor: default; }
+
+/* icon-only trigger (e.g. the theme picker in the top bar) */
+.sel-icon-only { min-width: 0; }
+.sel-icon-only .sel-trigger { width: 36px; height: 36px; padding: 0; justify-content: center; border-radius: 50%; }
+.sel-icon-only .sel-prefix { display: grid; place-items: center; color: var(--text-2); }
+.sel-icon-only .sel-trigger:hover .sel-prefix, .sel-icon-only .sel-trigger.open .sel-prefix { color: var(--accent); }
+.sel-icon-only .sel-menu { left: auto; right: 0; min-width: 190px; }
