@@ -7,6 +7,7 @@ import './connect.css';
 import './projects.css';
 import './controls.css';
 import './insights.css';
+import './premium.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

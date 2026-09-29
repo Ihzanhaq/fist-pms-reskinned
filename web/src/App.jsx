@@ -7,7 +7,7 @@ import BulkBar from './components/BulkBar.jsx';
 import ConnectClaude from './components/ConnectClaude.jsx';
 import DailyReport from './components/DailyReport.jsx';
 import DashboardView from './components/DashboardView.jsx';
-import { todayIso } from './dates.js';
+import { formatShort, todayIso } from './dates.js';
 import ProjectsGrid from './components/ProjectsGrid.jsx';
 import ProjectView from './components/ProjectView.jsx';
 import CreateIssueModal from './components/CreateIssueModal.jsx';
@@ -287,19 +287,29 @@ export default function App() {
       return next;
     });
 
+  const SECTION = { dashboard: 'Dashboard', issues: 'My Issues', projects: 'Projects', report: 'Daily report', claude: 'Connect to Claude' };
+  const crumbs = [
+    { label: 'FIST PMS' },
+    { label: SECTION[view], onClick: view === 'projects' && openProject ? () => setOpenProject(null) : undefined },
+    ...(view === 'projects' && openProject ? [{ label: openProject.name }] : []),
+    ...(view === 'report' && route.date && route.date !== todayIso() ? [{ label: formatShort(route.date) }] : []),
+  ];
+
   return (
     <div className="shell">
+      <Sidebar
+        view={view}
+        onNavigate={navigate}
+        user={session.loggedIn ? { id: session.userId, name: session.userName } : null}
+        onLogout={logout}
+      />
       <TopBar
-        userId={session.userId}
-        userName={session.userName}
-        loggedIn={session.loggedIn}
+        crumbs={crumbs}
         theme={theme}
         onToggleTheme={toggleTheme}
         refreshing={loading}
-        onRefresh={loadIssues}
-        onLogout={logout}
+        onRefresh={view === 'issues' && session.loggedIn ? loadIssues : null}
       />
-      <Sidebar view={view} onNavigate={navigate} />
 
       {view === 'claude' ? (
         <main className="page">
@@ -361,14 +371,10 @@ export default function App() {
               </p>
             )}
           </div>
-          {session.loggedIn ? (
+          {session.loggedIn && (
             <button className="primary-btn new-issue-btn" onClick={() => setCreateFor({ parent: null })}>
               <Plus size={16} /> New issue
             </button>
-          ) : (
-            <div className="crumbs">
-              FIST PMS <span>›</span> <strong>My Issues</strong>
-            </div>
           )}
         </div>
 

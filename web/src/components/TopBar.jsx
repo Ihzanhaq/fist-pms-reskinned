@@ -1,42 +1,46 @@
-import { LogOut, Moon, RefreshCw, Sun } from 'lucide-react';
-import Avatar from './Avatar.jsx';
+import { Fragment } from 'react';
+import { ChevronRight, Moon, RefreshCw, Sun } from 'lucide-react';
 
-export default function TopBar({ userId, userName, loggedIn, refreshing, theme, onToggleTheme, onRefresh, onLogout }) {
-  const themeToggle = (
-    <button
-      className="icon-btn"
-      onClick={onToggleTheme}
-      title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-    >
-      {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
-    </button>
-  );
-
+// crumbs: [{ label, onClick? }] — the last one is the current page.
+export default function TopBar({ crumbs, theme, onToggleTheme, refreshing, onRefresh }) {
+  const toDark = theme !== 'dark';
   return (
     <header className="topbar">
-      <div className="brand">
-        <span className="brand-mark">F</span>
-        <span className="brand-name">FIST PMS</span>
-      </div>
-      {!loggedIn && <div className="topbar-actions">{themeToggle}</div>}
-      {loggedIn && (
-        <div className="topbar-actions">
-          {themeToggle}
-          <button className="icon-btn" onClick={onRefresh} disabled={refreshing} title="Refresh issues">
+      <nav className="crumbs" aria-label="Breadcrumb">
+        {crumbs.map((c, i) => {
+          const last = i === crumbs.length - 1;
+          return (
+            <Fragment key={`${c.label}-${i}`}>
+              {i > 0 && <ChevronRight size={14} className="crumb-sep" />}
+              {c.onClick && !last ? (
+                <button className="crumb" onClick={c.onClick}>
+                  {c.label}
+                </button>
+              ) : (
+                <span className={last ? 'crumb current' : 'crumb'} aria-current={last ? 'page' : undefined}>
+                  {c.label}
+                </span>
+              )}
+            </Fragment>
+          );
+        })}
+      </nav>
+      <div className="topbar-actions">
+        {onRefresh && (
+          <button className="icon-btn" onClick={onRefresh} disabled={refreshing} title="Refresh issues" aria-label="Refresh issues">
             <RefreshCw size={17} className={refreshing ? 'spin' : undefined} />
           </button>
-          <span className="topbar-divider" />
-          <div className="account">
-            <Avatar id={userId} name={userName} size="" />
-            <span className="account-name">{userName}</span>
-          </div>
-          <span className="topbar-divider" />
-          <button className="icon-btn" onClick={onLogout} title="Log out of dashboard">
-            <LogOut size={17} />
-          </button>
-        </div>
-      )}
+        )}
+        <button
+          className="theme-toggle"
+          onClick={onToggleTheme}
+          title={toDark ? 'Switch to dark mode' : 'Switch to light mode'}
+          aria-label={toDark ? 'Switch to dark mode' : 'Switch to light mode'}
+        >
+          {toDark ? <Moon size={16} /> : <Sun size={16} />}
+          <span>{toDark ? 'Dark' : 'Light'}</span>
+        </button>
+      </div>
     </header>
   );
 }

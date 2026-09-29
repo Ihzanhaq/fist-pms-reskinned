@@ -53,6 +53,12 @@ export function ColumnChart({ data, height = 220, ariaLabel }) {
     <div className="chart" ref={ref}>
       {width > 0 && (
         <svg width={width} height={height} role="img" aria-label={ariaLabel}>
+          <defs>
+            <linearGradient id="col-accent" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" style={{ stopColor: ACCENT }} />
+              <stop offset="100%" style={{ stopColor: ACCENT, stopOpacity: 0.55 }} />
+            </linearGradient>
+          </defs>
           {ticks.map((t) => (
             <g key={t}>
               <line x1={pad.left} x2={width - pad.right} y1={y(t)} y2={y(t)} style={{ stroke: GRID }} strokeWidth="1" />
@@ -69,7 +75,11 @@ export function ColumnChart({ data, height = 220, ariaLabel }) {
               <g key={d.key} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}>
                 <rect x={cx - band / 2} y={pad.top} width={band} height={plotH + pad.bottom} fill="transparent" />
                 {hover === i && <rect x={cx - band / 2 + 2} y={pad.top} width={band - 4} height={plotH} rx="6" style={{ fill: 'var(--accent-wash)' }} />}
-                <path d={columnPath(cx - barW / 2, y(d.value), barW, h)} style={{ fill: isLast || hover === i ? ACCENT : RECEDE }} />
+                <path
+                  d={columnPath(cx - barW / 2, y(d.value), barW, h)}
+                  className={isLast ? 'bar-today' : undefined}
+                  style={{ fill: isLast || hover === i ? 'url(#col-accent)' : RECEDE }}
+                />
                 {isLast && d.value > 0 && (
                   <text x={cx} y={y(d.value) - 7} textAnchor="middle" className="chart-value">
                     {d.value}
