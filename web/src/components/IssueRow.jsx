@@ -1,10 +1,11 @@
 import { AlertTriangle } from 'lucide-react';
+import { rowClick } from '../rowClick.js';
 import Checkbox from './Checkbox.jsx';
 import StatusSelect from './StatusSelect.jsx';
 
 export default function IssueRow({ issue, colorFor, saving, selected, selectionLocked, onToggle, onStatusChange, onOpen }) {
   return (
-    <div className={selected ? 'row selected' : 'row'}>
+    <div className={selected ? 'row clickable selected' : 'row clickable'} onClick={rowClick(() => onOpen(issue.id))}>
       <Checkbox
         checked={selected}
         disabled={selectionLocked}

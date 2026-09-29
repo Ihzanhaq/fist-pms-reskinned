@@ -14,5 +14,6 @@ export const DATA_DIR = process.env.PMS_DATA_DIR || path.join(os.homedir(), '.fi
 export const COOKIE_FILE = path.join(DATA_DIR, 'cookie.json');
 export const PROFILE_DIR = path.join(DATA_DIR, 'browser-profile');
 
-// Use the browser that is already installed instead of downloading one.
+// Default login browser (already installed, never downloaded). The user can
+// pick another on the sign-in screen; see browsers.js.
 export const BROWSER_CHANNEL = process.platform === 'win32' ? 'msedge' : 'chrome';

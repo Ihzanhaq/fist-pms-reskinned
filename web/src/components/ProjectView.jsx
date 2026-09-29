@@ -7,6 +7,7 @@ import AssigneeSelect from './AssigneeSelect.jsx';
 import Select from './Select.jsx';
 import Avatar from './Avatar.jsx';
 import StatusSelect from './StatusSelect.jsx';
+import { rowClick } from '../rowClick.js';
 
 const PRIORITY_RANK = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
 const PRIORITY_COLORS = { urgent: '#dc2626', high: '#ea580c', medium: '#ca8a04', low: '#2f7de1', none: '#9ca3af' };
@@ -314,7 +315,7 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
           )}
 
           {pageItems.map((issue) => (
-            <div className="row" key={issue.id}>
+            <div className="row clickable" key={issue.id} onClick={rowClick(() => onOpenIssue(issue.id))}>
               <span className="key">{issue.key}</span>
               <button className="title" onClick={() => onOpenIssue(issue.id)} title={issue.title}>
                 {issue.title}

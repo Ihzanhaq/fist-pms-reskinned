@@ -12,6 +12,7 @@ import {
 import * as pms from './pms-client.js';
 import { PmsError, SessionExpiredError } from './pms-client.js';
 import * as session from './session.js';
+import { chosenBrowser, installedBrowsers } from './browsers.js';
 import { textToHtml } from './text-to-html.js';
 
 export const PRIORITIES = ['urgent', 'high', 'medium', 'low', 'none'];
@@ -43,9 +44,16 @@ export async function sessionInfo() {
   }
 }
 
-export async function login() {
+export function browsers() {
+  return { browsers: installedBrowsers(), selected: chosenBrowser() };
+}
+
+export async function login(browser) {
+  if (browser !== undefined && !installedBrowsers().some((b) => b.id === browser)) {
+    throw new BadRequestError('bad_request', 'That browser is not installed');
+  }
   try {
-    await session.login();
+    await session.login(browser);
   } catch (err) {
     throw new BadRequestError('login_failed', err.message);
   }

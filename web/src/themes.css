@@ -146,6 +146,7 @@
   inset: calc(var(--glass-bg-blur, 0px) * -2.5);
   background: var(--glass-bg, linear-gradient(135deg, #a8c0ff, #3f2b96));
   filter: blur(var(--glass-bg-blur, 0px));
+  will-change: transform; /* keep the blurred wallpaper on its own cached layer */
 }
 :root[data-theme='glass'] body::after { inset: 0; background: rgba(0, 0, 0, var(--glass-dim, 0)); }
 :root[data-theme='glass'][data-mode='light'] body::after { background: rgba(255, 255, 255, var(--glass-dim, 0)); }
@@ -162,13 +163,19 @@
   -webkit-backdrop-filter: blur(var(--glass-blur)); backdrop-filter: blur(var(--glass-blur));
 }
 
-/* every panel is frosted glass */
-:root[data-theme='glass'] :is(.card, .stat, .row:not(.skeleton), .project-card, .report-doc, .report-summary, .empty,
-  .login-card, .search, .toggle-btn, .page-btn, .team-chip, .sel-trigger, .theme-toggle, .report-item, .error-card,
-  .properties, .sidebar-user, .settings-card) {
+/* Large, few panels are live frosted glass. */
+:root[data-theme='glass'] :is(.card, .stat, .report-doc, .report-summary, .empty,
+  .login-card, .error-card, .properties, .sidebar-user, .settings-card) {
   background: var(--surface);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(170%);
   backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+}
+/* Repeated and small items (issue rows, project cards, chips, buttons) skip the live blur:
+   dozens of backdrop filters inside the scroller re-blur on every scrolled frame and make
+   scrolling stutter. A slightly denser tint keeps them readable on the wallpaper. */
+:root[data-theme='glass'] :is(.row:not(.skeleton), .project-card, .report-item, .search, .toggle-btn, .page-btn,
+  .team-chip, .sel-trigger, .theme-toggle) {
+  background: color-mix(in srgb, var(--surface), var(--glass-strong) 45%);
 }
 :root[data-theme='glass'] .page-btn.active { background: var(--accent); }
 :root[data-theme='glass'] .row.selected { background: rgba(var(--accent-rgb), 0.16); }
@@ -200,7 +207,8 @@
 
 /* light glass: sidebar text goes dark */
 :root[data-theme='glass'][data-mode='light'] :is(.brand-name, .sidebar-user-name) { color: var(--text); }
-:root[data-theme='glass'][data-mode='light'] :is(.brand-sub, .nav-label, .sidebar-user-sub) { color: var(--muted); }
+:root[data-theme='glass'][data-mode='light'] :is(.brand-sub, .sidebar-user-sub) { color: var(--muted); }
+:root[data-theme='glass'][data-mode='light'] .nav-label { color: var(--text-2); }
 :root[data-theme='glass'][data-mode='light'] .nav-item { color: var(--text-2); }
 :root[data-theme='glass'][data-mode='light'] .nav-item:hover { color: var(--text); background: rgba(255, 255, 255, 0.4); }
 :root[data-theme='glass'][data-mode='light'] .nav-item.active {
@@ -217,7 +225,7 @@
 }
 
 /* ---------- Settings page ---------- */
-.settings { display: flex; flex-direction: column; gap: 20px; max-width: 1080px; }
+.settings { display: flex; flex-direction: column; gap: 20px; max-width: 1080px; margin-inline: auto; }
 .settings-card { padding: 22px 24px; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-sm); }
 .settings-card.dimmed .settings-row { opacity: 0.55; }
 .settings-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
@@ -285,3 +293,7 @@
   .settings-row { grid-template-columns: 1fr; gap: 8px; }
 }
 
+
+/* theme / background switches cross-fade (see apply() in theme.js) */
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: 0.45s; animation-timing-function: ease; }

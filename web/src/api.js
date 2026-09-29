@@ -48,7 +48,8 @@ async function call(path, { method = 'GET', body } = {}) {
 
 export const api = {
   session: () => call('/api/session'),
-  login: () => call('/api/login', { method: 'POST' }),
+  browsers: () => call('/api/browsers'),
+  login: (browser) => call('/api/login', { method: 'POST', body: browser ? { browser } : undefined }),
   logout: () => call('/api/logout', { method: 'POST' }),
   issues: (scope) => call(`/api/issues?scope=${scope}`),
   states: (issue) => call(`/api/issues/${issue.id}/states?projectId=${issue.projectId}`),

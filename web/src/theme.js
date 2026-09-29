@@ -98,7 +98,23 @@ export function resolve(settings) {
   };
 }
 
+let lastLook = null;
+
+// Cross-fade the whole page when the theme, mode or background changes.
+// Slider tweaks (blur, dim) apply instantly so dragging stays responsive.
 function apply(resolved) {
+  const look = `${resolved.theme}|${resolved.mode}|${resolved.bg ?? ''}`;
+  const fade =
+    lastLook !== null &&
+    look !== lastLook &&
+    document.startViewTransition &&
+    !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  lastLook = look;
+  if (fade) document.startViewTransition(() => setLook(resolved));
+  else setLook(resolved);
+}
+
+function setLook(resolved) {
   const root = document.documentElement;
   root.dataset.theme = resolved.theme;
   root.dataset.mode = resolved.mode;

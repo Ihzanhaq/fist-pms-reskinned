@@ -138,10 +138,11 @@ export default function App() {
     if (session.loggedIn) loadIssues();
   }, [session.loggedIn, loadIssues]);
 
-  const login = async () => {
+  // `browser` comes from the sign-in screen's picker; buttons elsewhere pass a click event.
+  const login = async (browser) => {
     setLoggingIn(true);
     try {
-      const s = await api.login();
+      const s = await api.login(typeof browser === 'string' ? browser : undefined);
       setSession({ checked: true, expired: false, ...s });
       setError(null);
     } catch (err) {

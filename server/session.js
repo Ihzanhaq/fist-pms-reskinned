@@ -2,7 +2,8 @@
 // (Playwright) so the app never sees the user's password.
 import fs from 'node:fs';
 import { chromium } from 'playwright-core';
-import { BROWSER_CHANNEL, COOKIE_FILE, DATA_DIR, PMS_BASE, PROFILE_DIR } from './config.js';
+import { COOKIE_FILE, DATA_DIR, PMS_BASE } from './config.js';
+import { BROWSER_NAMES, chosenBrowser, findExecutable, profileDir, saveChoice } from './browsers.js';
 
 const LOGIN_TIMEOUT_MS = 5 * 60_000;
 const SILENT_TIMEOUT_MS = 20_000;
@@ -28,7 +29,7 @@ export function clearCookie() {
   fs.rmSync(COOKIE_FILE, { force: true });
 }
 
-// The Edge profile can only be opened by one browser at a time, so logins are
+// A browser profile can only be opened by one browser at a time, so logins are
 // exclusive; callers asking for the same kind of login share the one in flight.
 function exclusive(kind, run) {
   if (loginInFlight) {
@@ -41,17 +42,22 @@ function exclusive(kind, run) {
   return promise;
 }
 
-// Visible Edge window where the user signs in.
-export async function login() {
+// Visible browser window where the user signs in. `browser` is an id from
+// browsers.js; without one the last-used browser opens.
+export async function login(browser) {
   if (loginInFlight?.kind === 'silent') await loginInFlight.promise.catch(() => {});
-  return exclusive('window', () => signIn({ visible: true }));
+  return exclusive('window', async () => {
+    const id = browser ?? chosenBrowser();
+    await signIn({ visible: true, browser: id });
+    saveChoice(id);
+  });
 }
 
-// Hidden Edge that reuses the Keycloak session saved in the profile.
+// Hidden browser that reuses the Keycloak session saved in the profile.
 // Resolves to false when Keycloak wants a password (or a window login is running).
 export async function silentLogin() {
   if (loginInFlight?.kind === 'window') return false;
-  return exclusive('silent', () => signIn({ visible: false })).then(
+  return exclusive('silent', () => signIn({ visible: false, browser: chosenBrowser() })).then(
     () => true,
     () => false,
   );
@@ -60,17 +66,20 @@ export async function silentLogin() {
 const isBackOnPms = (url) =>
   url.origin === PMS_BASE && !url.pathname.startsWith('/login') && !url.pathname.startsWith('/oauth2');
 
-async function signIn({ visible }) {
-  fs.mkdirSync(PROFILE_DIR, { recursive: true });
+async function signIn({ visible, browser: id }) {
+  const browser = BROWSER_NAMES[id] ?? 'a browser';
+  const executablePath = id && findExecutable(id);
+  if (!executablePath) throw new Error(`Could not find ${browser} on this computer.`);
+  const profile = profileDir(id);
+  fs.mkdirSync(profile, { recursive: true });
   let context;
   try {
-    context = await chromium.launchPersistentContext(PROFILE_DIR, {
-      channel: BROWSER_CHANNEL, // installed Edge (Windows) or Chrome (macOS/Linux)
+    context = await chromium.launchPersistentContext(profile, {
+      executablePath,
       headless: !visible,
       viewport: null,
     });
   } catch (err) {
-    const browser = BROWSER_CHANNEL === 'msedge' ? 'Microsoft Edge' : 'Google Chrome';
     if (/ProcessSingleton|in use|lock/i.test(err.message)) {
       throw new Error('The PMS login window is already open in another app (dashboard or Claude). Finish signing in there.');
     }

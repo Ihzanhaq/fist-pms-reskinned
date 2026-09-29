@@ -32,8 +32,9 @@ export function createApp() {
     if (info.loggedIn) info.userId = await insights.myActorId().catch(() => null);
     res.json(info);
   });
+  app.get('/api/browsers', (req, res) => res.json(service.browsers()));
   app.post('/api/login', async (req, res) => {
-    const info = await service.login();
+    const info = await service.login(req.body?.browser);
     if (info.loggedIn) info.userId = await insights.myActorId().catch(() => null);
     res.json(info);
   });

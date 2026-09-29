@@ -1,6 +1,8 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { KeyRound, Loader2, Palette } from 'lucide-react';
+import { api } from '../api.js';
 import BrandMark from './BrandMark.jsx';
+import BrowserLogo from './BrowserLogo.jsx';
 import Select from './Select.jsx';
 
 export function Splash() {
@@ -114,6 +116,18 @@ function FlowArt() {
 }
 
 export default function SignInScreen({ expired, loggingIn, onLogin, themes, theme, onThemeChange }) {
+  const [browsers, setBrowsers] = useState([]);
+  const [browser, setBrowser] = useState(null);
+  useEffect(() => {
+    api
+      .browsers()
+      .then((r) => {
+        setBrowsers(r.browsers);
+        setBrowser(r.selected);
+      })
+      .catch(() => {}); // picker is optional; the server falls back to the default browser
+  }, []);
+
   return (
     <div className="signin">
       <div className="signin-theme">
@@ -137,7 +151,29 @@ export default function SignInScreen({ expired, loggingIn, onLogin, themes, them
               {expired ? 'Your session ended. Sign in again to pick up where you left off.' : 'Sign in with your FIST account to continue.'}
             </p>
 
-            <button className="primary-btn signin-btn" onClick={onLogin} disabled={loggingIn}>
+            {browsers.length > 1 && (
+              <div className="signin-browsers" role="radiogroup" aria-label="Browser to sign in with">
+                <span className="signin-browsers-label">Sign in using</span>
+                <div className="signin-browsers-list">
+                  {browsers.map((b) => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={browser === b.id}
+                      className={`browser-opt${browser === b.id ? ' on' : ''}`}
+                      onClick={() => setBrowser(b.id)}
+                      disabled={loggingIn}
+                    >
+                      <BrowserLogo id={b.id} size={26} />
+                      <span>{b.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <button className="primary-btn signin-btn" onClick={() => onLogin(browser ?? undefined)} disabled={loggingIn}>
               {loggingIn ? (
                 <>
                   <Loader2 size={17} className="spin" /> Waiting for you to sign in…

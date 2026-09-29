@@ -223,3 +223,6 @@ textarea.input { resize: vertical; line-height: 1.55; }
 .drop-zone:hover:not(:disabled), .drop-zone.over { border-color: var(--accent); background: var(--accent-soft); }
 .drop-zone:disabled { opacity: 0.6; }
 .attachment-list.picked li { padding: 6px 6px 6px 12px; }
+
+/* whole issue row opens the issue */
+.row.clickable { cursor: pointer; }
