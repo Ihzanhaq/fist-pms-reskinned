@@ -1,0 +1,36 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/mcpb/main/dist/mcpb-manifest-v0.3.schema.json",
+  "manifest_version": "0.3",
+  "name": "fist-pms",
+  "display_name": "FIST PMS",
+  "version": "1.0.0",
+  "description": "See and update your FIST PMS issues from Claude: statuses, priorities, assignees, comments and new issues.",
+  "long_description": "Connects Claude Desktop to FIST PMS (pms.fistinnovations.com) using your own PMS login. The first time you use it, a sign-in window opens (Microsoft Edge on Windows, Google Chrome on macOS); sign in there as usual. Your password never passes through Claude or this extension, and the saved session stays on your computer in ~/.fist-pms-dashboard.",
+  "author": { "name": "FIST Innovations" },
+  "homepage": "https://pms.fistinnovations.com",
+  "keywords": ["pms", "issues", "project management", "fist"],
+  "server": {
+    "type": "node",
+    "entry_point": "mcp/server.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/mcp/server.js"]
+    }
+  },
+  "tools": [
+    { "name": "check_login", "description": "Check the PMS sign-in, opening a sign-in window if needed" },
+    { "name": "list_my_issues", "description": "List your issues, filtered by project, status, text or overdue" },
+    { "name": "get_issue", "description": "Full details of an issue, including comments and sub-issues" },
+    { "name": "list_projects", "description": "List PMS projects" },
+    { "name": "get_project_options", "description": "Statuses, people and labels of a project" },
+    { "name": "update_status", "description": "Move an issue to another status" },
+    { "name": "update_priority", "description": "Change an issue's priority" },
+    { "name": "assign_issue", "description": "Change an issue's assignee" },
+    { "name": "add_comment", "description": "Comment on an issue" },
+    { "name": "create_issue", "description": "Create an issue or sub-issue" }
+  ],
+  "compatibility": {
+    "platforms": ["win32", "darwin"],
+    "runtimes": { "node": ">=20.0.0" }
+  }
+}

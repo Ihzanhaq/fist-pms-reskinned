@@ -6,15 +6,20 @@
     "dev": "concurrently -k -n api,web -c magenta,cyan \"node --watch server/index.js\" \"vite web\"",
     "build": "vite build web",
     "start": "node server/index.js",
-    "test": "node --test \"server/test/*.test.js\""
+    "test": "node --test \"server/test/*.test.js\"",
+    "build:extension": "node scripts/build-extension.mjs",
+    "mcp": "node mcp/server.js"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.31.0",
     "express": "^5.2.1",
     "multer": "^2.4.0",
     "node-html-parser": "^9.0.4",
-    "playwright": "^1.63.0"
+    "playwright-core": "^1.63.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@anthropic-ai/mcpb": "^2.1.2",
     "@vitejs/plugin-react": "^6.1.1",
     "concurrently": "^10.0.5",
     "dompurify": "^3.4.16",

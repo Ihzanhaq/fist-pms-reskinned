@@ -1,35 +1,31 @@
 // Holds the PMS session cookie. Login happens in a real browser window
 // (Playwright) so the app never sees the user's password.
 import fs from 'node:fs';
-import { chromium } from 'playwright';
-import { COOKIE_FILE, DATA_DIR, PMS_BASE, PROFILE_DIR } from './config.js';
+import { chromium } from 'playwright-core';
+import { BROWSER_CHANNEL, COOKIE_FILE, DATA_DIR, PMS_BASE, PROFILE_DIR } from './config.js';
 
 const LOGIN_TIMEOUT_MS = 5 * 60_000;
 const SILENT_TIMEOUT_MS = 20_000;
 
-let cookie;
 let loginInFlight = null;
 
+// Read from disk every time: the dashboard and the Claude extension are
+// separate processes and either one may renew the session.
 export function getCookie() {
-  if (cookie === undefined) {
-    try {
-      cookie = JSON.parse(fs.readFileSync(COOKIE_FILE, 'utf8')).jsessionid ?? null;
-    } catch {
-      cookie = null;
-    }
+  try {
+    return JSON.parse(fs.readFileSync(COOKIE_FILE, 'utf8')).jsessionid ?? null;
+  } catch {
+    return null;
   }
-  return cookie;
 }
 
 function saveCookie(value) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(COOKIE_FILE, JSON.stringify({ jsessionid: value }));
-  cookie = value;
+  fs.writeFileSync(COOKIE_FILE, JSON.stringify({ jsessionid: value }), { mode: 0o600 });
 }
 
 export function clearCookie() {
   fs.rmSync(COOKIE_FILE, { force: true });
-  cookie = null;
 }
 
 // The Edge profile can only be opened by one browser at a time, so logins are
@@ -66,11 +62,20 @@ const isBackOnPms = (url) =>
 
 async function signIn({ visible }) {
   fs.mkdirSync(PROFILE_DIR, { recursive: true });
-  const context = await chromium.launchPersistentContext(PROFILE_DIR, {
-    channel: 'msedge', // the Microsoft Edge installed on Windows
-    headless: !visible,
-    viewport: null,
-  });
+  let context;
+  try {
+    context = await chromium.launchPersistentContext(PROFILE_DIR, {
+      channel: BROWSER_CHANNEL, // installed Edge (Windows) or Chrome (macOS/Linux)
+      headless: !visible,
+      viewport: null,
+    });
+  } catch (err) {
+    const browser = BROWSER_CHANNEL === 'msedge' ? 'Microsoft Edge' : 'Google Chrome';
+    if (/ProcessSingleton|in use|lock/i.test(err.message)) {
+      throw new Error('The PMS login window is already open in another app (dashboard or Claude). Finish signing in there.');
+    }
+    throw new Error(`Could not open ${browser} for the PMS login. Is it installed? (${err.message.split('\n')[0]})`);
+  }
   try {
     const page = context.pages()[0] ?? (await context.newPage());
     await page.goto(PMS_BASE, { timeout: SILENT_TIMEOUT_MS });
