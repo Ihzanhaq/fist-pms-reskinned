@@ -1,6 +1,6 @@
 // Talks to the PMS like a browser would: session cookie in, HTML out.
 import { PMS_BASE } from './config.js';
-import { getCookie } from './session.js';
+import { getCookie, silentLogin } from './session.js';
 
 export class SessionExpiredError extends Error {
   constructor() {
@@ -25,7 +25,7 @@ export function isLoginRedirect(status, location) {
   );
 }
 
-async function request(path, init = {}) {
+async function request(path, init = {}, canRetry = true) {
   const cookie = getCookie();
   if (!cookie) throw new SessionExpiredError();
 
@@ -34,7 +34,13 @@ async function request(path, init = {}) {
     redirect: 'manual',
     headers: { ...init.headers, Cookie: `JSESSIONID=${cookie}` },
   });
-  if (isLoginRedirect(res.status, res.headers.get('location'))) throw new SessionExpiredError();
+  if (isLoginRedirect(res.status, res.headers.get('location'))) {
+    // PMS sessions idle out; the saved Keycloak session can usually renew them.
+    // Only GETs are retried: a POST carries a CSRF token tied to the old session.
+    const isGet = !init.method || init.method === 'GET';
+    if (isGet && canRetry && (await silentLogin())) return request(path, init, false);
+    throw new SessionExpiredError();
+  }
   return res;
 }
 
@@ -44,14 +50,28 @@ export async function get(path) {
   return res.text();
 }
 
-// PMS forms answer a successful POST with a redirect back to the page.
-export async function postForm(path, fields) {
-  const res = await request(path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams(fields).toString(),
-  });
+// For binary responses (attachments). Caller streams the body.
+export async function getRaw(path) {
+  const res = await request(path);
+  if (res.status !== 200) throw new PmsError(`PMS returned ${res.status} for ${path}`);
+  return res;
+}
+
+// PMS forms answer a successful POST with a redirect; returns its Location.
+async function post(path, body, headers) {
+  const res = await request(path, { method: 'POST', headers, body });
   if (res.status !== 302 && res.status !== 303) {
     throw new PmsError(`PMS rejected the change (HTTP ${res.status})`);
   }
+  return res.headers.get('location') ?? '';
+}
+
+export function postForm(path, fields) {
+  return post(path, new URLSearchParams(fields).toString(), {
+    'Content-Type': 'application/x-www-form-urlencoded',
+  });
+}
+
+export function postMultipart(path, formData) {
+  return post(path, formData); // fetch sets the multipart boundary header
 }

@@ -1,14 +1,25 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { Readable } from 'node:stream';
 import express from 'express';
 import { WEB_DIST_DIR } from './config.js';
-import { LayoutChangedError, parseIssuePage, parseMyIssues, parseUserName } from './parse.js';
+import {
+  LayoutChangedError,
+  parseIssueDetail,
+  parseIssueForm,
+  parseIssuePage,
+  parseMyIssues,
+  parseProjects,
+  parseUserName,
+} from './parse.js';
 import * as pms from './pms-client.js';
 import { SessionExpiredError } from './pms-client.js';
 import * as session from './session.js';
+import { textToHtml } from './text-to-html.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_PAGES = 50;
+const PRIORITIES = ['urgent', 'high', 'medium', 'low', 'none'];
 
 class BadRequestError extends Error {
   constructor(code, message) {
@@ -95,6 +106,115 @@ export function createApp() {
     const selected = after.states.find((s) => s.selected);
     if (selected?.id !== stateId) throw new pms.PmsError('The PMS did not apply the status change');
     res.json({ status: { id: selected.id, name: selected.name } });
+  });
+
+  // ---------- issue detail ----------
+
+  const loadDetail = async (id) => ({ id, ...parseIssueDetail(await pms.get(`/issues/${id}`)) });
+
+  app.get('/api/issues/:id', async (req, res) => {
+    res.json(await loadDetail(requireUuid(req.params.id, 'issue id')));
+  });
+
+  app.post('/api/issues/:id/comment', async (req, res) => {
+    const id = requireUuid(req.params.id, 'issue id');
+    const body = String(req.body?.body ?? '').trim();
+    if (!body) throw new BadRequestError('bad_request', 'Comment is empty');
+    if (body.length > 10_000) throw new BadRequestError('bad_request', 'Comment is too long');
+    const { csrf } = parseIssuePage(await pms.get(`/issues/${id}`));
+    await pms.postForm(`/issues/${id}/comment`, { _csrf: csrf, body });
+    res.json(await loadDetail(id));
+  });
+
+  app.post('/api/issues/:id/priority', async (req, res) => {
+    const id = requireUuid(req.params.id, 'issue id');
+    const priority = req.body?.priority;
+    if (!PRIORITIES.includes(priority)) throw new BadRequestError('bad_request', 'Invalid priority');
+    const { csrf } = parseIssuePage(await pms.get(`/issues/${id}`));
+    await pms.postForm(`/issues/${id}/priority`, { _csrf: csrf, priority, back: `/issues/${id}` });
+    res.json(await loadDetail(id));
+  });
+
+  app.post('/api/issues/:id/assignee', async (req, res) => {
+    const id = requireUuid(req.params.id, 'issue id');
+    const userId = req.body?.userId ?? '';
+    const page = await pms.get(`/issues/${id}`);
+    const detail = parseIssueDetail(page);
+    if (detail.assigneeLocked) throw new BadRequestError('assignee_locked', "Reopen this issue to change who it's assigned to");
+    if (userId && !detail.assignees.some((a) => a.id === userId)) {
+      throw new BadRequestError('bad_request', 'That person cannot be assigned to this issue');
+    }
+    const { csrf } = parseIssuePage(page);
+    await pms.postForm(`/issues/${id}/assignee`, { _csrf: csrf, userId, back: `/issues/${id}` });
+    res.json(await loadDetail(id));
+  });
+
+  // Streams an attachment through the server so the user's browser needs no PMS login.
+  app.get('/api/attachments/:id', async (req, res) => {
+    const id = requireUuid(req.params.id, 'attachment id');
+    const upstream = await pms.getRaw(`/issue-attachment/${id}${req.query.dl ? '?dl=1' : ''}`);
+    for (const header of ['content-type', 'content-length', 'content-disposition']) {
+      const value = upstream.headers.get(header);
+      if (value) res.setHeader(header, value);
+    }
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    Readable.fromWeb(upstream.body).pipe(res);
+  });
+
+  // ---------- projects & create issue ----------
+
+  app.get('/api/projects', async (req, res) => {
+    res.json({ projects: parseProjects(await pms.get('/')) });
+  });
+
+  const newIssuePath = (projectId, parentId) =>
+    `/projects/${projectId}/issues/new${parentId ? `?parent=${parentId}` : ''}`;
+
+  app.get('/api/projects/:id/issue-form', async (req, res) => {
+    const projectId = requireUuid(req.params.id, 'project id');
+    const parentId = req.query.parentId ? requireUuid(req.query.parentId, 'parent issue id') : null;
+    const { csrf, action, ...form } = parseIssueForm(await pms.get(newIssuePath(projectId, parentId)));
+    res.json(form);
+  });
+
+  app.post('/api/projects/:id/issues', async (req, res) => {
+    const projectId = requireUuid(req.params.id, 'project id');
+    const input = req.body ?? {};
+    const parentId = input.parentId ? requireUuid(input.parentId, 'parent issue id') : null;
+    const form = parseIssueForm(await pms.get(newIssuePath(projectId, parentId)));
+
+    const name = String(input.name ?? '').trim();
+    if (!name) throw new BadRequestError('bad_request', 'Title is required');
+    if (name.length > 500) throw new BadRequestError('bad_request', 'Title is too long');
+    const oneOf = (value, list, what) => {
+      if (value && !list.some((x) => x.id === value)) throw new BadRequestError('bad_request', `Invalid ${what}`);
+      return value || '';
+    };
+    const date = (value, what) => {
+      if (value && !/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new BadRequestError('bad_request', `Invalid ${what}`);
+      return value || '';
+    };
+    const priority = input.priority || 'none';
+    if (!PRIORITIES.includes(priority)) throw new BadRequestError('bad_request', 'Invalid priority');
+    const labelIds = Array.isArray(input.labelIds) ? input.labelIds : [];
+    labelIds.forEach((l) => oneOf(l, form.labels, 'label'));
+
+    const data = new FormData();
+    data.append('_csrf', form.csrf);
+    if (form.parentId) data.append('parentId', form.parentId);
+    data.append('name', name);
+    data.append('descriptionHtml', textToHtml(input.description));
+    data.append('stateId', oneOf(input.stateId, form.states, 'status'));
+    data.append('priority', priority);
+    data.append('startDate', date(input.startDate, 'start date'));
+    data.append('targetDate', date(input.targetDate, 'target date'));
+    data.append('assigneeId', oneOf(input.assigneeId, form.assignees, 'assignee'));
+    for (const labelId of labelIds) data.append('labelIds', labelId);
+
+    const location = await pms.postMultipart(form.action, data);
+    const id = location.match(/\/issues\/([0-9a-f-]{36})/i)?.[1] ?? null;
+    if (!id && location.includes('/issues/new')) throw new pms.PmsError('The PMS did not accept the new issue');
+    res.status(201).json({ id });
   });
 
   app.use('/api', (req, res) => res.status(404).json({ error: 'not_found' }));
