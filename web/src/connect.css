@@ -69,18 +69,6 @@ button.nav-item { width: 100%; border: 0; border-left: 3px solid transparent; ba
 .info-card h4 svg { color: var(--accent); }
 .info-card ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; line-height: 1.5; color: var(--text-2); }
 
-/* faq */
-.faq { display: flex; flex-direction: column; gap: 8px; }
-.faq details { border-radius: 10px; background: var(--surface); box-shadow: var(--shadow-sm); }
-.faq summary {
-  list-style: none; cursor: pointer; padding: 15px 20px; font-size: 13.5px; font-weight: 600;
-  display: flex; justify-content: space-between; align-items: center;
-}
-.faq summary::-webkit-details-marker { display: none; }
-.faq summary::after { content: '+'; font-size: 18px; font-weight: 400; color: var(--muted); transition: transform 0.15s; }
-.faq details[open] summary::after { transform: rotate(45deg); }
-.faq details p { margin: 0; padding: 0 20px 16px; font-size: 13px; line-height: 1.65; color: var(--text-2); }
-
 
 @media (max-width: 960px) {
   .two-col, .steps { grid-template-columns: 1fr; }

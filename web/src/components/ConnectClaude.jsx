@@ -167,41 +167,6 @@ export default function ConnectClaude() {
         </div>
       </section>
 
-      <section className="connect-section">
-        <h3>Good to know</h3>
-        <div className="faq">
-          <details>
-            <summary>Can I use it on my phone?</summary>
-            <p>
-              Not directly — the extension runs in Claude Desktop on your computer. On Pro plans and above you can
-              drive a desktop session from the Claude mobile app (Remote Control). Full mobile support would need an
-              official PMS API.
-            </p>
-          </details>
-          <details>
-            <summary>Why can’t Claude find an issue by its key?</summary>
-            <p>
-              Keys are looked up among <em>your</em> issues. For someone else’s issue, paste its PMS link into the chat
-              instead.
-            </p>
-          </details>
-          <details>
-            <summary>Can it upload attachments?</summary>
-            <p>Not from Claude. Use the New issue form in this dashboard, or the PMS itself.</p>
-          </details>
-          <details>
-            <summary>How do I sign out or switch accounts?</summary>
-            <p>
-              Delete the <code>.fist-pms-dashboard</code> folder in your user folder. The next request opens a fresh
-              sign-in window.
-            </p>
-          </details>
-          <details>
-            <summary>How do I update to a new version?</summary>
-            <p>Download the new file from this page and install it the same way; it replaces the old one.</p>
-          </details>
-        </div>
-      </section>
 
     </div>
   );
