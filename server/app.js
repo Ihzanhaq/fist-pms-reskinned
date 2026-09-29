@@ -4,7 +4,7 @@ import path from 'node:path';
 import { Readable } from 'node:stream';
 import express from 'express';
 import multer from 'multer';
-import { WEB_DIST_DIR } from './config.js';
+import { ROOT_DIR, WEB_DIST_DIR } from './config.js';
 import { LayoutChangedError } from './parse.js';
 import { SessionExpiredError } from './pms-client.js';
 import * as service from './service.js';
@@ -78,6 +78,15 @@ export function createApp() {
       throw new BadRequestError('bad_request', 'Invalid issue data');
     }
     res.status(201).json(await service.createIssue(req.params.id, input, req.files ?? []));
+  });
+
+  // The Claude Desktop extension, built by npm run build:extension.
+  app.get('/api/extension', (req, res) => {
+    const file = path.join(ROOT_DIR, 'dist', 'fist-pms.mcpb');
+    if (!fs.existsSync(file)) {
+      return res.status(404).json({ error: 'not_found', message: 'Run npm run build:extension first' });
+    }
+    res.download(file, 'fist-pms.mcpb');
   });
 
   app.use('/api', (req, res) => res.status(404).json({ error: 'not_found' }));

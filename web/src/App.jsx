@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertOctagon, Plus } from 'lucide-react';
 import { api, errorMessage, loadStates, runPool } from './api.js';
 import BulkBar from './components/BulkBar.jsx';
+import ConnectClaude from './components/ConnectClaude.jsx';
 import CreateIssueModal from './components/CreateIssueModal.jsx';
 import IssueDrawer from './components/IssueDrawer.jsx';
 import TopBar from './components/TopBar.jsx';
@@ -24,6 +25,7 @@ export default function App() {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [savingIds, setSavingIds] = useState(() => new Set());
   const [toast, setToast] = useState(null);
+  const [view, setView] = useState('issues');
   const [openIssueId, setOpenIssueId] = useState(null);
   const [createFor, setCreateFor] = useState(null); // null = closed, { parent } = open
 
@@ -242,8 +244,13 @@ export default function App() {
         onRefresh={loadIssues}
         onLogout={logout}
       />
-      <Sidebar />
+      <Sidebar view={view} onNavigate={setView} />
 
+      {view === 'claude' ? (
+        <main className="page">
+          <ConnectClaude />
+        </main>
+      ) : (
       <main className="page">
         <div className="page-head">
           <div>
@@ -307,8 +314,9 @@ export default function App() {
           </>
         )}
       </main>
+      )}
 
-      {session.loggedIn && selectedVisible.length > 0 && (
+      {view === 'issues' && session.loggedIn && selectedVisible.length > 0 && (
         <BulkBar
           issues={selectedVisible}
           running={bulkRunning}
