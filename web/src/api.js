@@ -39,3 +39,24 @@ export const api = {
   states: (issue) => call(`/api/issues/${issue.id}/states?projectId=${issue.projectId}`),
   setState: (issueId, stateId) => call(`/api/issues/${issueId}/state`, { method: 'POST', body: { stateId } }),
 };
+
+// Statuses are per project. Cache the promise so concurrent callers share one request.
+const statesByProject = new Map();
+
+export function loadStates(issue) {
+  if (!statesByProject.has(issue.projectId)) {
+    const pending = api.states(issue).then((r) => r.states);
+    pending.catch(() => statesByProject.delete(issue.projectId));
+    statesByProject.set(issue.projectId, pending);
+  }
+  return statesByProject.get(issue.projectId);
+}
+
+// Runs worker over items with at most `limit` in flight.
+export async function runPool(items, limit, worker) {
+  let next = 0;
+  const lane = async () => {
+    while (next < items.length) await worker(items[next++]);
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, lane));
+}

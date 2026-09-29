@@ -1,11 +1,18 @@
 import { AlertTriangle } from 'lucide-react';
+import Checkbox from './Checkbox.jsx';
 import StatusSelect from './StatusSelect.jsx';
 
 const PMS = 'https://pms.fistinnovations.com';
 
-export default function IssueRow({ issue, colorFor, saving, onStatusChange }) {
+export default function IssueRow({ issue, colorFor, saving, selected, selectionLocked, onToggle, onStatusChange }) {
   return (
-    <div className="row" style={{ '--accent': issue.status.color ?? '#94a3b8' }}>
+    <div className={selected ? 'row selected' : 'row'}>
+      <Checkbox
+        checked={selected}
+        disabled={selectionLocked}
+        onChange={() => onToggle(issue.id)}
+        label={`Select ${issue.key}`}
+      />
       <span className="key">{issue.key}</span>
       <a className="title" href={`${PMS}/issues/${issue.id}`} target="_blank" rel="noreferrer" title={issue.title}>
         {issue.title}

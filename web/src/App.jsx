@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertOctagon } from 'lucide-react';
-import { api, errorMessage } from './api.js';
+import { api, errorMessage, loadStates, runPool } from './api.js';
+import BulkBar from './components/BulkBar.jsx';
 import TopBar from './components/TopBar.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import Filters from './components/Filters.jsx';
@@ -95,21 +96,80 @@ export default function App() {
       return next;
     });
 
-  const changeStatus = async (issue, state) => {
+  // Optimistic update; reverts on failure. Returns { ok, status } or { ok: false, err }.
+  const applyStatus = async (issue, state) => {
     const previous = issue.status;
     updateIssue(issue.id, { status: { name: state.name, color: colorFor(state.name) } });
     setSaving(issue.id, true);
     try {
       const { status } = await api.setState(issue.id, state.id);
       updateIssue(issue.id, { status: { name: status.name, color: colorFor(status.name) } });
-      showToast('success', `${issue.key} moved to ${status.name}`);
+      return { ok: true, status };
     } catch (err) {
       updateIssue(issue.id, { status: previous });
       if (err.code === 'session_expired') handleError(err);
-      showToast('error', `Could not update ${issue.key}: ${errorMessage(err)}`);
+      return { ok: false, err };
     } finally {
       setSaving(issue.id, false);
     }
+  };
+
+  const changeStatus = async (issue, state) => {
+    const result = await applyStatus(issue, state);
+    if (result.ok) showToast('success', `${issue.key} moved to ${result.status.name}`);
+    else showToast('error', `Could not update ${issue.key}: ${errorMessage(result.err)}`);
+  };
+
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [bulkRunning, setBulkRunning] = useState(false);
+
+  useEffect(() => setSelectedIds(new Set()), [scope]);
+
+  const toggleSelected = useCallback(
+    (id) =>
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.has(id) ? next.delete(id) : next.add(id);
+        return next;
+      }),
+    [],
+  );
+
+  const bulkUpdate = async (targets, statusName) => {
+    const wanted = statusName.toLowerCase();
+    const jobs = [];
+    const failed = [];
+    let unchanged = 0;
+    let unavailable = 0;
+
+    setBulkRunning(true);
+    for (const issue of targets) {
+      if (issue.status.name.toLowerCase() === wanted) {
+        unchanged++;
+        continue;
+      }
+      const states = await loadStates(issue).catch(() => null);
+      const state = states?.find((s) => s.name.toLowerCase() === wanted);
+      if (!states) failed.push(issue);
+      else if (!state) unavailable++;
+      else jobs.push({ issue, state });
+    }
+
+    let updated = 0;
+    await runPool(jobs, 3, async ({ issue, state }) => {
+      const result = await applyStatus(issue, state);
+      result.ok ? updated++ : failed.push(issue);
+    });
+    setBulkRunning(false);
+
+    // Keep only failures selected so they can be retried.
+    setSelectedIds(new Set(failed.map((i) => i.id)));
+
+    const parts = [`${updated} moved to ${statusName}`];
+    if (unchanged) parts.push(`${unchanged} already there`);
+    if (unavailable) parts.push(`${unavailable} skipped (status not in project)`);
+    if (failed.length) parts.push(`${failed.length} failed`);
+    showToast(failed.length ? 'error' : 'success', parts.join(' · '));
   };
 
   const projects = useMemo(() => uniqueSorted(issues.map((i) => i.projectName)), [issues]);
@@ -124,6 +184,16 @@ export default function App() {
         (!q || i.key.toLowerCase().includes(q) || i.title.toLowerCase().includes(q)),
     );
   }, [issues, filters]);
+
+  // Bulk actions only touch issues that are both selected and currently visible.
+  const selectedVisible = useMemo(() => visible.filter((i) => selectedIds.has(i.id)), [visible, selectedIds]);
+
+  const toggleAllVisible = (select) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const i of visible) select ? next.add(i.id) : next.delete(i.id);
+      return next;
+    });
 
   return (
     <div className="shell">
@@ -181,13 +251,26 @@ export default function App() {
                 issues={visible}
                 loading={loading && issues.length === 0}
                 savingIds={savingIds}
+                selectedIds={selectedIds}
+                selectionLocked={bulkRunning}
                 colorFor={colorFor}
+                onToggle={toggleSelected}
+                onToggleAll={toggleAllVisible}
                 onStatusChange={changeStatus}
               />
             )}
           </>
         )}
       </main>
+
+      {session.loggedIn && selectedVisible.length > 0 && (
+        <BulkBar
+          issues={selectedVisible}
+          running={bulkRunning}
+          onApply={(statusName) => bulkUpdate(selectedVisible, statusName)}
+          onClear={() => setSelectedIds(new Set())}
+        />
+      )}
 
       <Toast toast={toast} onDone={clearToast} />
     </div>

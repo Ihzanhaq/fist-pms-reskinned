@@ -38,7 +38,7 @@ function parseIssueRow(item) {
   return {
     id,
     key: clean(item.querySelector('.mi-key')),
-    title: titleLink.getAttribute('title') || clean(titleLink),
+    title: titleLink.getAttribute('title')?.trim() || clean(titleLink),
     projectId,
     projectName: clean(projectLink.querySelector('.nm')),
     status: { name: clean(statusEl), color: dotStyle.match(HEX_COLOR)?.[0] ?? null },

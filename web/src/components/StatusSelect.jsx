@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, ChevronDown, Loader2 } from 'lucide-react';
-import { api } from '../api.js';
+import { loadStates } from '../api.js';
 
 const NEUTRAL = '#94a3b8';
-const statesCache = new Map(); // projectId -> states
 
 export default function StatusSelect({ issue, colorFor, saving, onChange }) {
   const [open, setOpen] = useState(false);
-  const [states, setStates] = useState(() => statesCache.get(issue.projectId) ?? null);
+  const [states, setStates] = useState(null);
   const [failed, setFailed] = useState(false);
   const ref = useRef(null);
 
@@ -25,16 +24,10 @@ export default function StatusSelect({ issue, colorFor, saving, onChange }) {
 
   useEffect(() => {
     if (!open || states) return;
-    const cached = statesCache.get(issue.projectId);
-    if (cached) return setStates(cached);
     let live = true;
     setFailed(false);
-    api
-      .states(issue)
-      .then(({ states }) => {
-        statesCache.set(issue.projectId, states);
-        if (live) setStates(states);
-      })
+    loadStates(issue)
+      .then((list) => live && setStates(list))
       .catch(() => live && setFailed(true));
     return () => {
       live = false;

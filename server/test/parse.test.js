@@ -28,6 +28,7 @@ test('parseMyIssues handles missing target date', () => {
   assert.equal(issues[1].overdue, false);
   assert.equal(issues[1].priority, 'low');
   assert.equal(issues[1].projectName, 'Shop Site');
+  assert.equal(issues[1].title, 'Update product images');
 });
 
 test('parseMyIssues defaults priority to none when no pill', () => {
