@@ -60,3 +60,20 @@
 @media (prefers-reduced-motion: reduce) {
   .splash svg { animation: none; }
 }
+
+/* artwork motion: corner glows drift, a spark of light runs along the curved edge */
+.flow-glow { transform-box: fill-box; transform-origin: center; }
+.flow-glow.a { animation: glow-drift-a 16s ease-in-out infinite alternate; }
+.flow-glow.b { animation: glow-drift-b 19s ease-in-out infinite alternate; }
+@keyframes glow-drift-a { to { transform: translate(70px, 50px) scale(1.15); } }
+@keyframes glow-drift-b { to { transform: translate(-80px, -40px) scale(1.2); } }
+.flow-spark { stroke-dasharray: 0.12 0.88; stroke-dashoffset: 1; opacity: 0.9; animation: spark-run 7s ease-in-out infinite; }
+@keyframes spark-run {
+  0% { stroke-dashoffset: 1.12; opacity: 0; }
+  12% { opacity: 0.9; }
+  80% { opacity: 0.9; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flow-glow, .flow-spark { animation: none; }
+}

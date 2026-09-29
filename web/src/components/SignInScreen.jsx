@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import { KeyRound, Loader2, Palette } from 'lucide-react';
 import BrandMark from './BrandMark.jsx';
 import Select from './Select.jsx';
@@ -11,9 +11,44 @@ export function Splash() {
   );
 }
 
-// Flowing abstract artwork in the current theme's brand colours.
+// Three poses of each curve. Every pose uses the same commands so the shapes
+// can morph smoothly between them.
+const SWEEP = [
+  'M-40 -20 C 160 60, 300 220, 330 420 C 350 560, 470 640, 660 610',
+  'M-40 -20 C 210 40, 250 260, 360 400 C 430 520, 500 600, 660 650',
+  'M-40 -20 C 130 100, 330 190, 300 450 C 285 590, 440 620, 660 575',
+];
+const SWEEP_CLOSE = ' L 660 -20 Z';
+const WAVE = [
+  'M-40 560 C 90 470, 230 470, 330 560 C 430 650, 540 640, 660 560',
+  'M-40 600 C 110 520, 250 440, 350 520 C 450 600, 560 690, 660 600',
+  'M-40 530 C 70 500, 200 530, 310 595 C 420 660, 520 610, 660 525',
+];
+const WAVE_CLOSE = ' L 660 840 L -40 840 Z';
+
+// Loops pose 0 → 1 → 2 → 0 with eased timing.
+function Morph({ values, dur }) {
+  return (
+    <animate
+      attributeName="d"
+      dur={dur}
+      repeatCount="indefinite"
+      calcMode="spline"
+      keyTimes="0;0.33;0.66;1"
+      keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"
+      values={[...values, values[0]].join(';')}
+    />
+  );
+}
+
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+// Flowing abstract artwork in the current theme's brand colours. Moves slowly
+// unless the system asks for reduced motion.
 function FlowArt() {
   const id = useId().replace(/:/g, '');
+  const [animate] = useState(() => !prefersReducedMotion());
   const stop = (offset, color, opacity = 1) => <stop offset={offset} style={{ stopColor: color, stopOpacity: opacity }} />;
   return (
     <svg className="flow-art" viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -38,6 +73,9 @@ function FlowArt() {
         <filter id={`${id}-soft`} x="-20%" y="-20%" width="140%" height="140%">
           <feGaussianBlur stdDeviation="18" />
         </filter>
+        <filter id={`${id}-spark`} x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="3" />
+        </filter>
         <filter id={`${id}-glow`} x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="60" />
         </filter>
@@ -45,22 +83,32 @@ function FlowArt() {
 
       <rect width="600" height="800" fill={`url(#${id}-bg)`} />
       {/* soft light source top-left */}
-      <circle cx="120" cy="120" r="170" style={{ fill: 'var(--brand-1)', opacity: 0.45 }} filter={`url(#${id}-glow)`} />
+      <circle className="flow-glow a" cx="120" cy="120" r="170" style={{ fill: 'var(--brand-1)', opacity: 0.45 }} filter={`url(#${id}-glow)`} />
       {/* main sweeping shape with a lit edge */}
-      <path d="M-40 -20 C 160 60, 300 220, 330 420 C 350 560, 470 640, 660 610 L 660 -20 Z" fill={`url(#${id}-sweep)`} opacity="0.9" />
-      <path
-        d="M-40 -20 C 160 60, 300 220, 330 420 C 350 560, 470 640, 660 610"
-        fill="none"
-        stroke={`url(#${id}-edge)`}
-        strokeWidth="10"
-        filter={`url(#${id}-soft)`}
-      />
-      <path d="M-40 -20 C 160 60, 300 220, 330 420 C 350 560, 470 640, 660 610" fill="none" stroke="#fff" strokeOpacity="0.55" strokeWidth="1.5" />
+      <path d={SWEEP[0] + SWEEP_CLOSE} fill={`url(#${id}-sweep)`} opacity="0.9">
+        {animate && <Morph values={SWEEP.map((d) => d + SWEEP_CLOSE)} dur="20s" />}
+      </path>
+      <path d={SWEEP[0]} fill="none" stroke={`url(#${id}-edge)`} strokeWidth="10" filter={`url(#${id}-soft)`}>
+        {animate && <Morph values={SWEEP} dur="20s" />}
+      </path>
+      <path d={SWEEP[0]} fill="none" stroke="#fff" strokeOpacity="0.55" strokeWidth="1.5">
+        {animate && <Morph values={SWEEP} dur="20s" />}
+      </path>
+      {/* a short run of light travelling along the edge */}
+      {animate && (
+        <path d={SWEEP[0]} fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" pathLength="1" className="flow-spark" filter={`url(#${id}-spark)`}>
+          <Morph values={SWEEP} dur="20s" />
+        </path>
+      )}
       {/* lower wave */}
-      <path d="M-40 560 C 90 470, 230 470, 330 560 C 430 650, 540 640, 660 560 L 660 840 L -40 840 Z" fill={`url(#${id}-wave)`} opacity="0.95" />
-      <path d="M-40 560 C 90 470, 230 470, 330 560 C 430 650, 540 640, 660 560" fill="none" stroke="#fff" strokeOpacity="0.3" strokeWidth="1.2" />
+      <path d={WAVE[0] + WAVE_CLOSE} fill={`url(#${id}-wave)`} opacity="0.95">
+        {animate && <Morph values={WAVE.map((d) => d + WAVE_CLOSE)} dur="24s" />}
+      </path>
+      <path d={WAVE[0]} fill="none" stroke="#fff" strokeOpacity="0.3" strokeWidth="1.2">
+        {animate && <Morph values={WAVE} dur="24s" />}
+      </path>
       {/* depth glow bottom-right */}
-      <circle cx="520" cy="760" r="160" style={{ fill: 'var(--brand-1)', opacity: 0.35 }} filter={`url(#${id}-glow)`} />
+      <circle className="flow-glow b" cx="520" cy="760" r="160" style={{ fill: 'var(--brand-1)', opacity: 0.35 }} filter={`url(#${id}-glow)`} />
     </svg>
   );
 }
