@@ -4,53 +4,58 @@
 .splash svg { animation: splash-pulse 1.6s ease-in-out infinite; }
 @keyframes splash-pulse { 50% { transform: scale(0.94); opacity: 0.7; } }
 
-.signin { position: relative; display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(380px, 1.1fr); min-height: 100vh; }
+/* the page is the brand colour; one large card sits on it */
+.signin {
+  position: relative; min-height: 100vh; display: grid; place-items: center;
+  padding: clamp(16px, 4vw, 56px);
+  background: linear-gradient(160deg, var(--brand-2), var(--brand-3));
+}
 .signin-theme { position: absolute; top: 18px; right: 22px; z-index: 2; }
+.signin-theme .sel-trigger { background: rgba(255, 255, 255, 0.9); }
 
-/* brand side: a quiet block of the brand colour, logo on top, one line at the bottom */
-.signin-brand {
-  display: flex; flex-direction: column; justify-content: space-between;
-  padding: 40px 48px;
-  color: #fff;
-  background: linear-gradient(180deg, var(--brand-2), var(--brand-3));
-}
-.signin-logo { display: flex; align-items: center; gap: 12px; }
-.signin-logo svg { border-radius: 11px; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25); }
-.signin-logo strong { font-size: 16px; font-weight: 600; letter-spacing: 0.01em; }
-.signin-tagline { margin: 0; max-width: 320px; font-size: 15px; line-height: 1.55; color: rgba(255, 255, 255, 0.82); }
-
-/* sign-in side */
-.signin-panel { display: grid; place-items: center; padding: 48px 32px; }
-.signin-card { width: min(380px, 100%); }
-.signin-card h2 { margin: 0 0 10px; font-size: 28px; font-weight: 600; letter-spacing: -0.03em; }
-.signin-lead { margin: 0 0 28px; font-size: 14.5px; line-height: 1.6; color: var(--text-2); }
-.signin-btn { width: 100%; height: 48px; font-size: 14.5px; border-radius: 12px; }
-.signin-help { margin: 14px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--muted); }
-
-/* dark themes: a deep shade of the brand colour rather than a bright block */
-:root[data-mode='dark']:not([data-theme='glass']) .signin-brand {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--brand-3) 55%, #07080c), color-mix(in srgb, var(--brand-3) 25%, #06070a));
-  box-shadow: inset -1px 0 0 var(--border);
+.signin-frame {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 16px;
+  width: min(1180px, 100%); min-height: min(720px, calc(100vh - 2 * clamp(16px, 4vw, 56px)));
+  padding: 16px; border-radius: 40px;
+  background: var(--surface);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
 }
 
-/* glass: both halves are frosted panes over the wallpaper */
-:root[data-theme='glass'] .signin-brand {
-  margin: 16px; border-radius: 22px;
-  background: rgba(24, 26, 44, 0.34);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+/* form half */
+.signin-form { display: flex; flex-direction: column; align-items: center; padding: 40px 24px 20px; }
+.signin-inner { display: flex; flex-direction: column; align-items: center; width: min(360px, 100%); margin: auto 0; text-align: center; }
+.signin-inner > svg { margin-bottom: 18px; border-radius: 13px; }
+.signin-inner h1 { margin: 0 0 8px; font-size: clamp(28px, 3vw, 36px); font-weight: 600; letter-spacing: -0.035em; line-height: 1.1; }
+.signin-lead { margin: 0 0 32px; font-size: 14.5px; line-height: 1.55; color: var(--text-2); }
+.signin-btn { width: 100%; height: 50px; font-size: 14.5px; border-radius: 999px; }
+.signin-help { margin: 16px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--muted); }
+.signin-foot { margin: 0; padding-top: 24px; font-size: 12px; color: var(--muted); }
+
+/* art half */
+.signin-art { position: relative; overflow: hidden; border-radius: 28px; min-height: 320px; }
+.flow-art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* dark themes: a deep page instead of a bright one */
+:root[data-mode='dark']:not([data-theme='glass']) .signin {
+  background:
+    radial-gradient(900px 600px at 15% 0%, color-mix(in srgb, var(--brand-3) 45%, transparent), transparent 60%),
+    var(--bg);
 }
-:root[data-theme='glass'] .signin-card {
-  padding: 32px; border-radius: 22px; background: var(--surface); box-shadow: var(--shadow-md);
+:root[data-mode='dark'] .signin-frame { box-shadow: var(--shadow-md); }
+:root[data-mode='dark'] .signin-theme .sel-trigger { background: var(--surface); }
+
+/* glass: the wallpaper shows around a frosted card */
+:root[data-theme='glass'] .signin { background: transparent; }
+:root[data-theme='glass'] .signin-frame {
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(170%);
   backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+  box-shadow: var(--shadow-md);
 }
 
-@media (max-width: 900px) {
-  .signin { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-  .signin-brand { flex-direction: row; align-items: center; padding: 18px 22px; }
-  .signin-tagline { display: none; }
+@media (max-width: 860px) {
+  .signin-frame { grid-template-columns: 1fr; border-radius: 28px; min-height: 0; }
+  .signin-art { display: none; }
+  .signin-form { padding: 48px 12px 16px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .splash svg { animation: none; }
