@@ -1,6 +1,7 @@
 import { LogOut, RefreshCw } from 'lucide-react';
+import Avatar from './Avatar.jsx';
 
-export default function TopBar({ userName, loggedIn, refreshing, onRefresh, onLogout }) {
+export default function TopBar({ userId, userName, loggedIn, refreshing, onRefresh, onLogout }) {
   return (
     <header className="topbar">
       <div className="brand">
@@ -14,7 +15,7 @@ export default function TopBar({ userName, loggedIn, refreshing, onRefresh, onLo
           </button>
           <span className="topbar-divider" />
           <div className="account">
-            <span className="avatar">{userName?.[0]?.toUpperCase() ?? '?'}</span>
+            <Avatar id={userId} name={userName} size="" />
             <span className="account-name">{userName}</span>
           </div>
           <span className="topbar-divider" />

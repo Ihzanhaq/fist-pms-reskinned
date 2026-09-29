@@ -224,3 +224,20 @@ export function attachment(id, download = false) {
   requireUuid(id, 'attachment id');
   return pms.getRaw(`/issue-attachment/${id}${download ? '?dl=1' : ''}`);
 }
+
+// ---------- profile photos ----------
+
+const AVATAR_TTL_MS = 60 * 60_000;
+const AVATAR_CACHE_MAX = 300;
+const avatarCache = new Map(); // userId -> { at, image: { type, body } | null }
+
+// A person's profile photo, or null if they have not uploaded one.
+export async function avatar(userId) {
+  requireUuid(userId, 'user id');
+  const hit = avatarCache.get(userId);
+  if (hit && Date.now() - hit.at < AVATAR_TTL_MS) return hit.image;
+  const image = await pms.getImage(`/avatar/${userId}`);
+  if (avatarCache.size >= AVATAR_CACHE_MAX) avatarCache.delete(avatarCache.keys().next().value);
+  avatarCache.set(userId, { at: Date.now(), image });
+  return image;
+}

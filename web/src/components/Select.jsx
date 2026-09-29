@@ -1,5 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown, Search } from 'lucide-react';
+import Avatar from './Avatar.jsx';
 import { useDropUp } from '../useDropUp.js';
 
 // Styled replacement for <select>.
@@ -120,6 +121,7 @@ export default function Select({
       >
         {prefix && <span className="sel-prefix">{prefix}</span>}
         {selected?.dot && <span className="dot" style={{ background: selected.dot }} />}
+        {selected?.person && <Avatar id={selected.person.id} name={selected.person.name} />}
         <span className={selected ? 'sel-value' : 'sel-value placeholder'}>{selected?.label ?? placeholder}</span>
         <ChevronDown size={15} className="sel-chevron" />
       </button>
@@ -150,6 +152,7 @@ export default function Select({
                   onClick={() => pick(o)}
                 >
                   {o.dot && <span className="dot" style={{ background: o.dot }} />}
+                  {o.person && <Avatar id={o.person.id} name={o.person.name} />}
                   <span className="sel-label">{o.label}</span>
                   {o.hint && <span className="sel-hint">{o.hint}</span>}
                   {isSelected && <Check size={14} className="sel-check" />}

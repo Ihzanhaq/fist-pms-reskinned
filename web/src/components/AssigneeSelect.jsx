@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown, Loader2, Lock, Search } from 'lucide-react';
+import Avatar from './Avatar.jsx';
 import { useDropUp } from '../useDropUp.js';
-
-const initial = (name) => (name ? name[0].toUpperCase() : '–');
 
 // Assignee cell that opens a searchable people picker, like StatusSelect does for status.
 export default function AssigneeSelect({ issue, people, saving, onChange }) {
@@ -34,7 +33,7 @@ export default function AssigneeSelect({ issue, people, saving, onChange }) {
   const current = issue.assignee;
   const label = (
     <>
-      <span className="avatar tiny">{initial(current?.name)}</span>
+      {current ? <Avatar id={current.id} name={current.name} /> : <span className="avatar tiny muted-avatar">–</span>}
       <span className="assignee-name">{current?.name ?? 'Unassigned'}</span>
     </>
   );
@@ -91,7 +90,7 @@ export default function AssigneeSelect({ issue, people, saving, onChange }) {
               return (
                 <li key={p.id}>
                   <button role="option" aria-selected={active} className={active ? 'active' : undefined} onClick={() => pick(p)}>
-                    <span className="avatar tiny">{initial(p.name)}</span>
+                    <Avatar id={p.id} name={p.name} />
                     <span>{p.name}</span>
                     {active && <Check size={14} className="menu-check" />}
                   </button>

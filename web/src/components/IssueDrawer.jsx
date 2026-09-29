@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { api, attachmentUrl, errorMessage } from '../api.js';
 import { PMS_BASE, isBlank, sanitizeRichText } from '../richText.js';
+import Avatar from './Avatar.jsx';
 import Select from './Select.jsx';
 
 const PRIORITIES = ['urgent', 'high', 'medium', 'low', 'none'];
@@ -194,7 +195,7 @@ export default function IssueDrawer({ issueId, colorFor, onOpenIssue, onClose, o
                     onChange={changeAssignee}
                     options={[
                       { value: '', label: 'Unassigned' },
-                      ...detail.assignees.map((a) => ({ value: a.id, label: a.name })),
+                      ...detail.assignees.map((a) => ({ value: a.id, label: a.name, person: a })),
                     ]}
                   />
                 )}
@@ -289,7 +290,7 @@ export default function IssueDrawer({ issueId, colorFor, onOpenIssue, onClose, o
                 <ul className="comment-list">
                   {detail.comments.map((c, i) => (
                     <li key={i}>
-                      <span className="avatar small">{c.author[0]?.toUpperCase() ?? '?'}</span>
+                      <Avatar id={c.authorId} name={c.author} size="small" />
                       <div>
                         <div className="comment-meta">
                           <strong>{c.author}</strong> <span className="muted">{c.at}</span>

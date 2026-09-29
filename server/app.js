@@ -25,8 +25,17 @@ export function createApp() {
   const app = express();
   app.use(express.json());
 
-  app.get('/api/session', async (req, res) => res.json(await service.sessionInfo()));
-  app.post('/api/login', async (req, res) => res.json(await service.login()));
+  app.get('/api/session', async (req, res) => {
+    const info = await service.sessionInfo();
+    // The user id only drives the top-bar photo, so a failed lookup is not an error.
+    if (info.loggedIn) info.userId = await insights.myActorId().catch(() => null);
+    res.json(info);
+  });
+  app.post('/api/login', async (req, res) => {
+    const info = await service.login();
+    if (info.loggedIn) info.userId = await insights.myActorId().catch(() => null);
+    res.json(info);
+  });
   app.post('/api/logout', (req, res) => res.json(service.logout()));
 
   app.get('/api/dashboard', async (req, res) => res.json(await insights.dashboard(req.query.days)));
@@ -65,6 +74,16 @@ export function createApp() {
     }
     res.setHeader('X-Content-Type-Options', 'nosniff');
     Readable.fromWeb(upstream.body).pipe(res);
+  });
+
+  // Profile photos, fetched with the PMS login and cached by the browser for an hour.
+  app.get('/api/avatars/:id', async (req, res) => {
+    const image = await service.avatar(req.params.id);
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    if (!image) return res.status(404).end();
+    res.setHeader('Content-Type', image.type);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.send(image.body);
   });
 
   app.get('/api/projects', async (req, res) => res.json({ projects: await service.listProjects() }));

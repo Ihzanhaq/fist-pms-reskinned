@@ -156,7 +156,13 @@ export function parseIssueDetail(html) {
 
   const comments = (section(root, 'Comments')?.querySelectorAll('.cmt') ?? []).map((c) => {
     const [author, at] = (c.querySelector('.body > div')?.querySelectorAll('span') ?? []).map(clean);
-    return { author: author ?? '', at: at ?? '', html: c.querySelector('.doc-body')?.innerHTML.trim() ?? '' };
+    return {
+      author: author ?? '',
+      // Only people with a profile photo have an <img src="/avatar/{id}">.
+      authorId: uuidIn(c.querySelector('img[src^="/avatar/"]'), 'src'),
+      at: at ?? '',
+      html: c.querySelector('.doc-body')?.innerHTML.trim() ?? '',
+    };
   });
 
   const activity = root.querySelectorAll('.act-row').map((row) => {

@@ -75,3 +75,13 @@ export function postForm(path, fields) {
 export function postMultipart(path, formData) {
   return post(path, formData); // fetch sets the multipart boundary header
 }
+
+// Images such as profile photos. Resolves to null when there is none (404).
+export async function getImage(path) {
+  const res = await request(path);
+  if (res.status === 404) return null;
+  if (res.status !== 200) throw new PmsError(`PMS returned ${res.status} for ${path}`);
+  const type = res.headers.get('content-type') ?? '';
+  if (!type.startsWith('image/')) return null;
+  return { type, body: Buffer.from(await res.arrayBuffer()) };
+}

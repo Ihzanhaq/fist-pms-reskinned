@@ -186,7 +186,7 @@ export default function CreateIssueModal({ parent, project, userName, colorFor, 
                     onChange={set('assigneeId')}
                     options={[
                       { value: '', label: 'Unassigned' },
-                      ...form.assignees.map((a) => ({ value: a.id, label: a.name, hint: a.name === userName ? 'you' : undefined })),
+                      ...form.assignees.map((a) => ({ value: a.id, label: a.name, person: a, hint: a.name === userName ? 'you' : undefined })),
                     ]}
                   />
                 </div>

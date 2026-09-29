@@ -5,6 +5,7 @@ import { PMS_BASE } from '../richText.js';
 import Pagination from './Pagination.jsx';
 import AssigneeSelect from './AssigneeSelect.jsx';
 import Select from './Select.jsx';
+import Avatar from './Avatar.jsx';
 import StatusSelect from './StatusSelect.jsx';
 
 const PRIORITY_RANK = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
@@ -138,6 +139,8 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
     return [...counts].sort((a, b) => b[1] - a[1]);
   }, [data]);
 
+  const idByName = useMemo(() => new Map((data?.assignees ?? []).map((a) => [a.name, a.id])), [data]);
+
   const statuses = useMemo(() => [...new Set((data?.issues ?? []).map((i) => i.status.name))], [data]);
 
   const filtered = useMemo(() => {
@@ -200,7 +203,11 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
                 onClick={() => set('assignee')(active ? 'all' : name)}
                 title={active ? 'Show everyone' : `Show only ${name === UNASSIGNED ? 'unassigned' : name}`}
               >
-                <span className="avatar tiny">{name === UNASSIGNED ? '–' : name[0].toUpperCase()}</span>
+                {name === UNASSIGNED ? (
+                  <span className="avatar tiny muted-avatar">–</span>
+                ) : (
+                  <Avatar id={idByName.get(name)} name={name} />
+                )}
                 {name === UNASSIGNED ? 'Unassigned' : name}
                 <span className="team-count">{count}</span>
               </button>

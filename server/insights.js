@@ -35,7 +35,8 @@ export function listDateToIso(text) {
 
 let actorCache = null; // { userName, id }
 
-async function myActorId() {
+// The signed-in user's PMS id (also used for their profile photo).
+export async function myActorId() {
   const { loggedIn, userName } = await sessionInfo();
   if (!loggedIn) throw new SessionExpiredError();
   if (actorCache?.userName === userName) return actorCache.id;

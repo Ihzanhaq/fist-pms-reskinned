@@ -96,6 +96,7 @@ test('parseIssueDetail reads the whole issue page', () => {
   assert.deepEqual(d.attachments, [{ id: '55555555-5555-4555-8555-555555555555', name: 'spec v2.docx', size: '99 KB' }]);
   assert.equal(d.comments.length, 1);
   assert.equal(d.comments[0].author, 'Sam Reviewer');
+  assert.equal(d.comments[0].authorId, '66666666-6666-4666-8666-666666666666');
   assert.equal(d.comments[0].at, '2026-06-05 07:25');
   assert.match(d.comments[0].html, /Looks good/);
   assert.deepEqual(d.activity, [{ who: 'Sam Reviewer', text: 'created this issue', at: '2026-09-10 11:16' }]);

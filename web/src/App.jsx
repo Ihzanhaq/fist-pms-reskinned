@@ -288,6 +288,7 @@ export default function App() {
   return (
     <div className="shell">
       <TopBar
+        userId={session.userId}
         userName={session.userName}
         loggedIn={session.loggedIn}
         refreshing={loading}
