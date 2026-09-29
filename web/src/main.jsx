@@ -5,6 +5,7 @@ import './styles.css';
 import './panels.css';
 import './connect.css';
 import './projects.css';
+import './controls.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

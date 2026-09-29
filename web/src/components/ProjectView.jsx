@@ -4,9 +4,11 @@ import { api, errorMessage, seedStates } from '../api.js';
 import { PMS_BASE } from '../richText.js';
 import Pagination from './Pagination.jsx';
 import AssigneeSelect from './AssigneeSelect.jsx';
+import Select from './Select.jsx';
 import StatusSelect from './StatusSelect.jsx';
 
 const PRIORITY_RANK = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
+const PRIORITY_COLORS = { urgent: '#dc2626', high: '#ea580c', medium: '#ca8a04', low: '#2f7de1', none: '#9ca3af' };
 const UNASSIGNED = '__unassigned__';
 const dateValue = (d) => (d ? Date.parse(d) || Infinity : Infinity);
 
@@ -218,32 +220,40 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
           )}
         </label>
         <div className="filter-group">
-          <select className="filter-select" value={filters.status} onChange={(e) => set('status')(e.target.value)} aria-label="Status">
-            <option value="all">All statuses</option>
-            {statuses.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-          <select className="filter-select" value={filters.priority} onChange={(e) => set('priority')(e.target.value)} aria-label="Priority">
-            <option value="all">All priorities</option>
-            {Object.keys(PRIORITY_RANK).map((p) => (
-              <option key={p} value={p}>{p[0].toUpperCase() + p.slice(1)}</option>
-            ))}
-          </select>
-          <select className="filter-select" value={filters.assignee} onChange={(e) => set('assignee')(e.target.value)} aria-label="Assignee">
-            <option value="all">Everyone</option>
-            <option value={UNASSIGNED}>Unassigned</option>
-            {team
-              .filter(([n]) => n !== UNASSIGNED)
-              .map(([n]) => (
-                <option key={n} value={n}>{n}</option>
-              ))}
-          </select>
-          <select className="filter-select" value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort">
-            {Object.entries(SORTS).map(([id, s]) => (
-              <option key={id} value={id}>Sort: {s.label}</option>
-            ))}
-          </select>
+          <Select
+            ariaLabel="Status"
+            value={filters.status}
+            onChange={set('status')}
+            options={[
+              { value: 'all', label: 'All statuses' },
+              ...statuses.map((s) => ({ value: s, label: s, dot: colorFor(s) ?? '#94a3b8' })),
+            ]}
+          />
+          <Select
+            ariaLabel="Priority"
+            value={filters.priority}
+            onChange={set('priority')}
+            options={[
+              { value: 'all', label: 'All priorities' },
+              ...Object.keys(PRIORITY_RANK).map((p) => ({ value: p, label: p[0].toUpperCase() + p.slice(1), dot: PRIORITY_COLORS[p] })),
+            ]}
+          />
+          <Select
+            ariaLabel="Assignee"
+            value={filters.assignee}
+            onChange={set('assignee')}
+            options={[
+              { value: 'all', label: 'Everyone' },
+              ...team.map(([n, count]) => ({ value: n, label: n === UNASSIGNED ? 'Unassigned' : n, hint: String(count) })),
+            ]}
+          />
+          <Select
+            ariaLabel="Sort"
+            prefix="Sort:"
+            value={sort}
+            onChange={setSort}
+            options={Object.entries(SORTS).map(([id, s]) => ({ value: id, label: s.label }))}
+          />
           <button
             className={filters.overdue ? 'toggle-btn on' : 'toggle-btn'}
             onClick={() => set('overdue')(!filters.overdue)}

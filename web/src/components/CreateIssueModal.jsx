@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2, X } from 'lucide-react';
 import { api, errorMessage } from '../api.js';
+import DatePicker from './DatePicker.jsx';
 import FilePicker from './FilePicker.jsx';
+import Select from './Select.jsx';
 
 const PRIORITIES = ['urgent', 'high', 'medium', 'low', 'none'];
 const LAST_PROJECT_KEY = 'pms-dashboard:last-project';
@@ -18,7 +20,7 @@ const EMPTY = {
 };
 
 // `parent` is set when adding a sub-issue: { id, key, project: { id, name } }.
-export default function CreateIssueModal({ parent, project, userName, onClose, onCreated, onError }) {
+export default function CreateIssueModal({ parent, project, userName, colorFor, onClose, onCreated, onError }) {
   const [projects, setProjects] = useState(null);
   const [projectId, setProjectId] = useState(
     parent?.project.id ?? project?.id ?? localStorage.getItem(LAST_PROJECT_KEY) ?? '',
@@ -116,15 +118,19 @@ export default function CreateIssueModal({ parent, project, userName, onClose, o
 
         <div className="modal-body">
           {!parent && (
-            <label className="field">
+            <div className="field">
               <span>Project</span>
-              <select className="input" value={projectId} onChange={(e) => setProjectId(e.target.value)} required>
-                <option value="" disabled>{projects ? 'Choose a project…' : 'Loading projects…'}</option>
-                {projects?.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </label>
+              <Select
+                variant="input"
+                ariaLabel="Project"
+                searchable
+                placeholder={projects ? 'Choose a project…' : 'Loading projects…'}
+                disabled={!projects}
+                value={projectId}
+                onChange={setProjectId}
+                options={(projects ?? []).map((p) => ({ value: p.id, label: p.name, hint: p.key || undefined }))}
+              />
+            </div>
           )}
 
           <label className="field">
@@ -160,23 +166,30 @@ export default function CreateIssueModal({ parent, project, userName, onClose, o
           {form && (
             <>
               <div className="field-row">
-                <label className="field">
+                <div className="field">
                   <span>Status</span>
-                  <select className="input" value={values.stateId} onChange={(e) => set('stateId')(e.target.value)}>
-                    {form.states.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
+                  <Select
+                    variant="input"
+                    ariaLabel="Status"
+                    value={values.stateId}
+                    onChange={set('stateId')}
+                    options={form.states.map((s) => ({ value: s.id, label: s.name, dot: colorFor?.(s.name) ?? '#94a3b8' }))}
+                  />
+                </div>
+                <div className="field">
                   <span>Assignee</span>
-                  <select className="input" value={values.assigneeId} onChange={(e) => set('assigneeId')(e.target.value)}>
-                    <option value="">Unassigned</option>
-                    {form.assignees.map((a) => (
-                      <option key={a.id} value={a.id}>{a.name}</option>
-                    ))}
-                  </select>
-                </label>
+                  <Select
+                    variant="input"
+                    ariaLabel="Assignee"
+                    searchable
+                    value={values.assigneeId}
+                    onChange={set('assigneeId')}
+                    options={[
+                      { value: '', label: 'Unassigned' },
+                      ...form.assignees.map((a) => ({ value: a.id, label: a.name, hint: a.name === userName ? 'you' : undefined })),
+                    ]}
+                  />
+                </div>
               </div>
 
               <div className="field">
@@ -196,20 +209,19 @@ export default function CreateIssueModal({ parent, project, userName, onClose, o
               </div>
 
               <div className="field-row">
-                <label className="field">
+                <div className="field">
                   <span>Start date</span>
-                  <input type="date" className="input" value={values.startDate} onChange={(e) => set('startDate')(e.target.value)} />
-                </label>
-                <label className="field">
+                  <DatePicker ariaLabel="Start date" value={values.startDate} onChange={set('startDate')} />
+                </div>
+                <div className="field">
                   <span>Target date</span>
-                  <input
-                    type="date"
-                    className="input"
+                  <DatePicker
+                    ariaLabel="Target date"
                     value={values.targetDate}
                     min={values.startDate || undefined}
-                    onChange={(e) => set('targetDate')(e.target.value)}
+                    onChange={set('targetDate')}
                   />
-                </label>
+                </div>
               </div>
               {datesInvalid && <p className="form-error">Target date is before the start date.</p>}
 

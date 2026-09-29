@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import Select from './Select.jsx';
 
 export const PAGE_SIZES = [25, 50, 100];
 
@@ -46,11 +47,13 @@ export default function Pagination({ page, pageSize, total, onPage, onPageSize }
           <ChevronRight size={16} />
         </button>
       </div>
-      <select className="filter-select page-size" value={pageSize} onChange={(e) => onPageSize(Number(e.target.value))} aria-label="Rows per page">
-        {PAGE_SIZES.map((n) => (
-          <option key={n} value={n}>{n} per page</option>
-        ))}
-      </select>
+      <Select
+        variant="compact"
+        ariaLabel="Rows per page"
+        value={pageSize}
+        onChange={onPageSize}
+        options={PAGE_SIZES.map((n) => ({ value: n, label: `${n} per page` }))}
+      />
     </div>
   );
 }

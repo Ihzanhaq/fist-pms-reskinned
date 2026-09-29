@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FolderOpen, ListChecks, Pin, Search, X } from 'lucide-react';
 import { api, errorMessage } from '../api.js';
+import Select from './Select.jsx';
 
 const SORTS = {
   name: { label: 'Name A–Z', fn: (a, b) => a.name.localeCompare(b.name) },
@@ -58,11 +59,13 @@ export default function ProjectsGrid({ onOpen, onError }) {
             </button>
           )}
         </label>
-        <select className="filter-select" value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort projects">
-          {Object.entries(SORTS).map(([id, s]) => (
-            <option key={id} value={id}>{s.label}</option>
-          ))}
-        </select>
+        <Select
+          ariaLabel="Sort projects"
+          prefix="Sort:"
+          value={sort}
+          onChange={setSort}
+          options={Object.entries(SORTS).map(([id, s]) => ({ value: id, label: s.label }))}
+        />
       </div>
 
       {error && (

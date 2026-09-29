@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, X } from 'lucide-react';
 import { loadStates } from '../api.js';
+import Select from './Select.jsx';
 
 // Statuses differ per project, so offer every status name found across the
 // selected issues' projects and say when one is not available everywhere.
@@ -35,7 +36,7 @@ function useStatusOptions(issues) {
   return options;
 }
 
-export default function BulkBar({ issues, running, onApply, onClear }) {
+export default function BulkBar({ issues, running, colorFor, onApply, onClear }) {
   const options = useStatusOptions(issues);
   const [choice, setChoice] = useState('');
 
@@ -46,21 +47,19 @@ export default function BulkBar({ issues, running, onApply, onClear }) {
       </span>
       <span className="bulk-sep" />
       <span className="bulk-label">Move to</span>
-      <select
-        className="filter-select bulk-select"
+      <Select
+        ariaLabel="New status"
+        placeholder={options ? 'Choose status…' : 'Loading statuses…'}
         value={choice}
-        onChange={(e) => setChoice(e.target.value)}
+        onChange={setChoice}
         disabled={!options || running}
-        aria-label="New status"
-      >
-        <option value="">{options ? 'Choose status…' : 'Loading statuses…'}</option>
-        {options?.list.map((o) => (
-          <option key={o.name} value={o.name}>
-            {o.name}
-            {o.projects < options.total ? ` (${o.projects} of ${options.total} projects)` : ''}
-          </option>
-        ))}
-      </select>
+        options={(options?.list ?? []).map((o) => ({
+          value: o.name,
+          label: o.name,
+          dot: colorFor?.(o.name) ?? '#94a3b8',
+          hint: o.projects < options.total ? `${o.projects} of ${options.total} projects` : undefined,
+        }))}
+      />
       <button className="primary-btn bulk-apply" disabled={!choice || running} onClick={() => onApply(choice)}>
         {running ? (
           <>

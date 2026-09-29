@@ -1,14 +1,7 @@
 import { Search, X } from 'lucide-react';
+import Select from './Select.jsx';
 
-function Select({ label, value, onChange, children }) {
-  return (
-    <select className="filter-select" aria-label={label} value={value} onChange={(e) => onChange(e.target.value)}>
-      {children}
-    </select>
-  );
-}
-
-export default function Filters({ filters, onChange, scope, onScopeChange, projects, statuses }) {
+export default function Filters({ filters, onChange, scope, onScopeChange, projects, statuses, colorFor }) {
   const set = (key) => (value) => onChange({ ...filters, [key]: value });
 
   return (
@@ -28,22 +21,30 @@ export default function Filters({ filters, onChange, scope, onScopeChange, proje
         )}
       </label>
       <div className="filter-group">
-        <Select label="Project" value={filters.project} onChange={set('project')}>
-          <option value="all">All projects</option>
-          {projects.map((p) => (
-            <option key={p} value={p}>{p}</option>
-          ))}
-        </Select>
-        <Select label="Status" value={filters.status} onChange={set('status')}>
-          <option value="all">All statuses</option>
-          {statuses.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </Select>
-        <Select label="Scope" value={scope} onChange={onScopeChange}>
-          <option value="active">Active only</option>
-          <option value="all">Include completed</option>
-        </Select>
+        <Select
+          ariaLabel="Project"
+          value={filters.project}
+          onChange={set('project')}
+          options={[{ value: 'all', label: 'All projects' }, ...projects.map((p) => ({ value: p, label: p }))]}
+        />
+        <Select
+          ariaLabel="Status"
+          value={filters.status}
+          onChange={set('status')}
+          options={[
+            { value: 'all', label: 'All statuses' },
+            ...statuses.map((s) => ({ value: s, label: s, dot: colorFor?.(s) ?? '#94a3b8' })),
+          ]}
+        />
+        <Select
+          ariaLabel="Scope"
+          value={scope}
+          onChange={onScopeChange}
+          options={[
+            { value: 'active', label: 'Active only' },
+            { value: 'all', label: 'Include completed' },
+          ]}
+        />
       </div>
     </div>
   );

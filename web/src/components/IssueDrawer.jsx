@@ -15,8 +15,10 @@ import {
 } from 'lucide-react';
 import { api, attachmentUrl, errorMessage } from '../api.js';
 import { PMS_BASE, isBlank, sanitizeRichText } from '../richText.js';
+import Select from './Select.jsx';
 
 const PRIORITIES = ['urgent', 'high', 'medium', 'low', 'none'];
+const PRIORITY_COLORS = { urgent: '#dc2626', high: '#ea580c', medium: '#ca8a04', low: '#2f7de1', none: '#9ca3af' };
 
 function RichText({ html, empty }) {
   if (isBlank(html)) return <p className="muted">{empty}</p>;
@@ -150,32 +152,30 @@ export default function IssueDrawer({ issueId, colorFor, onOpenIssue, onClose, o
 
             <div className="properties">
               <Property label="Status">
-                <select
-                  className="prop-select"
-                  style={{ '--c': colorFor(detail.status.name) ?? detail.status.color ?? '#94a3b8' }}
+                <Select
+                  variant="prop"
+                  ariaLabel="Status"
                   value={selectedStateId ?? ''}
                   disabled={busy === 'status'}
-                  onChange={(e) => changeStatus(e.target.value)}
-                >
-                  {!selectedStateId && <option value="">{detail.status.name}</option>}
-                  {detail.states.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
+                  onChange={changeStatus}
+                  options={[
+                    ...(selectedStateId ? [] : [{ value: '', label: detail.status.name, dot: detail.status.color ?? '#94a3b8' }]),
+                    ...detail.states.map((s) => ({ value: s.id, label: s.name, dot: colorFor(s.name) ?? '#94a3b8' })),
+                  ]}
+                />
                 {busy === 'status' && <Loader2 size={14} className="spin" />}
               </Property>
 
               <Property label="Priority">
-                <select
-                  className={`prop-select priority-select priority-${detail.priority}`}
+                <Select
+                  variant="prop"
+                  className={`capitalize priority-${detail.priority}`}
+                  ariaLabel="Priority"
                   value={detail.priority}
                   disabled={busy === 'priority'}
-                  onChange={(e) => changePriority(e.target.value)}
-                >
-                  {PRIORITIES.map((p) => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
-                </select>
+                  onChange={changePriority}
+                  options={PRIORITIES.map((p) => ({ value: p, label: p, dot: PRIORITY_COLORS[p] }))}
+                />
                 {busy === 'priority' && <Loader2 size={14} className="spin" />}
               </Property>
 
@@ -185,17 +185,18 @@ export default function IssueDrawer({ issueId, colorFor, onOpenIssue, onClose, o
                     {detail.assignee?.name ?? 'Unassigned'}
                   </span>
                 ) : (
-                  <select
-                    className="prop-select"
+                  <Select
+                    variant="prop"
+                    ariaLabel="Assignee"
+                    searchable
                     value={detail.assignee?.id ?? ''}
                     disabled={busy === 'assignee'}
-                    onChange={(e) => changeAssignee(e.target.value)}
-                  >
-                    <option value="">Unassigned</option>
-                    {detail.assignees.map((a) => (
-                      <option key={a.id} value={a.id}>{a.name}</option>
-                    ))}
-                  </select>
+                    onChange={changeAssignee}
+                    options={[
+                      { value: '', label: 'Unassigned' },
+                      ...detail.assignees.map((a) => ({ value: a.id, label: a.name })),
+                    ]}
+                  />
                 )}
                 {busy === 'assignee' && <Loader2 size={14} className="spin" />}
               </Property>

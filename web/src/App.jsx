@@ -357,6 +357,7 @@ export default function App() {
               onScopeChange={setScope}
               projects={projects}
               statuses={statuses}
+              colorFor={colorFor}
             />
             {error ? (
               <div className="error-card">
@@ -390,6 +391,7 @@ export default function App() {
         <BulkBar
           issues={selectedVisible}
           running={bulkRunning}
+          colorFor={colorFor}
           onApply={(statusName) => bulkUpdate(selectedVisible, statusName)}
           onClear={() => setSelectedIds(new Set())}
         />
@@ -412,6 +414,7 @@ export default function App() {
           parent={createFor.parent}
           project={createFor.project}
           userName={session.userName}
+          colorFor={colorFor}
           onClose={closeCreate}
           onCreated={onIssueCreated}
           onError={handlePanelError}
