@@ -115,6 +115,8 @@ button.crumb:hover { color: var(--text); }
    Dark theme: near-black base, hairline borders, a faint emerald haze.
    ========================================================================= */
 :root[data-mode='dark'] {
+  --nav-label: #74778d;
+  --nav-text: #a4a6ba;
   --accent-rgb: 52, 211, 153;
   --haze-rgb: 16, 185, 129;
   --btn-from: #6ee7b7;
@@ -162,8 +164,8 @@ button.crumb:hover { color: var(--text); }
     linear-gradient(180deg, #0f0f15, #0b0b10);
   border-right: 1px solid var(--border);
 }
-:root[data-mode='dark'] .brand-sub, :root[data-mode='dark'] .nav-label { color: #5f6175; }
-:root[data-mode='dark'] .nav-item { color: #9a9cb0; }
+:root[data-mode='dark'] .brand-sub, :root[data-mode='dark'] .nav-label { color: var(--nav-label); }
+:root[data-mode='dark'] .nav-item { color: var(--nav-text); }
 :root[data-mode='dark'] .nav-item:hover { color: var(--text); background: rgba(255, 255, 255, 0.035); }
 :root[data-mode='dark'] .nav-item.active {
   color: #fff;

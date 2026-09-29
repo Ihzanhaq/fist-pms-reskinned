@@ -61,6 +61,8 @@
   --brand-1: #93c5fd;
   --brand-2: #3b82f6;
   --brand-3: #1e3a8a;
+  --nav-label: #7a8fb3;
+  --nav-text: #b2c0da;
 }
 :root[data-theme='navy'] .sidebar {
   background:
@@ -82,8 +84,8 @@
 }
 :root[data-theme='glass'][data-mode='light'] {
   --bg: transparent;
-  --surface: rgba(255, 255, 255, 0.52);
-  --sidebar: rgba(255, 255, 255, 0.36);
+  --surface: rgba(255, 255, 255, 0.58);
+  --sidebar: rgba(255, 255, 255, 0.46);
   --glass-strong: rgba(255, 255, 255, 0.8);
   --accent: #0a6cff;
   --accent-soft: rgba(10, 108, 255, 0.14);
@@ -106,8 +108,8 @@
 }
 :root[data-theme='glass'][data-mode='dark'] {
   --bg: transparent;
-  --surface: rgba(22, 24, 34, 0.5);
-  --sidebar: rgba(12, 14, 22, 0.45);
+  --surface: rgba(20, 22, 32, 0.58);
+  --sidebar: rgba(10, 12, 20, 0.55);
   --glass-strong: rgba(22, 24, 34, 0.84);
   --accent: #409cff;
   --accent-rgb: 64, 156, 255;
@@ -120,9 +122,12 @@
   --btn-hover-from: #a9d2ff;
   --btn-hover-to: #4d9bff;
   --on-accent: #031a3a;
-  --text: #f3f5f9;
-  --text-2: #c4c9d5;
-  --muted: #9097a8;
+  /* Secondary text is translucent white, not grey, so it stays readable on any colour behind the glass. */
+  --text: #f5f7fb;
+  --text-2: rgba(245, 248, 255, 0.84);
+  --muted: rgba(235, 240, 255, 0.68);
+  --nav-label: rgba(235, 240, 255, 0.6);
+  --nav-text: rgba(245, 248, 255, 0.86);
   --border: rgba(255, 255, 255, 0.14);
   --border-strong: rgba(255, 255, 255, 0.24);
   --inverse: rgba(10, 12, 18, 0.86);
