@@ -6,6 +6,7 @@ import { THEMES, useAppearance } from './theme.js';
 import BulkBar from './components/BulkBar.jsx';
 import ConnectClaude from './components/ConnectClaude.jsx';
 import SettingsView from './components/SettingsView.jsx';
+import SignInScreen, { Splash } from './components/SignInScreen.jsx';
 import LeaderboardView from './components/LeaderboardView.jsx';
 import DailyReport from './components/DailyReport.jsx';
 import DashboardView from './components/DashboardView.jsx';
@@ -296,6 +297,24 @@ export default function App() {
     ...(view === 'projects' && openProject ? [{ label: openProject.name }] : []),
     ...(view === 'report' && route.date && route.date !== todayIso() ? [{ label: formatShort(route.date) }] : []),
   ];
+
+  // Until we know whether the user is signed in, show the logo; if they aren't, a full sign-in screen.
+  if (!session.checked) return <Splash />;
+  if (!session.loggedIn) {
+    return (
+      <>
+        <SignInScreen
+          expired={session.expired}
+          loggingIn={loggingIn}
+          onLogin={login}
+          themes={THEMES}
+          theme={appearance.resolved.theme}
+          onThemeChange={(id) => appearance.update({ theme: id })}
+        />
+        <Toast toast={toast} onDone={clearToast} />
+      </>
+    );
+  }
 
   return (
     <div className={session.loggedIn ? 'shell' : 'shell no-sidebar'}>

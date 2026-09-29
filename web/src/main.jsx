@@ -9,6 +9,7 @@ import './controls.css';
 import './insights.css';
 import './premium.css';
 import './leaderboard.css';
+import './signin.css';
 import './themes.css';
 
 createRoot(document.getElementById('root')).render(
