@@ -3,6 +3,8 @@ import { AlertOctagon, Plus } from 'lucide-react';
 import { api, errorMessage, loadStates, runPool } from './api.js';
 import BulkBar from './components/BulkBar.jsx';
 import ConnectClaude from './components/ConnectClaude.jsx';
+import ProjectsGrid from './components/ProjectsGrid.jsx';
+import ProjectView from './components/ProjectView.jsx';
 import CreateIssueModal from './components/CreateIssueModal.jsx';
 import IssueDrawer from './components/IssueDrawer.jsx';
 import TopBar from './components/TopBar.jsx';
@@ -26,6 +28,9 @@ export default function App() {
   const [savingIds, setSavingIds] = useState(() => new Set());
   const [toast, setToast] = useState(null);
   const [view, setView] = useState('issues');
+  const [openProject, setOpenProject] = useState(null); // project card shown in the Projects tab
+  const [lastChange, setLastChange] = useState(null); // latest edit from the detail panel
+  const [projectReload, setProjectReload] = useState(0);
   const [openIssueId, setOpenIssueId] = useState(null);
   const [createFor, setCreateFor] = useState(null); // null = closed, { parent } = open
 
@@ -197,11 +202,13 @@ export default function App() {
 
   // Keep the list in step with edits made in the detail panel.
   const onDetailChanged = (fresh, text) => {
-    updateIssue(fresh.id, {
+    const patch = {
       title: fresh.title,
       priority: fresh.priority,
       status: { name: fresh.status.name, color: colorFor(fresh.status.name) ?? fresh.status.color },
-    });
+    };
+    updateIssue(fresh.id, patch);
+    setLastChange({ id: fresh.id, patch: { ...patch, assignee: fresh.assignee } });
     showToast('success', `${fresh.key}: ${text}`);
   };
 
@@ -209,7 +216,13 @@ export default function App() {
     setCreateFor(null);
     showToast('success', `Created “${name}”`);
     loadIssues();
+    setProjectReload((n) => n + 1);
     if (id) setOpenIssueId(id);
+  };
+
+  const navigate = (next) => {
+    setView(next);
+    setOpenProject(null);
   };
 
   const projects = useMemo(() => uniqueSorted(issues.map((i) => i.projectName)), [issues]);
@@ -244,11 +257,30 @@ export default function App() {
         onRefresh={loadIssues}
         onLogout={logout}
       />
-      <Sidebar view={view} onNavigate={setView} />
+      <Sidebar view={view} onNavigate={navigate} />
 
       {view === 'claude' ? (
         <main className="page">
           <ConnectClaude />
+        </main>
+      ) : view === 'projects' ? (
+        <main className="page">
+          {!session.checked ? null : !session.loggedIn ? (
+            <LoginBanner expired={session.expired} loggingIn={loggingIn} onLogin={login} />
+          ) : openProject ? (
+            <ProjectView
+              project={openProject}
+              lastChange={lastChange}
+              reloadKey={projectReload}
+              onBack={() => setOpenProject(null)}
+              onOpenIssue={setOpenIssueId}
+              onNewIssue={(project) => setCreateFor({ parent: null, project })}
+              onError={handlePanelError}
+              showToast={showToast}
+            />
+          ) : (
+            <ProjectsGrid onOpen={setOpenProject} onError={handlePanelError} />
+          )}
         </main>
       ) : (
       <main className="page">
@@ -340,6 +372,7 @@ export default function App() {
       {session.loggedIn && createFor && (
         <CreateIssueModal
           parent={createFor.parent}
+          project={createFor.project}
           userName={session.userName}
           onClose={closeCreate}
           onCreated={onIssueCreated}

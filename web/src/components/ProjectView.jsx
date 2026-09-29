@@ -1,0 +1,299 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, ArrowLeft, ExternalLink, Inbox, Plus, RefreshCw, Search, Users, X } from 'lucide-react';
+import { api, errorMessage, seedStates } from '../api.js';
+import { PMS_BASE } from '../richText.js';
+import Pagination from './Pagination.jsx';
+import StatusSelect from './StatusSelect.jsx';
+
+const PRIORITY_RANK = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
+const UNASSIGNED = '__unassigned__';
+const dateValue = (d) => (d ? Date.parse(d) || Infinity : Infinity);
+
+const SORTS = {
+  default: { label: 'PMS order', fn: () => 0 },
+  keyDesc: { label: 'Newest key', fn: (a, b) => keyNum(b) - keyNum(a) },
+  keyAsc: { label: 'Oldest key', fn: (a, b) => keyNum(a) - keyNum(b) },
+  priority: { label: 'Priority', fn: (a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] },
+  target: { label: 'Target date', fn: (a, b) => dateValue(a.targetDate) - dateValue(b.targetDate) },
+  status: { label: 'Status', fn: (a, b) => a.status.name.localeCompare(b.status.name) },
+  assignee: { label: 'Assignee', fn: (a, b) => (a.assignee?.name ?? '~').localeCompare(b.assignee?.name ?? '~') },
+  title: { label: 'Title A–Z', fn: (a, b) => a.title.localeCompare(b.title) },
+};
+function keyNum(issue) {
+  return Number(issue.key.split('-').pop()) || 0;
+}
+
+const EMPTY_FILTERS = { q: '', status: 'all', priority: 'all', assignee: 'all', overdue: false };
+
+export default function ProjectView({ project, lastChange, reloadKey, onBack, onOpenIssue, onNewIssue, onError, showToast }) {
+  const [data, setData] = useState(null); // { issues, states, assignees }
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [sort, setSort] = useState('default');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [savingIds, setSavingIds] = useState(() => new Set());
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await api.projectIssues(project.id);
+      seedStates(project.id, result.states);
+      setData({ ...result, issues: result.issues.map((i) => ({ ...i, projectId: project.id })) });
+    } catch (err) {
+      if (err.code === 'session_expired') onError(err);
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [project.id, onError]);
+
+  useEffect(() => {
+    setData(null);
+    setFilters(EMPTY_FILTERS);
+    setPage(1);
+    load();
+  }, [load]);
+
+  // Reload after a new issue is created, keeping filters and page.
+  useEffect(() => {
+    if (reloadKey) load();
+  }, [reloadKey]); // only when a reload is requested
+
+  const patchIssue = (id, patch) =>
+    setData((d) => d && { ...d, issues: d.issues.map((i) => (i.id === id ? { ...i, ...patch } : i)) });
+
+  // Edits made in the detail panel.
+  useEffect(() => {
+    if (lastChange) patchIssue(lastChange.id, lastChange.patch);
+  }, [lastChange]);
+
+  useEffect(() => setPage(1), [filters, sort, pageSize]);
+
+  const statusColors = useMemo(() => {
+    const map = new Map();
+    for (const i of data?.issues ?? []) if (i.status.color) map.set(i.status.name.toLowerCase(), i.status.color);
+    return map;
+  }, [data]);
+  const colorFor = useCallback((name) => statusColors.get(name.toLowerCase()) ?? null, [statusColors]);
+
+  const changeStatus = async (issue, state) => {
+    const previous = issue.status;
+    patchIssue(issue.id, { status: { name: state.name, color: colorFor(state.name) } });
+    setSavingIds((s) => new Set(s).add(issue.id));
+    try {
+      const { status } = await api.setState(issue.id, state.id);
+      patchIssue(issue.id, { status: { name: status.name, color: colorFor(status.name) } });
+      showToast('success', `${issue.key} moved to ${status.name}`);
+    } catch (err) {
+      patchIssue(issue.id, { status: previous });
+      if (err.code === 'session_expired') onError(err);
+      showToast('error', `Could not update ${issue.key}: ${errorMessage(err)}`);
+    } finally {
+      setSavingIds((s) => {
+        const next = new Set(s);
+        next.delete(issue.id);
+        return next;
+      });
+    }
+  };
+
+  // Workload per person, busiest first.
+  const team = useMemo(() => {
+    const counts = new Map();
+    for (const i of data?.issues ?? []) {
+      const key = i.assignee?.name ?? UNASSIGNED;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return [...counts].sort((a, b) => b[1] - a[1]);
+  }, [data]);
+
+  const statuses = useMemo(() => [...new Set((data?.issues ?? []).map((i) => i.status.name))], [data]);
+
+  const filtered = useMemo(() => {
+    const q = filters.q.trim().toLowerCase();
+    const list = (data?.issues ?? []).filter(
+      (i) =>
+        (!q || i.key.toLowerCase().includes(q) || i.title.toLowerCase().includes(q)) &&
+        (filters.status === 'all' || i.status.name === filters.status) &&
+        (filters.priority === 'all' || i.priority === filters.priority) &&
+        (filters.assignee === 'all' || (i.assignee?.name ?? UNASSIGNED) === filters.assignee) &&
+        (!filters.overdue || i.overdue),
+    );
+    return sort === 'default' ? list : [...list].sort(SORTS[sort].fn);
+  }, [data, filters, sort]);
+
+  const pageItems = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const set = (key) => (value) => setFilters((f) => ({ ...f, [key]: value }));
+  const filtersActive = JSON.stringify(filters) !== JSON.stringify(EMPTY_FILTERS);
+
+  return (
+    <>
+      <button className="back-link" onClick={onBack}>
+        <ArrowLeft size={15} /> All projects
+      </button>
+
+      <div className="project-head">
+        <span className="project-icon large" style={{ '--c': project.color ?? '#8b6fe8' }}>
+          {project.icon || project.name[0]}
+        </span>
+        <div className="project-head-text">
+          <h1>
+            {project.name} <span className="key">{project.key}</span>
+          </h1>
+          {project.description && <p className="subtitle">{project.description}</p>}
+        </div>
+        <div className="project-head-actions">
+          <button className="icon-btn" onClick={load} disabled={loading} title="Reload issues">
+            <RefreshCw size={17} className={loading ? 'spin' : undefined} />
+          </button>
+          <a className="secondary-btn" href={`${PMS_BASE}/projects/${project.id}`} target="_blank" rel="noreferrer">
+            <ExternalLink size={15} /> Open in PMS
+          </a>
+          <button className="primary-btn new-issue-btn" onClick={() => onNewIssue(project)}>
+            <Plus size={16} /> New issue
+          </button>
+        </div>
+      </div>
+
+      {data && team.length > 0 && (
+        <div className="team">
+          <span className="team-label">
+            <Users size={14} /> Team
+          </span>
+          {team.map(([name, count]) => {
+            const active = filters.assignee === name;
+            return (
+              <button
+                key={name}
+                className={active ? 'team-chip active' : 'team-chip'}
+                onClick={() => set('assignee')(active ? 'all' : name)}
+                title={active ? 'Show everyone' : `Show only ${name === UNASSIGNED ? 'unassigned' : name}`}
+              >
+                <span className="avatar tiny">{name === UNASSIGNED ? '–' : name[0].toUpperCase()}</span>
+                {name === UNASSIGNED ? 'Unassigned' : name}
+                <span className="team-count">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="filters">
+        <label className="search">
+          <Search size={16} />
+          <input type="search" placeholder="Search by key or title" value={filters.q} onChange={(e) => set('q')(e.target.value)} />
+          {filters.q && (
+            <button className="search-clear" onClick={() => set('q')('')} aria-label="Clear search">
+              <X size={14} />
+            </button>
+          )}
+        </label>
+        <div className="filter-group">
+          <select className="filter-select" value={filters.status} onChange={(e) => set('status')(e.target.value)} aria-label="Status">
+            <option value="all">All statuses</option>
+            {statuses.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <select className="filter-select" value={filters.priority} onChange={(e) => set('priority')(e.target.value)} aria-label="Priority">
+            <option value="all">All priorities</option>
+            {Object.keys(PRIORITY_RANK).map((p) => (
+              <option key={p} value={p}>{p[0].toUpperCase() + p.slice(1)}</option>
+            ))}
+          </select>
+          <select className="filter-select" value={filters.assignee} onChange={(e) => set('assignee')(e.target.value)} aria-label="Assignee">
+            <option value="all">Everyone</option>
+            <option value={UNASSIGNED}>Unassigned</option>
+            {team
+              .filter(([n]) => n !== UNASSIGNED)
+              .map(([n]) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+          </select>
+          <select className="filter-select" value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort">
+            {Object.entries(SORTS).map(([id, s]) => (
+              <option key={id} value={id}>Sort: {s.label}</option>
+            ))}
+          </select>
+          <button
+            className={filters.overdue ? 'toggle-btn on' : 'toggle-btn'}
+            onClick={() => set('overdue')(!filters.overdue)}
+            aria-pressed={filters.overdue}
+          >
+            <AlertTriangle size={14} /> Overdue
+          </button>
+          {filtersActive && (
+            <button className="link-btn" onClick={() => setFilters(EMPTY_FILTERS)}>
+              Clear filters
+            </button>
+          )}
+        </div>
+      </div>
+
+      {error && (
+        <div className="error-card">
+          <div>
+            <strong>Could not load this project</strong>
+            <p>{errorMessage(error)}</p>
+          </div>
+          <button className="secondary-btn" onClick={load}>Try again</button>
+        </div>
+      )}
+
+      {!error && (
+        <div className="table project-table">
+          <div className="table-head">
+            <span>Key</span>
+            <span>Title</span>
+            <span>Assignee</span>
+            <span>Priority</span>
+            <span>Target</span>
+            <span>Status</span>
+          </div>
+
+          {!data &&
+            Array.from({ length: 8 }, (_, i) => (
+              <div className="row skeleton" key={i}>
+                {Array.from({ length: 6 }, (_, j) => (
+                  <span key={j} className="bone" />
+                ))}
+              </div>
+            ))}
+
+          {data && filtered.length === 0 && (
+            <div className="empty">
+              <Inbox size={28} />
+              <p>{data.issues.length ? 'No issues match these filters' : 'This project has no issues yet'}</p>
+            </div>
+          )}
+
+          {pageItems.map((issue) => (
+            <div className="row" key={issue.id}>
+              <span className="key">{issue.key}</span>
+              <button className="title" onClick={() => onOpenIssue(issue.id)} title={issue.title}>
+                {issue.title}
+              </button>
+              <span className={issue.assignee ? 'assignee' : 'assignee none'} title={issue.assignee?.name ?? 'Unassigned'}>
+                <span className="avatar tiny">{issue.assignee ? issue.assignee.name[0].toUpperCase() : '–'}</span>
+                <span className="assignee-name">{issue.assignee?.name ?? 'Unassigned'}</span>
+              </span>
+              <span className={`priority priority-${issue.priority}`}>{issue.priority}</span>
+              <span className={issue.overdue ? 'target overdue' : 'target'}>
+                {issue.overdue && <AlertTriangle size={13} />}
+                {issue.targetDate ?? '—'}
+              </span>
+              <StatusSelect issue={issue} colorFor={colorFor} saving={savingIds.has(issue.id)} onChange={changeStatus} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {data && filtered.length > 0 && (
+        <Pagination page={page} pageSize={pageSize} total={filtered.length} onPage={setPage} onPageSize={setPageSize} />
+      )}
+    </>
+  );
+}

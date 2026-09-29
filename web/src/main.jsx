@@ -4,6 +4,7 @@ import App from './App.jsx';
 import './styles.css';
 import './panels.css';
 import './connect.css';
+import './projects.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

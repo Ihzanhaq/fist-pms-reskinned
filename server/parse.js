@@ -248,3 +248,77 @@ export function parseProjects(html) {
   if (!seen.size) throw new LayoutChangedError('Could not find the project list');
   return [...seen].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
 }
+
+// ---------- project list & project issues ----------
+
+export function parseProjectCards(html) {
+  const cards = parse(html).querySelectorAll('[data-card="grid"]');
+  if (!cards.length) throw new LayoutChangedError('Could not find the project cards');
+  return cards.map((card) => {
+    // The card also links to /projects/{id}/edit; the name is the plain /projects/{id} link.
+    const link = card.querySelectorAll('a[href^="/projects/"]').find((a) => /^\/projects\/[0-9a-f-]{36}$/i.test(a.getAttribute('href')));
+    if (!link) throw new LayoutChangedError('A project card has an unexpected layout');
+    const iconEl = card.querySelector('.-mt-6 span');
+    const countText = card.querySelectorAll('span').map(clean).find((t) => /^\d+ issues?$/.test(t)) ?? '0';
+    return {
+      id: uuidIn(link),
+      name: clean(link),
+      key: clean(link?.parentNode.querySelector('span')),
+      description: clean(card.querySelector('p')),
+      issueCount: Number.parseInt(countText, 10),
+      icon: clean(iconEl),
+      color: iconEl?.getAttribute('style')?.match(HEX_COLOR)?.[0] ?? null,
+      pinned: card.getAttribute('data-pinned') === 'true',
+    };
+  });
+}
+
+// The project list view shows every issue at once (no paging) with inline
+// status, priority and assignee pickers.
+export function parseProjectIssues(html) {
+  const root = parse(html);
+  if (!root.querySelector('form.isf-form')) throw new LayoutChangedError('The project issue list has an unexpected layout');
+
+  const issues = root.querySelectorAll('.mi-item').map((item) => {
+    const titleLink = item.querySelector('a.mi-title');
+    const statusEl = item.querySelector('.mi-status');
+    const dateEl = item.querySelector('.mi-target');
+    const id = uuidIn(titleLink);
+    if (!id || !statusEl) throw new LayoutChangedError('A project issue row has an unexpected layout');
+
+    const current = item.querySelector('.ap-opt.is-current');
+    const trigger = item.querySelector('.ap-trigger');
+    let assignee = null;
+    if (current?.getAttribute('value')) {
+      assignee = { id: current.getAttribute('value'), name: lastSpanText(current) };
+    } else {
+      const name = trigger?.getAttribute('title')?.match(/^Assigned to (.+)$/)?.[1];
+      if (name) assignee = { id: uuidIn(trigger.querySelector('img'), 'src'), name };
+    }
+    const targetDate = lastSpanText(dateEl);
+
+    return {
+      id,
+      key: clean(item.querySelector('.mi-key')),
+      title: titleLink.getAttribute('title')?.trim() || clean(titleLink),
+      status: {
+        name: lastSpanText(statusEl),
+        color: statusEl.querySelector('.dot')?.getAttribute('style')?.match(HEX_COLOR)?.[0] ?? null,
+      },
+      priority: lastSpanText(item.querySelector('.pill')) || 'none',
+      assignee,
+      targetDate: targetDate && targetDate !== '—' ? targetDate : null,
+      overdue: Boolean(dateEl?.classList.contains('is-over')),
+    };
+  });
+
+  // Status and people options come from the first row that has pickers.
+  const stateSelect = root.querySelector('.mi-item select[name="stateId"]');
+  const states = (stateSelect?.querySelectorAll('option') ?? []).map((o) => ({ id: o.getAttribute('value'), name: clean(o) }));
+  const panel = root.querySelector('.mi-item form[action$="/assignee"]');
+  const assignees = (panel?.querySelectorAll('button[name="userId"]') ?? [])
+    .filter((b) => b.getAttribute('value'))
+    .map((b) => ({ id: b.getAttribute('value'), name: lastSpanText(b) }));
+
+  return { issues, states, assignees };
+}

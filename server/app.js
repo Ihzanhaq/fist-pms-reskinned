@@ -65,6 +65,8 @@ export function createApp() {
 
   app.get('/api/projects', async (req, res) => res.json({ projects: await service.listProjects() }));
 
+  app.get('/api/projects/:id/issues', async (req, res) => res.json(await service.projectIssues(req.params.id)));
+
   app.get('/api/projects/:id/issue-form', async (req, res) =>
     res.json(await service.issueFormOptions(req.params.id, req.query.parentId || null)),
   );

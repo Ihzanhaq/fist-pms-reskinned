@@ -2,7 +2,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 export const PMS_BASE = 'https://pms.fistinnovations.com';
-export const PORT = 3000;
+export const PORT = Number(process.env.PORT) || 3000;
 export const HOST = '127.0.0.1';
 
 export const ROOT_DIR = path.resolve(import.meta.dirname, '..');

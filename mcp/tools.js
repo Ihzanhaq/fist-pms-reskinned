@@ -168,7 +168,11 @@ export function registerTools(server) {
     wrap(async ({ search }) => {
       let projects = await service.listProjects();
       if (search) projects = projects.filter((p) => p.name.toLowerCase().includes(search.trim().toLowerCase()));
-      return text(projects.length ? projects.map((p) => `- ${p.name}`).join('\n') : 'No matching projects.');
+      return text(
+        projects.length
+          ? projects.map((p) => `- ${p.name} (${p.key}) · ${p.issueCount} issues`).join('\n')
+          : 'No matching projects.',
+      );
     }),
   );
 

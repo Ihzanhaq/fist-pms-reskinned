@@ -5,7 +5,8 @@ import {
   parseIssueForm,
   parseIssuePage,
   parseMyIssues,
-  parseProjects,
+  parseProjectCards,
+  parseProjectIssues,
   parseUserName,
 } from './parse.js';
 import * as pms from './pms-client.js';
@@ -87,8 +88,15 @@ export async function statesFor(issueId, projectId) {
   return list;
 }
 
+// Project cards: id, name, key, description, issueCount, icon, color, pinned.
 export async function listProjects() {
-  return parseProjects(await pms.get('/'));
+  return parseProjectCards(await pms.get('/'));
+}
+
+// Every issue in a project (the PMS list view has no paging), plus its statuses and people.
+export async function projectIssues(projectId) {
+  requireUuid(projectId, 'project id');
+  return parseProjectIssues(await pms.get(`/projects/${projectId}?view=list`));
 }
 
 const newIssuePath = (projectId, parentId) =>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+<main>
+  <form class="isf-form" method="get" action="/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"><input type="hidden" name="view" value="list"></form>
+  <div class="mi-list">
+    <div class="mi-item" style="--accent-col:#ea580c">
+      <span class="mi-key">DEMO-264</span>
+      <a href="/issues/11111111-1111-4111-8111-111111111111?back=/projects/x" class="mi-title" title="Attachment upload &amp; register">Attachment upload &amp; register</a>
+      <span class="mi-status inline-pick" style="background:#60646C1f;color:#60646C">
+        <span class="dot" style="background:#60646C"></span> <span>New</span>
+        <form action="/issues/11111111-1111-4111-8111-111111111111/state" method="post"><input type="hidden" name="_csrf" value="t">
+          <select name="stateId"><option value="aaaa0001-0000-4000-8000-000000000001" selected="selected">New</option><option value="aaaa0002-0000-4000-8000-000000000002">In Progress</option></select>
+        </form></span>
+      <span class="pill inline-pick pill-amber">
+        <span class="material-symbols-rounded">keyboard_double_arrow_up</span> <span>high</span>
+        <form action="/issues/11111111-1111-4111-8111-111111111111/priority" method="post"><select name="priority"><option value="urgent">urgent</option><option value="high" selected="selected">high</option></select></form>
+      </span>
+      <span class="mi-assignees"><div class="ap">
+        <button type="button" class="ap-trigger" title="Assigned to Sam Reviewer"><img src="/avatar/66666666-6666-4666-8666-666666666666" alt="Sam Reviewer" class="av"></button>
+        <div class="ap-panel"><form action="/issues/11111111-1111-4111-8111-111111111111/assignee" method="post">
+          <button type="submit" name="userId" value="" class="ap-opt"><span>Unassigned</span></button>
+          <button type="submit" name="userId" value="66666666-6666-4666-8666-666666666666" class="ap-opt is-current"><img class="ap-av" alt="Sam Reviewer"> <span>Sam Reviewer</span></button>
+          <button type="submit" name="userId" value="88888888-8888-4888-8888-888888888888" class="ap-opt"><span class="ap-av">J</span> <span>Jane Tester</span></button>
+        </form></div>
+      </div></span>
+      <span class="mi-target is-over"><span class="material-symbols-rounded">warning</span> <span>11 Sep 2026</span></span>
+    </div>
+    <div class="mi-item" style="--accent-col:#94a3b8">
+      <span class="mi-key">DEMO-9</span>
+      <a href="/issues/22222222-2222-4222-8222-222222222222?back=/projects/x" class="mi-title" title="Old task">Old task</a>
+      <span class="mi-status inline-pick" style="background:#16A34A1f;color:#16A34A">
+        <span class="dot" style="background:#16A34A"></span> <span>Closed</span></span>
+      <span class="pill inline-pick pill-slate"><span class="material-symbols-rounded">remove</span> <span>low</span></span>
+      <span class="mi-assignees"><div class="ap">
+        <button type="button" class="ap-trigger" title="Unassigned — click to assign"><span class="av">?</span><span class="ap-empty">—</span></button>
+      </div></span>
+      <span class="mi-target" style="color:var(--txt-placeholder)">—</span>
+    </div>
+  </div>
+</main>
+</body>
+</html>

@@ -8,6 +8,8 @@ import {
   parseIssueDetail,
   parseIssueForm,
   parseProjects,
+  parseProjectCards,
+  parseProjectIssues,
   LayoutChangedError,
 } from '../parse.js';
 
@@ -148,4 +150,61 @@ test('parseIssueDetail reads a locked assignee on closed issues', () => {
   assert.deepEqual(d.assignee, { id: null, name: 'Jane Tester' });
   assert.deepEqual(d.assignees, []);
   assert.equal(d.assigneeLocked, true);
+});
+
+test('parseProjectCards reads the project grid on the home page', () => {
+  assert.deepEqual(parseProjectCards(fixture('projects-home.html')), [
+    {
+      id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      name: 'Demo App',
+      key: 'DEMO',
+      description: 'Customer portal & admin.',
+      issueCount: 81,
+      icon: '💻',
+      color: '#0891b2',
+      pinned: true,
+    },
+    {
+      id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      name: 'Shop Site',
+      key: 'SHOP',
+      description: '',
+      issueCount: 1,
+      icon: '🛒',
+      color: '#7c3aed',
+      pinned: false,
+    },
+  ]);
+});
+
+test('parseProjectIssues reads every issue with assignee and status options', () => {
+  const { issues, states, assignees } = parseProjectIssues(fixture('project-issues.html'));
+  assert.equal(issues.length, 2);
+  assert.deepEqual(issues[0], {
+    id: '11111111-1111-4111-8111-111111111111',
+    key: 'DEMO-264',
+    title: 'Attachment upload & register',
+    status: { name: 'New', color: '#60646C' },
+    priority: 'high',
+    assignee: { id: '66666666-6666-4666-8666-666666666666', name: 'Sam Reviewer' },
+    targetDate: '11 Sep 2026',
+    overdue: true,
+  });
+  assert.deepEqual(issues[1].assignee, null);
+  assert.deepEqual(issues[1].status, { name: 'Closed', color: '#16A34A' });
+  assert.equal(issues[1].targetDate, null);
+  assert.deepEqual(states, [
+    { id: 'aaaa0001-0000-4000-8000-000000000001', name: 'New' },
+    { id: 'aaaa0002-0000-4000-8000-000000000002', name: 'In Progress' },
+  ]);
+  assert.deepEqual(assignees, [
+    { id: '66666666-6666-4666-8666-666666666666', name: 'Sam Reviewer' },
+    { id: '88888888-8888-4888-8888-888888888888', name: 'Jane Tester' },
+  ]);
+});
+
+test('project parsers throw LayoutChangedError on unrecognised pages', () => {
+  const PAGE = '<html><body><p>nope</p></body></html>';
+  assert.throws(() => parseProjectCards(PAGE), LayoutChangedError);
+  assert.throws(() => parseProjectIssues(PAGE), LayoutChangedError);
 });

@@ -44,6 +44,7 @@ export const api = {
   setPriority: (id, priority) => call(`/api/issues/${id}/priority`, { method: 'POST', body: { priority } }),
   setAssignee: (id, userId) => call(`/api/issues/${id}/assignee`, { method: 'POST', body: { userId } }),
   projects: () => call('/api/projects'),
+  projectIssues: (projectId) => call(`/api/projects/${projectId}/issues`),
   issueForm: (projectId, parentId) =>
     call(`/api/projects/${projectId}/issue-form${parentId ? `?parentId=${parentId}` : ''}`),
   createIssue: (projectId, input, files = []) => {
@@ -58,6 +59,11 @@ export const attachmentUrl = (id, download = false) => `/api/attachments/${id}${
 
 // Statuses are per project. Cache the promise so concurrent callers share one request.
 const statesByProject = new Map();
+
+// The project issue list already includes the status options; reuse them.
+export function seedStates(projectId, states) {
+  if (states.length) statesByProject.set(projectId, Promise.resolve(states));
+}
 
 export function loadStates(issue) {
   if (!statesByProject.has(issue.projectId)) {

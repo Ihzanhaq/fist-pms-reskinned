@@ -18,9 +18,11 @@ const EMPTY = {
 };
 
 // `parent` is set when adding a sub-issue: { id, key, project: { id, name } }.
-export default function CreateIssueModal({ parent, userName, onClose, onCreated, onError }) {
+export default function CreateIssueModal({ parent, project, userName, onClose, onCreated, onError }) {
   const [projects, setProjects] = useState(null);
-  const [projectId, setProjectId] = useState(parent?.project.id ?? localStorage.getItem(LAST_PROJECT_KEY) ?? '');
+  const [projectId, setProjectId] = useState(
+    parent?.project.id ?? project?.id ?? localStorage.getItem(LAST_PROJECT_KEY) ?? '',
+  );
   const [form, setForm] = useState(null); // options for the chosen project
   const [formError, setFormError] = useState(null);
   const [values, setValues] = useState(EMPTY);
