@@ -135,9 +135,31 @@
   --chart-grid: rgba(255, 255, 255, 0.08);
 }
 
-:root[data-theme='glass'] body {
+/* The wallpaper lives on fixed layers behind the app so it can be blurred and dimmed
+   without touching the content. Oversized so the blur has no soft edges. */
+:root[data-theme='glass'] body { background: #15171f; }
+:root[data-theme='glass'] body::before,
+:root[data-theme='glass'] body::after {
+  content: ''; position: fixed; z-index: -1; pointer-events: none;
+}
+:root[data-theme='glass'] body::before {
+  inset: calc(var(--glass-bg-blur, 0px) * -2.5);
   background: var(--glass-bg, linear-gradient(135deg, #a8c0ff, #3f2b96));
-  background-attachment: fixed;
+  filter: blur(var(--glass-bg-blur, 0px));
+}
+:root[data-theme='glass'] body::after { inset: 0; background: rgba(0, 0, 0, var(--glass-dim, 0)); }
+:root[data-theme='glass'][data-mode='light'] body::after { background: rgba(255, 255, 255, var(--glass-dim, 0)); }
+
+/* Page headers sit on the wallpaper, so they get their own glass strip. */
+:root[data-theme='glass'] :is(.page-head, .project-head) {
+  padding: 16px 20px; border-bottom: 0; border-radius: 14px;
+  background: var(--surface); box-shadow: var(--shadow-sm);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+}
+:root[data-theme='glass'] .back-link {
+  padding: 6px 12px; border-radius: 999px; background: var(--surface);
+  -webkit-backdrop-filter: blur(var(--glass-blur)); backdrop-filter: blur(var(--glass-blur));
 }
 
 /* every panel is frosted glass */
@@ -263,9 +285,3 @@
   .settings-row { grid-template-columns: 1fr; gap: 8px; }
 }
 
-/* Page titles sit straight on the wallpaper; a soft halo keeps them legible on busy images. */
-:root[data-theme='glass'][data-mode='dark'] .page-head :is(h1, .subtitle),
-:root[data-theme='glass'][data-mode='dark'] .project-head :is(h1, .subtitle) { text-shadow: 0 1px 14px rgba(0, 0, 0, 0.45); }
-:root[data-theme='glass'][data-mode='light'] .page-head :is(h1, .subtitle),
-:root[data-theme='glass'][data-mode='light'] .project-head :is(h1, .subtitle) { text-shadow: 0 1px 14px rgba(255, 255, 255, 0.7); }
-:root[data-theme='glass'][data-mode='light'] .page-head .subtitle { color: var(--text-2); }

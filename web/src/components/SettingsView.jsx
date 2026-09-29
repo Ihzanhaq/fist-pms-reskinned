@@ -48,7 +48,13 @@ export default function SettingsView({ appearance }) {
     setUploading(true);
     try {
       const { image, luminance } = await prepareImage(file);
-      updateGlass({ background: { type: 'image', image }, tint: tintFor(luminance) });
+      // Photos are busy: start with a light blur and dim so text reads well. Both are adjustable.
+      updateGlass({
+        background: { type: 'image', image },
+        tint: tintFor(luminance),
+        bgBlur: Math.max(glass.bgBlur ?? 0, 8),
+        dim: Math.max(glass.dim ?? 0, 20),
+      });
     } catch {
       setUploadError('That image could not be read. Try another one.');
     } finally {
@@ -240,7 +246,39 @@ export default function SettingsView({ appearance }) {
         </div>
 
         <div className="settings-row">
-          <span className="settings-label">Blur</span>
+          <span className="settings-label">Background blur</span>
+          <label className="range-field wide">
+            <input
+              type="range"
+              min="0"
+              max="40"
+              step="1"
+              value={glass.bgBlur ?? 0}
+              onChange={(e) => updateGlass({ bgBlur: Number(e.target.value) })}
+              aria-label="Background blur"
+            />
+            <span className="muted">{glass.bgBlur ? `${glass.bgBlur}px` : 'Off'}</span>
+          </label>
+        </div>
+
+        <div className="settings-row">
+          <span className="settings-label">{glass.tint === 'dark' ? 'Darken background' : 'Lighten background'}</span>
+          <label className="range-field wide">
+            <input
+              type="range"
+              min="0"
+              max="70"
+              step="5"
+              value={glass.dim ?? 0}
+              onChange={(e) => updateGlass({ dim: Number(e.target.value) })}
+              aria-label="Dim background"
+            />
+            <span className="muted">{glass.dim ? `${glass.dim}%` : 'Off'}</span>
+          </label>
+        </div>
+
+        <div className="settings-row">
+          <span className="settings-label">Glass blur</span>
           <label className="range-field wide">
             <input
               type="range"
@@ -249,7 +287,7 @@ export default function SettingsView({ appearance }) {
               step="1"
               value={glass.blur}
               onChange={(e) => updateGlass({ blur: Number(e.target.value) })}
-              aria-label="Blur strength"
+              aria-label="Glass blur"
             />
             <span className="muted">{glass.blur}px</span>
           </label>

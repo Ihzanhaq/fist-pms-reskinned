@@ -23,6 +23,8 @@
             if (a.bg) {
               root.style.setProperty('--glass-bg', a.bg);
               root.style.setProperty('--glass-blur', a.blur + 'px');
+              root.style.setProperty('--glass-bg-blur', (a.bgBlur || 0) + 'px');
+              root.style.setProperty('--glass-dim', String((a.dim || 0) / 100));
             }
             return;
           }

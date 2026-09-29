@@ -60,6 +60,8 @@ export const DEFAULT_GLASS = {
   background: { type: 'preset', preset: 'sonoma', from: '#7f8cff', to: '#ff9a8b', angle: 135, image: null },
   tint: 'light',
   blur: 22,
+  bgBlur: 0, // px of blur on the wallpaper itself
+  dim: 0, // 0–70 % darken (dark glass) or lighten (light glass)
 };
 
 const systemMode = () => (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
@@ -91,6 +93,8 @@ export function resolve(settings) {
     mode: settings.glass.tint,
     bg: glassBackgroundCss(settings.glass.background),
     blur: settings.glass.blur,
+    bgBlur: settings.glass.bgBlur ?? 0,
+    dim: settings.glass.dim ?? 0,
   };
 }
 
@@ -101,9 +105,13 @@ function apply(resolved) {
   if (resolved.bg) {
     root.style.setProperty('--glass-bg', resolved.bg);
     root.style.setProperty('--glass-blur', `${resolved.blur}px`);
+    root.style.setProperty('--glass-bg-blur', `${resolved.bgBlur}px`);
+    root.style.setProperty('--glass-dim', String(resolved.dim / 100));
   } else {
     root.style.removeProperty('--glass-bg');
     root.style.removeProperty('--glass-blur');
+    root.style.removeProperty('--glass-bg-blur');
+    root.style.removeProperty('--glass-dim');
   }
 }
 
