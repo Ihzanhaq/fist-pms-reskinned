@@ -1,19 +1,19 @@
 :root {
-  --bg: #f4f3f9;
+  --bg: #f3f6f5;
   --surface: #ffffff;
-  --sidebar: #9187cf;
+  --sidebar: #0f6b61;
   --sidebar-active: rgba(255, 255, 255, 0.18);
-  --accent: #8b6fe8;
-  --accent-soft: #efeafd;
+  --accent: #059669;
+  --accent-soft: #e3f6ee;
   --text: #22243a;
   --text-2: #5d6178;
   --muted: #9a9eb4;
-  --border: #ebeaf2;
-  --border-strong: #d4d3e1;
-  --faint: #c9cbd8;
-  --accent-border: #ddd4fa;
-  --accent-wash: #f7f5fd;
-  --accent-ink: #5b47c4;
+  --border: #e5ebe9;
+  --border-strong: #cfd8d5;
+  --faint: #c3cdc9;
+  --accent-border: #bfe8d7;
+  --accent-wash: #f2faf6;
+  --accent-ink: #047857;
   --inverse: #22243a;
   --skeleton-a: #efeef5;
   --skeleton-b: #f7f6fb;
@@ -26,10 +26,10 @@
   --p-high: #ea580c;
   --p-medium: #b7791f;
   --p-low: #2f7de1;
-  --chart-recede: #d8d0f6;
-  --chart-grid: #ecebf3;
+  --chart-recede: #bfe9d8;
+  --chart-grid: #e8eeec;
   --shadow-sm: 0 1px 2px rgba(34, 36, 58, 0.04), 0 2px 10px rgba(34, 36, 58, 0.04);
-  --shadow-md: 0 10px 28px rgba(83, 67, 160, 0.14);
+  --shadow-md: 0 10px 28px rgba(6, 95, 70, 0.14);
   --radius: 10px;
   --row-cols: 18px 128px minmax(220px, 1fr) 150px 96px 124px 176px;
   color-scheme: light;
@@ -43,13 +43,13 @@
 :root[data-theme='dark'] {
   --bg: #13141c;
   --surface: #1c1d28;
-  --sidebar: #221f36;
+  --sidebar: #0f1f1b;
   --sidebar-active: rgba(255, 255, 255, 0.08);
-  --accent: #9b83f0;
-  --accent-soft: #2c2748;
-  --accent-border: #3d3566;
-  --accent-wash: #232135;
-  --accent-ink: #c4b5fd;
+  --accent: #34d399;
+  --accent-soft: #123a2f;
+  --accent-border: #1f5a47;
+  --accent-wash: #13241f;
+  --accent-ink: #6ee7b7;
   --text: #e7e7f0;
   --text-2: #a9abc0;
   --muted: #7c7f96;
@@ -68,7 +68,7 @@
   --p-high: #fb923c;
   --p-medium: #eab308;
   --p-low: #60a5fa;
-  --chart-recede: #3f3769;
+  --chart-recede: #1d4d3e;
   --chart-grid: #262736;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 10px rgba(0, 0, 0, 0.2);
   --shadow-md: 0 10px 28px rgba(0, 0, 0, 0.45);
@@ -106,7 +106,7 @@ button:disabled { cursor: default; }
 .brand-mark {
   display: grid; place-items: center;
   width: 30px; height: 30px; border-radius: 8px;
-  background: linear-gradient(135deg, #9f8cf0, #7b68d6);
+  background: linear-gradient(135deg, #34d399, #059669);
   color: #fff; font-weight: 700; font-size: 14px;
 }
 .brand-name { font-weight: 700; letter-spacing: 0.06em; font-size: 14px; }
@@ -324,7 +324,7 @@ button:disabled { cursor: default; }
   transition: background 0.15s, opacity 0.15s;
 }
 .primary-btn { border: 0; background: var(--accent); color: #fff; min-width: 190px; }
-.primary-btn:hover:not(:disabled) { background: #7a5ce0; }
+.primary-btn:hover:not(:disabled) { background: #047857; }
 .primary-btn:disabled { opacity: 0.75; }
 .secondary-btn { border: 1px solid var(--border); background: var(--surface); }
 .secondary-btn:hover { background: var(--bg); }

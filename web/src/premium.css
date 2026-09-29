@@ -23,7 +23,7 @@
 /* brand */
 .sidebar .brand { display: flex; align-items: center; gap: 12px; padding: 20px 20px 18px; }
 /* the SVG carries its own tile; only the lift shadow comes from CSS */
-.brand-mark { display: block; flex-shrink: 0; border-radius: 9px; background: none; box-shadow: 0 4px 14px rgba(110, 88, 220, 0.35); }
+.brand-mark { display: block; flex-shrink: 0; border-radius: 9px; background: none; box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35); }
 .brand-text { display: flex; flex-direction: column; line-height: 1.2; }
 .brand-name { font-size: 14px; font-weight: 600; letter-spacing: 0.02em; color: #fff; }
 .brand-sub { font-size: 11.5px; color: rgba(255, 255, 255, 0.6); }
@@ -109,17 +109,17 @@ button.crumb:hover { color: var(--text); }
 }
 
 /* =========================================================================
-   Dark theme: near-black base, hairline borders, a faint violet haze.
+   Dark theme: near-black base, hairline borders, a faint emerald haze.
    ========================================================================= */
 :root[data-theme='dark'] {
   --bg: #09090d;
   --surface: #111117;
   --sidebar: #0c0c11;
-  --accent: #a594ff;
-  --accent-soft: rgba(165, 148, 255, 0.13);
-  --accent-border: rgba(165, 148, 255, 0.32);
+  --accent: #34d399;
+  --accent-soft: rgba(52, 211, 153, 0.13);
+  --accent-border: rgba(52, 211, 153, 0.32);
   --accent-wash: rgba(255, 255, 255, 0.03);
-  --accent-ink: #cbbfff;
+  --accent-ink: #a7f3d0;
   --text: #ededf3;
   --text-2: #a3a5b8;
   --muted: #6d6f84;
@@ -129,7 +129,7 @@ button.crumb:hover { color: var(--text); }
   --inverse: #1c1c25;
   --skeleton-a: rgba(255, 255, 255, 0.04);
   --skeleton-b: rgba(255, 255, 255, 0.08);
-  --chart-recede: rgba(165, 148, 255, 0.22);
+  --chart-recede: rgba(52, 211, 153, 0.22);
   --chart-grid: rgba(255, 255, 255, 0.05);
   /* A hairline ring plus a faint top highlight: reads as a glass edge, not a drop shadow. */
   --shadow-sm: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 0 0 1px rgba(255, 255, 255, 0.065);
@@ -138,8 +138,8 @@ button.crumb:hover { color: var(--text); }
 
 :root[data-theme='dark'] body {
   background:
-    radial-gradient(900px 520px at 22% -12%, rgba(118, 98, 255, 0.11), transparent 62%),
-    radial-gradient(700px 480px at 100% 110%, rgba(118, 98, 255, 0.05), transparent 60%),
+    radial-gradient(900px 520px at 22% -12%, rgba(16, 185, 129, 0.11), transparent 62%),
+    radial-gradient(700px 480px at 100% 110%, rgba(16, 185, 129, 0.05), transparent 60%),
     var(--bg);
   background-attachment: fixed;
 }
@@ -148,7 +148,7 @@ button.crumb:hover { color: var(--text); }
 /* sidebar with a soft light source in its top corner */
 :root[data-theme='dark'] .sidebar {
   background:
-    radial-gradient(360px 240px at 0% 0%, rgba(140, 120, 255, 0.2), transparent 70%),
+    radial-gradient(360px 240px at 0% 0%, rgba(52, 211, 153, 0.2), transparent 70%),
     linear-gradient(180deg, #0f0f15, #0b0b10);
   border-right: 1px solid var(--border);
 }
@@ -177,7 +177,7 @@ button.crumb:hover { color: var(--text); }
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.008)), var(--surface);
 }
 :root[data-theme='dark'] .row:not(.skeleton):hover { box-shadow: var(--shadow-md); }
-:root[data-theme='dark'] .row.selected { background: linear-gradient(90deg, rgba(165, 148, 255, 0.1), rgba(165, 148, 255, 0.02)), var(--surface); }
+:root[data-theme='dark'] .row.selected { background: linear-gradient(90deg, rgba(52, 211, 153, 0.1), rgba(52, 211, 153, 0.02)), var(--surface); }
 :root[data-theme='dark'] :is(.drawer, .modal, .sel-menu, .status-menu, .assignee-menu) {
   background: #13131a;
 }
@@ -187,18 +187,27 @@ button.crumb:hover { color: var(--text); }
 
 /* primary actions keep a lit edge */
 :root[data-theme='dark'] .primary-btn {
-  background: linear-gradient(180deg, #ae9fff, #8b74f2);
-  color: #0f0c1f;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 18px rgba(139, 116, 242, 0.25);
+  background: linear-gradient(180deg, #6ee7b7, #10b981);
+  color: #03261b;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 18px rgba(16, 185, 129, 0.25);
 }
-:root[data-theme='dark'] .primary-btn:hover:not(:disabled) { background: linear-gradient(180deg, #bbaeff, #9580f5); }
-:root[data-theme='dark'] .page-btn.active { background: var(--accent); color: #0f0c1f; }
-:root[data-theme='dark'] .cal-day.selected, :root[data-theme='dark'] .step-num { color: #0f0c1f; }
+:root[data-theme='dark'] .primary-btn:hover:not(:disabled) { background: linear-gradient(180deg, #a7f3d0, #34d399); }
+:root[data-theme='dark'] .page-btn.active { background: var(--accent); color: #03261b; }
+:root[data-theme='dark'] .cal-day.selected, :root[data-theme='dark'] .step-num { color: #03261b; }
 
 /* chart: gradient columns; only today's column carries a glow */
-:root[data-theme='dark'] .chart .bar-today { filter: drop-shadow(0 0 10px rgba(165, 148, 255, 0.55)); }
-:root[data-theme='dark'] .bar-fill { background: linear-gradient(90deg, rgba(165, 148, 255, 0.55), #a594ff); }
+:root[data-theme='dark'] .chart .bar-today { filter: drop-shadow(0 0 10px rgba(52, 211, 153, 0.55)); }
+:root[data-theme='dark'] .bar-fill { background: linear-gradient(90deg, rgba(52, 211, 153, 0.55), #34d399); }
 :root[data-theme='dark'] .bar-track { background: rgba(255, 255, 255, 0.05); }
 
 /* quieter scrollbars */
 :root[data-theme='dark'] * { scrollbar-color: rgba(255, 255, 255, 0.12) transparent; scrollbar-width: thin; }
+
+/* Light theme: white text needs a deeper emerald than the accent to stay readable. */
+:root:not([data-theme='dark']) .primary-btn { background: #047857; }
+:root:not([data-theme='dark']) .primary-btn:hover:not(:disabled) { background: #065f46; }
+
+/* Stack the chart and Up next on narrower screens (the two-column rule is declared later in insights.css). */
+@media (max-width: 1100px) {
+  .dash-grid { grid-template-columns: minmax(0, 1fr); }
+}

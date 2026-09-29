@@ -102,7 +102,7 @@ export default function ProjectsGrid({ onOpen, onError }) {
           {visible.map((p) => (
             <button key={p.id} className="project-card" onClick={() => onOpen(p)}>
               <div className="project-card-top">
-                <span className="project-icon" style={{ '--c': p.color ?? '#8b6fe8' }}>{p.icon || p.name[0] || '?'}</span>
+                <span className="project-icon" style={{ '--c': p.color ?? '#059669' }}>{p.icon || p.name[0] || '?'}</span>
                 {p.pinned && <Pin size={14} className="pinned" aria-label="Pinned" />}
               </div>
               <div className="project-name-row">

@@ -168,7 +168,7 @@ button.report-issue:hover { color: var(--accent); text-decoration: underline; te
 
 /* "Other" row that folds the tail of a long breakdown */
 .bar-list li.other .bar-label { color: var(--muted); }
-.bar-list li.other .bar-fill { background: var(--recede, #d8d0f6); }
+.bar-list li.other .bar-fill { background: var(--recede, #bfe9d8); }
 .bar-more { margin-top: 10px; }
 
 /* Up next beside the chart; the two breakdowns share the row below */

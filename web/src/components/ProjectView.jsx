@@ -167,7 +167,7 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
       </button>
 
       <div className="project-head">
-        <span className="project-icon large" style={{ '--c': project.color ?? '#8b6fe8' }}>
+        <span className="project-icon large" style={{ '--c': project.color ?? '#059669' }}>
           {project.icon || project.name[0] || '?'}
         </span>
         <div className="project-head-text">
