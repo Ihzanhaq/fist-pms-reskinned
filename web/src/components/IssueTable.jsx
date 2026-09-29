@@ -14,6 +14,7 @@ export default function IssueTable({
   onToggle,
   onToggleAll,
   onStatusChange,
+  onOpen,
 }) {
   const selectedCount = issues.filter((i) => selectedIds.has(i.id)).length;
   const allSelected = issues.length > 0 && selectedCount === issues.length;
@@ -61,6 +62,7 @@ export default function IssueTable({
             selectionLocked={selectionLocked}
             onToggle={onToggle}
             onStatusChange={onStatusChange}
+            onOpen={onOpen}
           />
         ))}
     </div>

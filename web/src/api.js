@@ -38,7 +38,17 @@ export const api = {
   issues: (scope) => call(`/api/issues?scope=${scope}`),
   states: (issue) => call(`/api/issues/${issue.id}/states?projectId=${issue.projectId}`),
   setState: (issueId, stateId) => call(`/api/issues/${issueId}/state`, { method: 'POST', body: { stateId } }),
+  issue: (id) => call(`/api/issues/${id}`),
+  comment: (id, body) => call(`/api/issues/${id}/comment`, { method: 'POST', body: { body } }),
+  setPriority: (id, priority) => call(`/api/issues/${id}/priority`, { method: 'POST', body: { priority } }),
+  setAssignee: (id, userId) => call(`/api/issues/${id}/assignee`, { method: 'POST', body: { userId } }),
+  projects: () => call('/api/projects'),
+  issueForm: (projectId, parentId) =>
+    call(`/api/projects/${projectId}/issue-form${parentId ? `?parentId=${parentId}` : ''}`),
+  createIssue: (projectId, input) => call(`/api/projects/${projectId}/issues`, { method: 'POST', body: input }),
 };
+
+export const attachmentUrl = (id, download = false) => `/api/attachments/${id}${download ? '?dl=1' : ''}`;
 
 // Statuses are per project. Cache the promise so concurrent callers share one request.
 const statesByProject = new Map();

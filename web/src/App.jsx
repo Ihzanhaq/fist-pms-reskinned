@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertOctagon } from 'lucide-react';
+import { AlertOctagon, Plus } from 'lucide-react';
 import { api, errorMessage, loadStates, runPool } from './api.js';
 import BulkBar from './components/BulkBar.jsx';
+import CreateIssueModal from './components/CreateIssueModal.jsx';
+import IssueDrawer from './components/IssueDrawer.jsx';
 import TopBar from './components/TopBar.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import Filters from './components/Filters.jsx';
@@ -22,6 +24,8 @@ export default function App() {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [savingIds, setSavingIds] = useState(() => new Set());
   const [toast, setToast] = useState(null);
+  const [openIssueId, setOpenIssueId] = useState(null);
+  const [createFor, setCreateFor] = useState(null); // null = closed, { parent } = open
 
   const showToast = useCallback((kind, text) => setToast({ kind, text }), []);
   const clearToast = useCallback(() => setToast(null), []);
@@ -33,6 +37,23 @@ export default function App() {
       setError(err);
     }
   }, []);
+
+  // Errors from the panel and the create form: expired sessions show the login banner,
+  // everything else becomes a toast.
+  const handlePanelError = useCallback(
+    (err, text) => {
+      if (err.code === 'session_expired') {
+        setOpenIssueId(null);
+        setCreateFor(null);
+        setSession((s) => ({ ...s, loggedIn: false, expired: true }));
+      }
+      showToast('error', text ?? errorMessage(err));
+    },
+    [showToast],
+  );
+
+  const closeDrawer = useCallback(() => setOpenIssueId(null), []);
+  const closeCreate = useCallback(() => setCreateFor(null), []);
 
   useEffect(() => {
     api
@@ -172,6 +193,23 @@ export default function App() {
     showToast(failed.length ? 'error' : 'success', parts.join(' · '));
   };
 
+  // Keep the list in step with edits made in the detail panel.
+  const onDetailChanged = (fresh, text) => {
+    updateIssue(fresh.id, {
+      title: fresh.title,
+      priority: fresh.priority,
+      status: { name: fresh.status.name, color: colorFor(fresh.status.name) ?? fresh.status.color },
+    });
+    showToast('success', `${fresh.key}: ${text}`);
+  };
+
+  const onIssueCreated = (id, name) => {
+    setCreateFor(null);
+    showToast('success', `Created “${name}”`);
+    loadIssues();
+    if (id) setOpenIssueId(id);
+  };
+
   const projects = useMemo(() => uniqueSorted(issues.map((i) => i.projectName)), [issues]);
   const statuses = useMemo(() => uniqueSorted(issues.map((i) => i.status.name)), [issues]);
 
@@ -218,9 +256,15 @@ export default function App() {
               </p>
             )}
           </div>
-          <div className="crumbs">
-            FIST PMS <span>›</span> <strong>My Issues</strong>
-          </div>
+          {session.loggedIn ? (
+            <button className="primary-btn new-issue-btn" onClick={() => setCreateFor({ parent: null })}>
+              <Plus size={16} /> New issue
+            </button>
+          ) : (
+            <div className="crumbs">
+              FIST PMS <span>›</span> <strong>My Issues</strong>
+            </div>
+          )}
         </div>
 
         {!session.checked ? (
@@ -257,6 +301,7 @@ export default function App() {
                 onToggle={toggleSelected}
                 onToggleAll={toggleAllVisible}
                 onStatusChange={changeStatus}
+                onOpen={setOpenIssueId}
               />
             )}
           </>
@@ -269,6 +314,28 @@ export default function App() {
           running={bulkRunning}
           onApply={(statusName) => bulkUpdate(selectedVisible, statusName)}
           onClear={() => setSelectedIds(new Set())}
+        />
+      )}
+
+      {session.loggedIn && openIssueId && (
+        <IssueDrawer
+          issueId={openIssueId}
+          colorFor={colorFor}
+          onOpenIssue={setOpenIssueId}
+          onClose={closeDrawer}
+          onChanged={onDetailChanged}
+          onAddSubIssue={(parent) => setCreateFor({ parent })}
+          onError={handlePanelError}
+        />
+      )}
+
+      {session.loggedIn && createFor && (
+        <CreateIssueModal
+          parent={createFor.parent}
+          userName={session.userName}
+          onClose={closeCreate}
+          onCreated={onIssueCreated}
+          onError={handlePanelError}
         />
       )}
 

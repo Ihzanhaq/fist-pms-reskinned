@@ -16,6 +16,7 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^6.1.1",
     "concurrently": "^10.0.5",
+    "dompurify": "^3.4.16",
     "lucide-react": "^1.48.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

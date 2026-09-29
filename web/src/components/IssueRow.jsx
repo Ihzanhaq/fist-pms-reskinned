@@ -2,9 +2,7 @@ import { AlertTriangle } from 'lucide-react';
 import Checkbox from './Checkbox.jsx';
 import StatusSelect from './StatusSelect.jsx';
 
-const PMS = 'https://pms.fistinnovations.com';
-
-export default function IssueRow({ issue, colorFor, saving, selected, selectionLocked, onToggle, onStatusChange }) {
+export default function IssueRow({ issue, colorFor, saving, selected, selectionLocked, onToggle, onStatusChange, onOpen }) {
   return (
     <div className={selected ? 'row selected' : 'row'}>
       <Checkbox
@@ -14,9 +12,9 @@ export default function IssueRow({ issue, colorFor, saving, selected, selectionL
         label={`Select ${issue.key}`}
       />
       <span className="key">{issue.key}</span>
-      <a className="title" href={`${PMS}/issues/${issue.id}`} target="_blank" rel="noreferrer" title={issue.title}>
+      <button className="title" onClick={() => onOpen(issue.id)} title={issue.title}>
         {issue.title}
-      </a>
+      </button>
       <span className="project" title={issue.projectName}>{issue.projectName}</span>
       <span className={`priority priority-${issue.priority}`}>{issue.priority}</span>
       <span className={issue.overdue ? 'target overdue' : 'target'}>
