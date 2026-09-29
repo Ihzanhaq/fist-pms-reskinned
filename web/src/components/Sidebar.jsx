@@ -1,5 +1,6 @@
 import { ExternalLink, FileText, FolderKanban, LayoutDashboard, ListChecks, LogOut } from 'lucide-react';
 import Avatar from './Avatar.jsx';
+import BrandMark from './BrandMark.jsx';
 import ClaudeIcon from './ClaudeIcon.jsx';
 
 const GROUPS = [
@@ -27,7 +28,7 @@ export default function Sidebar({ view, onNavigate, user, onLogout }) {
   return (
     <aside className="sidebar">
       <div className="brand">
-        <span className="brand-mark">F</span>
+        <BrandMark />
         <span className="brand-text">
           <span className="brand-name">FIST PMS</span>
           <span className="brand-sub">Issue dashboard</span>
