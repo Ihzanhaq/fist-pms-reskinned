@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>FIST PMS</title></head>
+<body>
+<main>
+  <form action="/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/issues" method="post" enctype="multipart/form-data"><input type="hidden" name="_csrf" value="create-token">
+    <input type="hidden" name="parentId" value="11111111-1111-4111-8111-111111111111"/>
+    <input type="text" name="name" value="" required placeholder="Issue title"/>
+    <input type="hidden" name="descriptionHtml" id="descHtml"/>
+    <input type="file" name="files" multiple/>
+    <select name="stateId">
+      <option value="">—</option>
+      <option value="aaaa0001-0000-4000-8000-000000000001" selected>Todo</option>
+      <option value="aaaa0002-0000-4000-8000-000000000002">In Progress</option>
+    </select>
+    <input type="hidden" name="priority" :value="p"/>
+    <input type="date" name="startDate"/>
+    <input type="date" name="targetDate"/>
+    <select name="assigneeId">
+      <option value="" selected>Unassigned</option>
+      <option value="88888888-8888-4888-8888-888888888888">Jane Tester</option>
+      <option value="66666666-6666-4666-8666-666666666666">Sam Reviewer</option>
+    </select>
+    <template x-for="id in sel" :key="'h'+id"><input type="hidden" name="labelIds" :value="id"/></template>
+  </form>
+</main>
+<script>
+  const ALL_LABELS = [
+    { id: "99999999-0000-4000-8000-000000000001", name: "Feature", color: "#0084ff"},
+    { id: "99999999-0000-4000-8000-000000000002", name: "Bug \u0026 fix", color: "#ef4444"},
+  ];
+  const SEL_LABELS = [ ].filter(Boolean);
+  const SEL_PRIO = "none";
+</script>
+</body>
+</html>
