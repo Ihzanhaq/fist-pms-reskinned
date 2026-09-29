@@ -10,6 +10,7 @@ import {
   parseProjects,
   parseProjectCards,
   parseProjectIssues,
+  parseActivity,
   LayoutChangedError,
 } from '../parse.js';
 
@@ -209,4 +210,41 @@ test('project parsers throw LayoutChangedError on unrecognised pages', () => {
   const PAGE = '<html><body><p>nope</p></body></html>';
   assert.throws(() => parseProjectCards(PAGE), LayoutChangedError);
   assert.throws(() => parseProjectIssues(PAGE), LayoutChangedError);
+});
+
+test('parseActivity turns day headings and rows into dated entries', () => {
+  const { entries, actors } = parseActivity(fixture('activity.html'), '2026-09-29');
+  assert.equal(entries.length, 5);
+  assert.deepEqual(entries[0], {
+    date: '2026-09-29',
+    time: '16:40',
+    who: 'Jane Tester',
+    text: 'changed status from In Progress to Done',
+    type: 'issue',
+    kind: 'status',
+    fromStatus: 'In Progress',
+    toStatus: 'Done',
+    project: { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', name: 'Demo App' },
+    issue: { id: '11111111-1111-4111-8111-111111111111', key: 'DEMO-12' },
+  });
+  assert.equal(entries[1].kind, 'comment');
+  assert.equal(entries[2].kind, 'created');
+  assert.equal(entries[3].date, '2026-09-28');
+  assert.equal(entries[3].kind, 'other');
+  assert.equal(entries[3].project, null);
+  assert.equal(entries[4].date, '2026-09-26');
+  assert.equal(entries[4].toStatus, 'Resolved');
+  assert.deepEqual(actors, [
+    { id: '88888888-8888-4888-8888-888888888888', name: 'Jane Tester' },
+    { id: '66666666-6666-4666-8666-666666666666', name: 'Sam Reviewer' },
+  ]);
+});
+
+test('parseActivity handles a page with no activity', () => {
+  const html = '<html><body><form action="/activity"><select name="actor"></select></form><p>No activity</p></body></html>';
+  assert.deepEqual(parseActivity(html, '2026-09-29').entries, []);
+});
+
+test('parseActivity throws LayoutChangedError on unrecognised pages', () => {
+  assert.throws(() => parseActivity('<html><body><p>nope</p></body></html>', '2026-09-29'), LayoutChangedError);
 });

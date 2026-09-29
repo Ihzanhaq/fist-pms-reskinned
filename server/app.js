@@ -7,6 +7,7 @@ import multer from 'multer';
 import { ROOT_DIR, WEB_DIST_DIR } from './config.js';
 import { LayoutChangedError } from './parse.js';
 import { SessionExpiredError } from './pms-client.js';
+import * as insights from './insights.js';
 import * as service from './service.js';
 import { BadRequestError } from './service.js';
 
@@ -27,6 +28,9 @@ export function createApp() {
   app.get('/api/session', async (req, res) => res.json(await service.sessionInfo()));
   app.post('/api/login', async (req, res) => res.json(await service.login()));
   app.post('/api/logout', (req, res) => res.json(service.logout()));
+
+  app.get('/api/dashboard', async (req, res) => res.json(await insights.dashboard(req.query.days)));
+  app.get('/api/report', async (req, res) => res.json(await insights.dailyReport(req.query.date || undefined)));
 
   app.get('/api/issues', async (req, res) => res.json({ issues: await service.listMyIssues(req.query.scope) }));
 

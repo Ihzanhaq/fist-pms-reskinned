@@ -324,3 +324,74 @@ export function parseProjectIssues(html) {
 
   return { issues, states, assignees };
 }
+
+// ---------- activity feed ----------
+
+const MONTHS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+const pad2 = (n) => String(n).padStart(2, '0');
+
+function shiftIsoDate(iso, days) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d + days));
+  return `${date.getUTCFullYear()}-${pad2(date.getUTCMonth() + 1)}-${pad2(date.getUTCDate())}`;
+}
+
+// Day headings are "Today", "Yesterday" or like "Sat, 26 Sep 2026".
+function dayHeadingToIso(label, todayIso) {
+  if (/^today$/i.test(label)) return todayIso;
+  if (/^yesterday$/i.test(label)) return shiftIsoDate(todayIso, -1);
+  const m = label.match(/(\d{1,2})\s+([a-z]{3})[a-z]*\s+(\d{4})/i);
+  if (!m || !MONTHS[m[2].toLowerCase()]) return null;
+  return `${m[3]}-${pad2(MONTHS[m[2].toLowerCase()])}-${pad2(m[1])}`;
+}
+
+function activityKind(text, type) {
+  if (/^changed status from /i.test(text)) return 'status';
+  if (/^created /i.test(text)) return 'created';
+  if (type === 'comment' || /comment/i.test(text)) return 'comment';
+  return 'other';
+}
+
+// todayIso: the local date the PMS means by "Today" (YYYY-MM-DD).
+export function parseActivity(html, todayIso) {
+  const root = parse(html);
+  if (!root.querySelector('form[action="/activity"]')) {
+    throw new LayoutChangedError('The activity page has an unexpected layout');
+  }
+
+  const entries = [];
+  for (const heading of root.querySelectorAll('.ac-day')) {
+    const date = dayHeadingToIso(clean(heading.querySelector('.t')), todayIso);
+    const list = heading.nextElementSibling;
+    if (!date || !list) continue;
+    for (const item of list.querySelectorAll('.ac-item')) {
+      const line = item.querySelector('.ac-line');
+      const text = (line?.querySelectorAll('span') ?? [])
+        .filter((s) => !['ac-who', 'ac-when', 'ac-av'].some((c) => hasClass(s, c)))
+        .map(clean)
+        .join(' ');
+      const type = clean(item.querySelector('.ac-type'));
+      const status = text.match(/^changed status from (.+) to (.+)$/i);
+      const projectLink = item.querySelector('a.ac-chip[href^="/projects/"]');
+      const issueLink = item.querySelector('a.ac-chip[href^="/issues/"]');
+      entries.push({
+        date,
+        time: clean(item.querySelector('.ac-when')),
+        who: clean(item.querySelector('.ac-who')),
+        text,
+        type,
+        kind: activityKind(text, type),
+        ...(status ? { fromStatus: status[1], toStatus: status[2] } : {}),
+        project: projectLink ? { id: uuidIn(projectLink), name: lastSpanText(projectLink) } : null,
+        issue: issueLink ? { id: uuidIn(issueLink), key: clean(issueLink) } : null,
+      });
+    }
+  }
+
+  const actors = root
+    .querySelectorAll('select[name="actor"] option')
+    .filter((o) => o.getAttribute('value'))
+    .map((o) => ({ id: o.getAttribute('value'), name: clean(o) }));
+
+  return { entries, actors };
+}

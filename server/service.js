@@ -60,7 +60,7 @@ export function logout() {
 // ---------- reading ----------
 
 export async function listMyIssues(scope = 'active') {
-  const safeScope = scope === 'all' ? 'all' : 'active';
+  const safeScope = ['all', 'completed'].includes(scope) ? scope : 'active';
   const issues = [];
   for (let page = 0; page < MAX_PAGES; page++) {
     const result = parseMyIssues(await pms.get(`/my-issues?scope=${safeScope}&sort=default&size=100&page=${page}`));
