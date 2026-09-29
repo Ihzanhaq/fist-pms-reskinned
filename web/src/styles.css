@@ -333,3 +333,8 @@ button:disabled { cursor: default; }
   .bulk-sep, .bulk-label { display: none; }
   .bulk-select { flex: 1; min-width: 0; }
 }
+
+/* Fixed-height shell: only the page scrolls, so the sidebar always fills the
+   left column even when a dropdown extends past the last row. */
+.shell { height: 100vh; min-height: 0; overflow: hidden; }
+.page { overflow-y: auto; }
