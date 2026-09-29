@@ -187,10 +187,12 @@ test('parseProjectIssues reads every issue with assignee and status options', ()
     status: { name: 'New', color: '#60646C' },
     priority: 'high',
     assignee: { id: '66666666-6666-4666-8666-666666666666', name: 'Sam Reviewer' },
+    assigneeLocked: false,
     targetDate: '11 Sep 2026',
     overdue: true,
   });
   assert.deepEqual(issues[1].assignee, null);
+  assert.equal(issues[1].assigneeLocked, true);
   assert.deepEqual(issues[1].status, { name: 'Closed', color: '#16A34A' });
   assert.equal(issues[1].targetDate, null);
   assert.deepEqual(states, [

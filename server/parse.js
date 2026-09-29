@@ -307,6 +307,8 @@ export function parseProjectIssues(html) {
       },
       priority: lastSpanText(item.querySelector('.pill')) || 'none',
       assignee,
+      // Closed issues have no assignee picker; the PMS only allows reassigning after reopening.
+      assigneeLocked: !item.querySelector('form[action$="/assignee"]'),
       targetDate: targetDate && targetDate !== '—' ? targetDate : null,
       overdue: Boolean(dateEl?.classList.contains('is-over')),
     };

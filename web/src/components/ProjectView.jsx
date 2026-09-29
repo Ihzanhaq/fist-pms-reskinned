@@ -3,6 +3,7 @@ import { AlertTriangle, ArrowLeft, ExternalLink, Inbox, Plus, RefreshCw, Search,
 import { api, errorMessage, seedStates } from '../api.js';
 import { PMS_BASE } from '../richText.js';
 import Pagination from './Pagination.jsx';
+import AssigneeSelect from './AssigneeSelect.jsx';
 import StatusSelect from './StatusSelect.jsx';
 
 const PRIORITY_RANK = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
@@ -78,6 +79,31 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
     return map;
   }, [data]);
   const colorFor = useCallback((name) => statusColors.get(name.toLowerCase()) ?? null, [statusColors]);
+
+  const setSaving = (key, on) =>
+    setSavingIds((s) => {
+      const next = new Set(s);
+      on ? next.add(key) : next.delete(key);
+      return next;
+    });
+
+  // person null = unassign. Optimistic; reverts if the PMS refuses.
+  const changeAssignee = async (issue, person) => {
+    const previous = issue.assignee;
+    patchIssue(issue.id, { assignee: person });
+    setSaving(`a:${issue.id}`, true);
+    try {
+      const fresh = await api.setAssignee(issue.id, person?.id ?? '');
+      patchIssue(issue.id, { assignee: fresh.assignee });
+      showToast('success', `${issue.key} ${fresh.assignee ? `assigned to ${fresh.assignee.name}` : 'unassigned'}`);
+    } catch (err) {
+      patchIssue(issue.id, { assignee: previous });
+      if (err.code === 'session_expired') onError(err);
+      showToast('error', `Could not reassign ${issue.key}: ${errorMessage(err)}`);
+    } finally {
+      setSaving(`a:${issue.id}`, false);
+    }
+  };
 
   const changeStatus = async (issue, state) => {
     const previous = issue.status;
@@ -276,10 +302,12 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
               <button className="title" onClick={() => onOpenIssue(issue.id)} title={issue.title}>
                 {issue.title}
               </button>
-              <span className={issue.assignee ? 'assignee' : 'assignee none'} title={issue.assignee?.name ?? 'Unassigned'}>
-                <span className="avatar tiny">{issue.assignee ? issue.assignee.name[0].toUpperCase() : '–'}</span>
-                <span className="assignee-name">{issue.assignee?.name ?? 'Unassigned'}</span>
-              </span>
+              <AssigneeSelect
+                issue={issue}
+                people={data.assignees}
+                saving={savingIds.has(`a:${issue.id}`)}
+                onChange={changeAssignee}
+              />
               <span className={`priority priority-${issue.priority}`}>{issue.priority}</span>
               <span className={issue.overdue ? 'target overdue' : 'target'}>
                 {issue.overdue && <AlertTriangle size={13} />}
