@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, ChevronDown, Loader2 } from 'lucide-react';
 import { loadStates } from '../api.js';
+import { useDropUp } from '../useDropUp.js';
 
 const NEUTRAL = '#94a3b8';
 
@@ -9,6 +10,7 @@ export default function StatusSelect({ issue, colorFor, saving, onChange }) {
   const [states, setStates] = useState(null);
   const [failed, setFailed] = useState(false);
   const ref = useRef(null);
+  const menuRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
@@ -34,6 +36,9 @@ export default function StatusSelect({ issue, colorFor, saving, onChange }) {
     };
   }, [open, states, issue]);
 
+  // Re-measure once the status list has loaded, since the menu grows.
+  const up = useDropUp(open, ref, menuRef, states?.length ?? (failed ? 'failed' : 'loading'));
+
   const current = issue.status.name.toLowerCase();
   const pick = (state) => {
     setOpen(false);
@@ -56,7 +61,7 @@ export default function StatusSelect({ issue, colorFor, saving, onChange }) {
       </button>
 
       {open && (
-        <ul className="status-menu" role="listbox">
+        <ul ref={menuRef} className={up ? 'status-menu up' : 'status-menu'} role="listbox">
           {!states && !failed && <li className="menu-note">Loading statuses…</li>}
           {failed && <li className="menu-note error">Could not load statuses</li>}
           {states?.map((state) => {

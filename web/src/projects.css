@@ -135,3 +135,7 @@
 }
 .assignee-menu li button:hover { background: var(--bg); }
 .assignee-menu li button.active { font-weight: 600; }
+
+/* dropdowns flip upwards when there is no room below (see useDropUp) */
+.status-menu.up, .assignee-menu.up { top: auto; bottom: calc(100% + 6px); animation: pop-up 0.12s ease-out; }
+@keyframes pop-up { from { opacity: 0; transform: translateY(4px); } }

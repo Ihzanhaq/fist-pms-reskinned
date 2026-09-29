@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown, Loader2, Lock, Search } from 'lucide-react';
+import { useDropUp } from '../useDropUp.js';
 
 const initial = (name) => (name ? name[0].toUpperCase() : '–');
 
@@ -8,6 +9,7 @@ export default function AssigneeSelect({ issue, people, saving, onChange }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const ref = useRef(null);
+  const menuRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
@@ -26,6 +28,8 @@ export default function AssigneeSelect({ issue, people, saving, onChange }) {
     const term = q.trim().toLowerCase();
     return term ? people.filter((p) => p.name.toLowerCase().includes(term)) : people;
   }, [people, q]);
+
+  const up = useDropUp(open, ref, menuRef, matches.length);
 
   const current = issue.assignee;
   const label = (
@@ -67,7 +71,7 @@ export default function AssigneeSelect({ issue, people, saving, onChange }) {
       </button>
 
       {open && (
-        <div className="assignee-menu">
+        <div ref={menuRef} className={up ? 'assignee-menu up' : 'assignee-menu'}>
           <label className="assignee-search">
             <Search size={14} />
             <input autoFocus placeholder="Search people" value={q} onChange={(e) => setQ(e.target.value)} />
