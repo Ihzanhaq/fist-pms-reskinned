@@ -1,6 +1,7 @@
 // Small, dependency-free charts for the dashboard. One hue (the accent) for
 // magnitude; the latest period is emphasised and the rest recede.
 import { useEffect, useRef, useState } from 'react';
+import { foldRows } from '../foldRows.js';
 
 const ACCENT = '#8b6fe8';
 const RECEDE = '#d8d0f6';
@@ -112,22 +113,33 @@ export function Sparkline({ values, width = 96, height = 28 }) {
 }
 
 // Horizontal bars with the value at the tip. rows: [{ label, value, dot? }]
-export function BarList({ rows, max }) {
-  const top = max ?? Math.max(...rows.map((r) => r.value), 1);
+// Long lists show the top `limit` rows plus an "Other" row, expandable in place.
+export function BarList({ rows, limit = 5 }) {
+  const [expanded, setExpanded] = useState(false);
+  const folded = foldRows(rows, limit);
+  const shown = expanded ? rows : folded.rows;
+  const top = Math.max(...rows.map((r) => r.value), 1);
   return (
-    <ul className="bar-list">
-      {rows.map((r) => (
-        <li key={r.label} title={`${r.label}: ${r.value}`}>
-          <span className="bar-label">
-            {r.dot && <span className="dot" style={{ background: r.dot }} />}
-            <span>{r.label}</span>
-          </span>
-          <span className="bar-track">
-            <span className="bar-fill" style={{ width: `${Math.max(2, (r.value / top) * 100)}%` }} />
-          </span>
-          <span className="bar-value">{r.value}</span>
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="bar-list">
+        {shown.map((r) => (
+          <li key={r.label} title={`${r.label}: ${r.value}`} className={r.other ? 'other' : undefined}>
+            <span className="bar-label">
+              {r.dot && <span className="dot" style={{ background: r.dot }} />}
+              <span>{r.label}</span>
+            </span>
+            <span className="bar-track">
+              <span className="bar-fill" style={{ width: `${Math.max(2, (r.value / top) * 100)}%` }} />
+            </span>
+            <span className="bar-value">{r.value}</span>
+          </li>
+        ))}
+      </ul>
+      {folded.hidden > 0 && (
+        <button className="link-btn bar-more" onClick={() => setExpanded((e) => !e)}>
+          {expanded ? 'Show fewer' : `Show all ${rows.length}`}
+        </button>
+      )}
+    </>
   );
 }

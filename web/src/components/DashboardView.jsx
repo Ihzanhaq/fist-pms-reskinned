@@ -178,30 +178,33 @@ export default function DashboardView({ onOpenIssue, onOpenReport, onError }) {
                     ))}
                   </ul>
                 ) : (
-                  <p className="muted empty-note">Nothing pending. Nice.</p>
-                )}
-              </section>
-              <section className="card">
-                <header className="card-head">
-                  <h2>Pending by status</h2>
-                </header>
-                {data.pending.byStatus.length ? (
-                  <BarList rows={data.pending.byStatus.map((s) => ({ label: s.name, value: s.count, dot: s.color ?? '#94a3b8' }))} />
-                ) : (
-                  <p className="muted empty-note">No pending issues.</p>
-                )}
-              </section>
-              <section className="card">
-                <header className="card-head">
-                  <h2>Pending by project</h2>
-                </header>
-                {data.pending.byProject.length ? (
-                  <BarList rows={data.pending.byProject.map((p) => ({ label: p.name, value: p.count }))} />
-                ) : (
-                  <p className="muted empty-note">No pending issues.</p>
+                  <p className="muted empty-note">Nothing pending.</p>
                 )}
               </section>
             </div>
+          </div>
+
+          <div className="dash-pair">
+            <section className="card">
+              <header className="card-head">
+                <h2>Pending by status</h2>
+              </header>
+              {data.pending.byStatus.length ? (
+                <BarList rows={data.pending.byStatus.map((s) => ({ label: s.name, value: s.count, dot: s.color ?? '#94a3b8' }))} />
+              ) : (
+                <p className="muted empty-note">No pending issues.</p>
+              )}
+            </section>
+            <section className="card">
+              <header className="card-head">
+                <h2>Pending by project</h2>
+              </header>
+              {data.pending.byProject.length ? (
+                <BarList rows={data.pending.byProject.map((p) => ({ label: p.name, value: p.count }))} />
+              ) : (
+                <p className="muted empty-note">No pending issues.</p>
+              )}
+            </section>
           </div>
 
           <section className="card">
