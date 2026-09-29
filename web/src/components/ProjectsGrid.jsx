@@ -5,8 +5,8 @@ import { api, errorMessage } from '../api.js';
 const SORTS = {
   name: { label: 'Name A–Z', fn: (a, b) => a.name.localeCompare(b.name) },
   nameDesc: { label: 'Name Z–A', fn: (a, b) => b.name.localeCompare(a.name) },
-  most: { label: 'Most issues', fn: (a, b) => b.issueCount - a.issueCount || a.name.localeCompare(b.name) },
-  fewest: { label: 'Fewest issues', fn: (a, b) => a.issueCount - b.issueCount || a.name.localeCompare(b.name) },
+  most: { label: 'Most issues', fn: (a, b) => (b.issueCount ?? 0) - (a.issueCount ?? 0) || a.name.localeCompare(b.name) },
+  fewest: { label: 'Fewest issues', fn: (a, b) => (a.issueCount ?? 0) - (b.issueCount ?? 0) || a.name.localeCompare(b.name) },
   pinned: { label: 'Pinned first', fn: (a, b) => b.pinned - a.pinned || a.name.localeCompare(b.name) },
 };
 
@@ -99,17 +99,19 @@ export default function ProjectsGrid({ onOpen, onError }) {
           {visible.map((p) => (
             <button key={p.id} className="project-card" onClick={() => onOpen(p)}>
               <div className="project-card-top">
-                <span className="project-icon" style={{ '--c': p.color ?? '#8b6fe8' }}>{p.icon || p.name[0]}</span>
+                <span className="project-icon" style={{ '--c': p.color ?? '#8b6fe8' }}>{p.icon || p.name[0] || '?'}</span>
                 {p.pinned && <Pin size={14} className="pinned" aria-label="Pinned" />}
               </div>
               <div className="project-name-row">
                 <strong>{p.name}</strong>
-                <span className="key">{p.key}</span>
+                {p.key && <span className="key">{p.key}</span>}
               </div>
               <p className="project-desc">{p.description || 'No description'}</p>
-              <span className="project-count">
-                <ListChecks size={14} /> {p.issueCount} {p.issueCount === 1 ? 'issue' : 'issues'}
-              </span>
+              {p.issueCount !== null && (
+                <span className="project-count">
+                  <ListChecks size={14} /> {p.issueCount} {p.issueCount === 1 ? 'issue' : 'issues'}
+                </span>
+              )}
             </button>
           ))}
         </div>

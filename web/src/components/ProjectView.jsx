@@ -137,11 +137,11 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
 
       <div className="project-head">
         <span className="project-icon large" style={{ '--c': project.color ?? '#8b6fe8' }}>
-          {project.icon || project.name[0]}
+          {project.icon || project.name[0] || '?'}
         </span>
         <div className="project-head-text">
           <h1>
-            {project.name} <span className="key">{project.key}</span>
+            {project.name} {project.key && <span className="key">{project.key}</span>}
           </h1>
           {project.description && <p className="subtitle">{project.description}</p>}
         </div>

@@ -15,6 +15,20 @@ export function errorMessage(err) {
   return MESSAGES[err.code] ?? err.message ?? 'Something went wrong';
 }
 
+// Fill in card fields that may be missing (e.g. from an older server) so the UI never sees undefined.
+function normalizeProject(p) {
+  return {
+    id: p.id,
+    name: p.name ?? '',
+    key: p.key ?? '',
+    description: p.description ?? '',
+    issueCount: Number.isFinite(p.issueCount) ? p.issueCount : null,
+    icon: p.icon ?? '',
+    color: p.color ?? null,
+    pinned: Boolean(p.pinned),
+  };
+}
+
 async function call(path, { method = 'GET', body } = {}) {
   let res;
   try {
@@ -43,7 +57,7 @@ export const api = {
   comment: (id, body) => call(`/api/issues/${id}/comment`, { method: 'POST', body: { body } }),
   setPriority: (id, priority) => call(`/api/issues/${id}/priority`, { method: 'POST', body: { priority } }),
   setAssignee: (id, userId) => call(`/api/issues/${id}/assignee`, { method: 'POST', body: { userId } }),
-  projects: () => call('/api/projects'),
+  projects: () => call('/api/projects').then(({ projects }) => ({ projects: projects.map(normalizeProject) })),
   projectIssues: (projectId) => call(`/api/projects/${projectId}/issues`),
   issueForm: (projectId, parentId) =>
     call(`/api/projects/${projectId}/issue-form${parentId ? `?parentId=${parentId}` : ''}`),
