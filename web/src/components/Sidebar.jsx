@@ -1,4 +1,4 @@
-import { ExternalLink, FileText, FolderKanban, LayoutDashboard, ListChecks, LogOut } from 'lucide-react';
+import { ExternalLink, FileText, FolderKanban, LayoutDashboard, ListChecks, LogOut, Settings } from 'lucide-react';
 import Avatar from './Avatar.jsx';
 import BrandMark from './BrandMark.jsx';
 import ClaudeIcon from './ClaudeIcon.jsx';
@@ -21,6 +21,10 @@ const GROUPS = [
   {
     label: 'Integrations',
     items: [{ id: 'claude', label: 'Connect to Claude', icon: ClaudeIcon }],
+  },
+  {
+    label: 'Preferences',
+    items: [{ id: 'settings', label: 'Settings', icon: Settings }],
   },
 ];
 

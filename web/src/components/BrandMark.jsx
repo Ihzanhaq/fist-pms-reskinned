@@ -1,16 +1,16 @@
 import { useId } from 'react';
 
 // FIST PMS mark: an "F" drawn as task rows — a full bar (done), a shorter bar
-// (in progress) and a dot (next up) — on the brand's emerald tile.
+// (in progress) and a dot (next up) — on a tile in the current theme's brand colours.
 export default function BrandMark({ size = 34, className = 'brand-mark' }) {
   const id = useId().replace(/:/g, '');
   return (
     <svg className={className} width={size} height={size} viewBox="0 0 32 32" role="img" aria-label="FIST PMS">
       <defs>
         <linearGradient id={`${id}-tile`} x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#6ee7b7" />
-          <stop offset="0.55" stopColor="#10b981" />
-          <stop offset="1" stopColor="#047857" />
+          <stop offset="0" style={{ stopColor: 'var(--brand-1)' }} />
+          <stop offset="0.55" style={{ stopColor: 'var(--brand-2)' }} />
+          <stop offset="1" style={{ stopColor: 'var(--brand-3)' }} />
         </linearGradient>
         <linearGradient id={`${id}-shine`} x1="16" y1="0" x2="16" y2="16" gradientUnits="userSpaceOnUse">
           <stop offset="0" stopColor="#fff" stopOpacity="0.28" />

@@ -8,6 +8,7 @@ import './projects.css';
 import './controls.css';
 import './insights.css';
 import './premium.css';
+import './themes.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

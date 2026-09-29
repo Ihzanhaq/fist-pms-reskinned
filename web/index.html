@@ -9,11 +9,26 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <script>
-      // Apply the saved or system theme before first paint (see src/theme.js).
+      // Apply the saved appearance before first paint (see src/theme.js).
       (function () {
-        var saved = localStorage.getItem('pms-dashboard:theme');
-        var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        var root = document.documentElement;
+        var dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        try {
+          var a = JSON.parse(localStorage.getItem('pms-dashboard:appearance-applied') || 'null');
+          var legacy = localStorage.getItem('pms-dashboard:theme');
+          if (!a && legacy) a = { theme: legacy, mode: legacy };
+          if (a && a.theme) {
+            root.dataset.theme = a.theme;
+            root.dataset.mode = a.mode;
+            if (a.bg) {
+              root.style.setProperty('--glass-bg', a.bg);
+              root.style.setProperty('--glass-blur', a.blur + 'px');
+            }
+            return;
+          }
+        } catch (e) {}
+        root.dataset.theme = dark ? 'dark' : 'light';
+        root.dataset.mode = dark ? 'dark' : 'light';
       })();
     </script>
   </head>

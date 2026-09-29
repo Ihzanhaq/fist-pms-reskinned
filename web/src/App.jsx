@@ -2,9 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertOctagon, Loader2, Plus } from 'lucide-react';
 import { api, errorMessage, loadStates, runPool } from './api.js';
 import { parseRoute, routeToPath } from './route.js';
-import { useTheme } from './theme.js';
+import { THEMES, useAppearance } from './theme.js';
 import BulkBar from './components/BulkBar.jsx';
 import ConnectClaude from './components/ConnectClaude.jsx';
+import SettingsView from './components/SettingsView.jsx';
 import DailyReport from './components/DailyReport.jsx';
 import DashboardView from './components/DashboardView.jsx';
 import { formatShort, todayIso } from './dates.js';
@@ -33,7 +34,7 @@ export default function App() {
   const [savingIds, setSavingIds] = useState(() => new Set());
   const [toast, setToast] = useState(null);
   const [route, setRoute] = useState(parseRoute);
-  const [theme, toggleTheme] = useTheme();
+  const appearance = useAppearance();
   const [projectCard, setProjectCard] = useState(null); // card for route.projectId
   const [lastChange, setLastChange] = useState(null); // latest edit from the detail panel
   const [projectReload, setProjectReload] = useState(0);
@@ -287,7 +288,7 @@ export default function App() {
       return next;
     });
 
-  const SECTION = { dashboard: 'Dashboard', issues: 'My Issues', projects: 'Projects', report: 'Daily report', claude: 'Connect to Claude' };
+  const SECTION = { dashboard: 'Dashboard', issues: 'My Issues', projects: 'Projects', report: 'Daily report', claude: 'Connect to Claude', settings: 'Settings' };
   const crumbs = [
     { label: 'FIST PMS' },
     { label: SECTION[view], onClick: view === 'projects' && openProject ? () => setOpenProject(null) : undefined },
@@ -305,13 +306,18 @@ export default function App() {
       />
       <TopBar
         crumbs={crumbs}
-        theme={theme}
-        onToggleTheme={toggleTheme}
+        themes={THEMES}
+        theme={appearance.resolved.theme}
+        onThemeChange={(id) => appearance.update({ theme: id })}
         refreshing={loading}
         onRefresh={view === 'issues' && session.loggedIn ? loadIssues : null}
       />
 
-      {view === 'claude' ? (
+      {view === 'settings' ? (
+        <main className="page">
+          <SettingsView appearance={appearance} />
+        </main>
+      ) : view === 'claude' ? (
         <main className="page">
           <ConnectClaude />
         </main>

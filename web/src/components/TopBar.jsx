@@ -1,9 +1,11 @@
 import { Fragment } from 'react';
-import { ChevronRight, Moon, RefreshCw, Sun } from 'lucide-react';
+import { ChevronRight, Palette, RefreshCw } from 'lucide-react';
+import Select from './Select.jsx';
+
+const GLASS_DOT = 'linear-gradient(135deg, #7cc4ff, #ff9ab8)';
 
 // crumbs: [{ label, onClick? }] — the last one is the current page.
-export default function TopBar({ crumbs, theme, onToggleTheme, refreshing, onRefresh }) {
-  const toDark = theme !== 'dark';
+export default function TopBar({ crumbs, themes, theme, onThemeChange, refreshing, onRefresh }) {
   return (
     <header className="topbar">
       <nav className="crumbs" aria-label="Breadcrumb">
@@ -31,15 +33,15 @@ export default function TopBar({ crumbs, theme, onToggleTheme, refreshing, onRef
             <RefreshCw size={17} className={refreshing ? 'spin' : undefined} />
           </button>
         )}
-        <button
-          className="theme-toggle"
-          onClick={onToggleTheme}
-          title={toDark ? 'Switch to dark mode' : 'Switch to light mode'}
-          aria-label={toDark ? 'Switch to dark mode' : 'Switch to light mode'}
-        >
-          {toDark ? <Moon size={16} /> : <Sun size={16} />}
-          <span>{toDark ? 'Dark' : 'Light'}</span>
-        </button>
+        <Select
+          variant="compact"
+          className="theme-picker"
+          ariaLabel="Theme"
+          prefix={<Palette size={15} />}
+          value={theme}
+          onChange={onThemeChange}
+          options={themes.map((t) => ({ value: t.id, label: t.name, dot: t.preview?.accent ?? GLASS_DOT }))}
+        />
       </div>
     </header>
   );

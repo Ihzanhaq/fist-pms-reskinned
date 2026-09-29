@@ -40,7 +40,7 @@
 }
 
 /* Dark theme: its own steps of the same palette, not an inverted light theme. */
-:root[data-theme='dark'] {
+:root[data-mode='dark'] {
   --bg: #13141c;
   --surface: #1c1d28;
   --sidebar: #0f1f1b;
@@ -74,8 +74,8 @@
   --shadow-md: 0 10px 28px rgba(0, 0, 0, 0.45);
   color-scheme: dark;
 }
-:root[data-theme='dark'] .key { background: var(--accent-wash); }
-:root[data-theme='dark'] .rt-image, :root[data-theme='dark'] .pill-status { color: var(--text-2); }
+:root[data-mode='dark'] .key { background: var(--accent-wash); }
+:root[data-mode='dark'] .rt-image, :root[data-mode='dark'] .pill-status { color: var(--text-2); }
 
 * { box-sizing: border-box; }
 body { margin: 0; }
@@ -402,10 +402,10 @@ img.avatar.photo { display: block; object-fit: cover; background: var(--bg); }
 .avatar.tiny { width: 22px; height: 22px; font-size: 10.5px; flex-shrink: 0; }
 
 /* PMS status colours include dark greys; lift pill text so it stays readable on dark surfaces. */
-:root[data-theme='dark'] .status-pill {
+:root[data-mode='dark'] .status-pill {
   color: color-mix(in srgb, var(--c) 65%, white);
   background: color-mix(in srgb, var(--c) 22%, var(--surface));
   border-color: color-mix(in srgb, var(--c) 40%, transparent);
 }
-:root[data-theme='dark'] .status-pill .dot { background: color-mix(in srgb, var(--c) 75%, white); }
-:root[data-theme='dark'] .label-chip { color: color-mix(in srgb, var(--c) 65%, white); }
+:root[data-mode='dark'] .status-pill .dot { background: color-mix(in srgb, var(--c) 75%, white); }
+:root[data-mode='dark'] .label-chip { color: color-mix(in srgb, var(--c) 65%, white); }
