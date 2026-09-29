@@ -6,6 +6,7 @@ import { THEMES, useAppearance } from './theme.js';
 import BulkBar from './components/BulkBar.jsx';
 import ConnectClaude from './components/ConnectClaude.jsx';
 import SettingsView from './components/SettingsView.jsx';
+import WelcomeTour, { hasSeenTour, markTourSeen } from './components/WelcomeTour.jsx';
 import SignInScreen, { Splash } from './components/SignInScreen.jsx';
 import LeaderboardView from './components/LeaderboardView.jsx';
 import DailyReport from './components/DailyReport.jsx';
@@ -37,6 +38,7 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [route, setRoute] = useState(parseRoute);
   const appearance = useAppearance();
+  const [tourOpen, setTourOpen] = useState(false);
   const [projectCard, setProjectCard] = useState(null); // card for route.projectId
   const [lastChange, setLastChange] = useState(null); // latest edit from the detail panel
   const [projectReload, setProjectReload] = useState(0);
@@ -298,6 +300,16 @@ export default function App() {
     ...(view === 'report' && route.date && route.date !== todayIso() ? [{ label: formatShort(route.date) }] : []),
   ];
 
+  // The welcome tour shows once per person (remembered in this browser).
+  const tourUser = session.userId || session.userName;
+  useEffect(() => {
+    if (session.loggedIn && tourUser && !hasSeenTour(tourUser)) setTourOpen(true);
+  }, [session.loggedIn, tourUser]);
+  const closeTour = useCallback(() => {
+    markTourSeen(tourUser);
+    setTourOpen(false);
+  }, [tourUser]);
+
   // Until we know whether the user is signed in, show the logo; if they aren't, a full sign-in screen.
   if (!session.checked) return <Splash />;
   if (!session.loggedIn) {
@@ -345,7 +357,7 @@ export default function App() {
         </main>
       ) : view === 'settings' ? (
         <main className="page">
-          <SettingsView appearance={appearance} />
+          <SettingsView appearance={appearance} onShowTour={() => setTourOpen(true)} />
         </main>
       ) : view === 'claude' ? (
         <main className="page">
@@ -488,6 +500,17 @@ export default function App() {
           onClose={closeCreate}
           onCreated={onIssueCreated}
           onError={handlePanelError}
+        />
+      )}
+
+      {tourOpen && (
+        <WelcomeTour
+          userName={session.userName}
+          onClose={closeTour}
+          onNavigate={(next) => {
+            closeTour();
+            navigate(next);
+          }}
         />
       )}
 

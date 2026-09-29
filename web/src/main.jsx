@@ -10,6 +10,7 @@ import './insights.css';
 import './premium.css';
 import './leaderboard.css';
 import './signin.css';
+import './tour.css';
 import './themes.css';
 
 createRoot(document.getElementById('root')).render(

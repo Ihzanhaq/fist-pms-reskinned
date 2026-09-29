@@ -31,7 +31,7 @@ function ThemePreview({ theme, glassBg }) {
   );
 }
 
-export default function SettingsView({ appearance }) {
+export default function SettingsView({ appearance, onShowTour }) {
   const { settings, resolved, update, updateGlass, saveError } = appearance;
   const { glass } = settings;
   const fileRef = useRef(null);
@@ -292,6 +292,17 @@ export default function SettingsView({ appearance }) {
             <span className="muted">{glass.blur}px</span>
           </label>
         </div>
+      </section>
+      <section className="settings-card">
+        <header className="settings-head">
+          <div>
+            <h2>Welcome tour</h2>
+            <p className="muted">A quick look at issues, the daily report, the leaderboard, themes and Claude.</p>
+          </div>
+          <button className="secondary-btn" onClick={onShowTour}>
+            Show the welcome tour
+          </button>
+        </header>
       </section>
     </div>
   );
