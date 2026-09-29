@@ -227,7 +227,9 @@ export function attachment(id, download = false) {
 
 // ---------- profile photos ----------
 
-const AVATAR_TTL_MS = 60 * 60_000;
+// Photos can be added or changed at any time, so keep them briefly, and "no photo" even more briefly.
+const AVATAR_TTL_MS = 10 * 60_000;
+const NO_AVATAR_TTL_MS = 2 * 60_000;
 const AVATAR_CACHE_MAX = 300;
 const avatarCache = new Map(); // userId -> { at, image: { type, body } | null }
 
@@ -235,7 +237,7 @@ const avatarCache = new Map(); // userId -> { at, image: { type, body } | null }
 export async function avatar(userId) {
   requireUuid(userId, 'user id');
   const hit = avatarCache.get(userId);
-  if (hit && Date.now() - hit.at < AVATAR_TTL_MS) return hit.image;
+  if (hit && Date.now() - hit.at < (hit.image ? AVATAR_TTL_MS : NO_AVATAR_TTL_MS)) return hit.image;
   const image = await pms.getImage(`/avatar/${userId}`);
   if (avatarCache.size >= AVATAR_CACHE_MAX) avatarCache.delete(avatarCache.keys().next().value);
   avatarCache.set(userId, { at: Date.now(), image });

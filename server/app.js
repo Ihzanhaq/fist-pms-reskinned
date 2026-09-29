@@ -76,11 +76,14 @@ export function createApp() {
     Readable.fromWeb(upstream.body).pipe(res);
   });
 
-  // Profile photos, fetched with the PMS login and cached by the browser for an hour.
+  // Profile photos, fetched with the PMS login. Browsers keep a photo for 10 minutes and never keep "no photo".
   app.get('/api/avatars/:id', async (req, res) => {
     const image = await service.avatar(req.params.id);
-    res.setHeader('Cache-Control', 'private, max-age=3600');
-    if (!image) return res.status(404).end();
+    if (!image) {
+      res.setHeader('Cache-Control', 'no-store');
+      return res.status(404).end();
+    }
+    res.setHeader('Cache-Control', 'private, max-age=600');
     res.setHeader('Content-Type', image.type);
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.send(image.body);
