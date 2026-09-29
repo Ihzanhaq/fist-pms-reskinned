@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertOctagon, Plus } from 'lucide-react';
+import { AlertOctagon, Loader2, Plus } from 'lucide-react';
 import { api, errorMessage, loadStates, runPool } from './api.js';
+import { parseRoute, routeToPath } from './route.js';
 import BulkBar from './components/BulkBar.jsx';
 import ConnectClaude from './components/ConnectClaude.jsx';
 import ProjectsGrid from './components/ProjectsGrid.jsx';
@@ -27,12 +28,50 @@ export default function App() {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [savingIds, setSavingIds] = useState(() => new Set());
   const [toast, setToast] = useState(null);
-  const [view, setView] = useState('issues');
-  const [openProject, setOpenProject] = useState(null); // project card shown in the Projects tab
+  const [route, setRoute] = useState(parseRoute);
+  const [projectCard, setProjectCard] = useState(null); // card for route.projectId
   const [lastChange, setLastChange] = useState(null); // latest edit from the detail panel
   const [projectReload, setProjectReload] = useState(0);
-  const [openIssueId, setOpenIssueId] = useState(null);
   const [createFor, setCreateFor] = useState(null); // null = closed, { parent } = open
+
+  const { view, issueId: openIssueId } = route;
+  const openProject = route.projectId && projectCard?.id === route.projectId ? projectCard : null;
+
+  // Keep the URL in step with the route, and the route with back/forward.
+  useEffect(() => {
+    const path = routeToPath(route);
+    if (path !== window.location.pathname + window.location.search) window.history.pushState(null, '', path);
+  }, [route]);
+  useEffect(() => {
+    const onPop = () => setRoute(parseRoute());
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  const setOpenIssueId = useCallback((issueId) => setRoute((r) => ({ ...r, issueId: issueId ?? null })), []);
+  const navigate = useCallback((next) => setRoute({ view: next, projectId: null, issueId: null }), []);
+  const setOpenProject = useCallback((card) => {
+    if (card) setProjectCard(card);
+    setRoute({ view: 'projects', projectId: card?.id ?? null, issueId: null });
+  }, []);
+
+  // After a refresh only the project id is known; look up its card.
+  useEffect(() => {
+    if (!route.projectId || projectCard?.id === route.projectId || !session.loggedIn) return;
+    let live = true;
+    api
+      .projects()
+      .then(({ projects }) => {
+        if (!live) return;
+        const card = projects.find((p) => p.id === route.projectId);
+        if (card) setProjectCard(card);
+        else setRoute({ view: 'projects', projectId: null, issueId: null });
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [route.projectId, projectCard, session.loggedIn]);
 
   const showToast = useCallback((kind, text) => setToast({ kind, text }), []);
   const clearToast = useCallback(() => setToast(null), []);
@@ -220,11 +259,6 @@ export default function App() {
     if (id) setOpenIssueId(id);
   };
 
-  const navigate = (next) => {
-    setView(next);
-    setOpenProject(null);
-  };
-
   const projects = useMemo(() => uniqueSorted(issues.map((i) => i.projectName)), [issues]);
   const statuses = useMemo(() => uniqueSorted(issues.map((i) => i.status.name)), [issues]);
 
@@ -267,6 +301,10 @@ export default function App() {
         <main className="page">
           {!session.checked ? null : !session.loggedIn ? (
             <LoginBanner expired={session.expired} loggingIn={loggingIn} onLogin={login} />
+          ) : route.projectId && !openProject ? (
+            <div className="drawer-loading page-loading">
+              <Loader2 size={22} className="spin" />
+            </div>
           ) : openProject ? (
             <ProjectView
               project={openProject}

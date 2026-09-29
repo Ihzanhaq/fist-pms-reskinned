@@ -98,3 +98,4 @@
   .project-table .row > :nth-child(3), .project-table .row > :nth-child(4), .project-table .row > :nth-child(5) { display: none; }
   .project-table .table-head > :nth-child(6), .project-table .row > :nth-child(6) { display: revert; }
 }
+.page-loading { min-height: 240px; }
