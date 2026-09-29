@@ -9,15 +9,74 @@
   --text-2: #5d6178;
   --muted: #9a9eb4;
   --border: #ebeaf2;
+  --border-strong: #d4d3e1;
+  --faint: #c9cbd8;
+  --accent-border: #ddd4fa;
+  --accent-wash: #f7f5fd;
+  --accent-ink: #5b47c4;
+  --inverse: #22243a;
+  --skeleton-a: #efeef5;
+  --skeleton-b: #f7f6fb;
+  --danger: #dc2626;
+  --danger-soft: #fff5f5;
+  --danger-text: #b91c1c;
+  --success-text: #15803d;
+  --success: #16a34a;
+  --success-line: #86efac;
+  --p-high: #ea580c;
+  --p-medium: #b7791f;
+  --p-low: #2f7de1;
+  --chart-recede: #d8d0f6;
+  --chart-grid: #ecebf3;
   --shadow-sm: 0 1px 2px rgba(34, 36, 58, 0.04), 0 2px 10px rgba(34, 36, 58, 0.04);
   --shadow-md: 0 10px 28px rgba(83, 67, 160, 0.14);
   --radius: 10px;
   --row-cols: 18px 128px minmax(220px, 1fr) 150px 96px 124px 176px;
+  color-scheme: light;
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
 }
+
+/* Dark theme: its own steps of the same palette, not an inverted light theme. */
+:root[data-theme='dark'] {
+  --bg: #13141c;
+  --surface: #1c1d28;
+  --sidebar: #221f36;
+  --sidebar-active: rgba(255, 255, 255, 0.08);
+  --accent: #9b83f0;
+  --accent-soft: #2c2748;
+  --accent-border: #3d3566;
+  --accent-wash: #232135;
+  --accent-ink: #c4b5fd;
+  --text: #e7e7f0;
+  --text-2: #a9abc0;
+  --muted: #7c7f96;
+  --border: #2a2b3a;
+  --border-strong: #3a3c50;
+  --faint: #4a4c60;
+  --inverse: #33354a;
+  --skeleton-a: #23242f;
+  --skeleton-b: #2a2b38;
+  --danger: #f87171;
+  --danger-soft: #2d1b20;
+  --danger-text: #fca5a5;
+  --success-text: #4ade80;
+  --success: #4ade80;
+  --success-line: #166534;
+  --p-high: #fb923c;
+  --p-medium: #eab308;
+  --p-low: #60a5fa;
+  --chart-recede: #3f3769;
+  --chart-grid: #262736;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 10px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 10px 28px rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+:root[data-theme='dark'] .brand-mark { background: linear-gradient(135deg, #8f7be6, #6c58cf); }
+:root[data-theme='dark'] .key { background: var(--accent-wash); }
+:root[data-theme='dark'] .rt-image, :root[data-theme='dark'] .pill-status { color: var(--text-2); }
 
 * { box-sizing: border-box; }
 body { margin: 0; }
@@ -152,13 +211,13 @@ button:disabled { cursor: default; }
 .row:not(.skeleton):hover { box-shadow: var(--shadow-md); transform: translateY(-1px); z-index: 1; }
 .row:not(.skeleton):hover::before { opacity: 1; }
 .row:focus-within { z-index: 2; }
-.row.selected { background: #fbfaff; box-shadow: 0 0 0 1px #d9d0fa, var(--shadow-sm); }
+.row.selected { background: var(--accent-wash); box-shadow: 0 0 0 1px var(--accent-border), var(--shadow-sm); }
 .row.selected::before { opacity: 1; }
 
 .check {
   appearance: none; margin: 0;
   width: 17px; height: 17px; border-radius: 5px;
-  border: 1.5px solid #cfd0dd; background: var(--surface);
+  border: 1.5px solid var(--border-strong); background: var(--surface);
   display: grid; place-items: center; cursor: pointer;
   transition: background 0.12s, border-color 0.12s;
 }
@@ -189,15 +248,15 @@ button:disabled { cursor: default; }
   justify-self: start;
   padding: 3px 10px; border-radius: 999px;
   font-size: 11px; font-weight: 600; text-transform: capitalize;
-  color: #6b7280; background: #f1f2f6;
+  color: #6b7280; background: color-mix(in srgb, #6b7280 12%, transparent);
 }
-.priority-urgent { color: #dc2626; background: #fdecec; }
-.priority-high { color: #ea580c; background: #fdf0e7; }
-.priority-medium { color: #b7791f; background: #fcf5e3; }
-.priority-low { color: #2f7de1; background: #e9f2fd; }
+.priority-urgent { color: var(--danger); background: color-mix(in srgb, #dc2626 14%, transparent); }
+.priority-high { color: var(--p-high); background: color-mix(in srgb, #ea580c 14%, transparent); }
+.priority-medium { color: var(--p-medium); background: color-mix(in srgb, #ca8a04 16%, transparent); }
+.priority-low { color: var(--p-low); background: color-mix(in srgb, #2f7de1 14%, transparent); }
 
 .target { display: inline-flex; align-items: center; gap: 5px; color: var(--text-2); white-space: nowrap; }
-.target.overdue { color: #dc2626; font-weight: 500; }
+.target.overdue { color: var(--danger); font-weight: 500; }
 
 /* ---------- status ---------- */
 .status { position: relative; justify-self: start; }
@@ -206,11 +265,11 @@ button:disabled { cursor: default; }
   max-width: 176px; padding: 5px 10px 5px 9px;
   border: 1px solid color-mix(in srgb, var(--c) 22%, transparent);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--c) 10%, white);
+  background: color-mix(in srgb, var(--c) 10%, var(--surface));
   color: var(--c); font-size: 12px; font-weight: 600;
   transition: background 0.15s, box-shadow 0.15s;
 }
-.status-pill:hover:not(:disabled) { background: color-mix(in srgb, var(--c) 17%, white); }
+.status-pill:hover:not(:disabled) { background: color-mix(in srgb, var(--c) 17%, var(--surface)); }
 .status-pill:disabled { opacity: 0.8; }
 .status-pill .dot { background: var(--c); }
 .status-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -232,12 +291,12 @@ button:disabled { cursor: default; }
 .status-menu button.active { font-weight: 600; }
 .menu-check { margin-left: auto; color: var(--accent); }
 .menu-note { padding: 8px 10px; font-size: 12px; color: var(--muted); }
-.menu-note.error { color: #dc2626; }
+.menu-note.error { color: var(--danger); }
 
 /* ---------- states ---------- */
 .skeleton .bone {
   height: 12px; border-radius: 6px;
-  background: linear-gradient(90deg, #efeef5 25%, #f7f6fb 50%, #efeef5 75%);
+  background: linear-gradient(90deg, var(--skeleton-a) 25%, var(--skeleton-b) 50%, var(--skeleton-a) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.2s infinite linear;
 }
@@ -274,16 +333,16 @@ button:disabled { cursor: default; }
 .error-card {
   display: flex; align-items: center; gap: 14px;
   padding: 18px 20px; border-radius: var(--radius);
-  background: #fff5f5; color: #b91c1c; box-shadow: var(--shadow-sm);
+  background: var(--danger-soft); color: var(--danger-text); box-shadow: var(--shadow-sm);
 }
 .error-card div { flex: 1; }
-.error-card p { margin: 4px 0 0; font-size: 13px; color: #7f1d1d; }
+.error-card p { margin: 4px 0 0; font-size: 13px; color: var(--danger-text); }
 
 .toast {
   position: fixed; right: 28px; top: 80px; z-index: 50;
   display: flex; align-items: center; gap: 10px;
   max-width: 420px; padding: 13px 18px; border-radius: 10px;
-  background: var(--text); color: #fff; font-size: 13px;
+  background: var(--inverse); color: #fff; font-size: 13px;
   box-shadow: 0 14px 36px rgba(34, 36, 58, 0.28);
   animation: slide-down 0.2s ease-out;
 }
@@ -305,7 +364,7 @@ button:disabled { cursor: default; }
   transform: translateX(-50%);
   display: flex; align-items: center; gap: 14px;
   padding: 10px 10px 10px 22px; border-radius: 14px;
-  background: var(--text); color: #fff;
+  background: var(--inverse); color: #fff;
   box-shadow: 0 18px 44px rgba(34, 36, 58, 0.32);
   animation: bar-in 0.18s ease-out;
   white-space: nowrap;
@@ -342,3 +401,12 @@ button:disabled { cursor: default; }
 /* profile photos share the initial avatar's size and shape */
 img.avatar.photo { display: block; object-fit: cover; background: var(--bg); }
 .avatar.tiny { width: 22px; height: 22px; font-size: 10.5px; flex-shrink: 0; }
+
+/* PMS status colours include dark greys; lift pill text so it stays readable on dark surfaces. */
+:root[data-theme='dark'] .status-pill {
+  color: color-mix(in srgb, var(--c) 65%, white);
+  background: color-mix(in srgb, var(--c) 22%, var(--surface));
+  border-color: color-mix(in srgb, var(--c) 40%, transparent);
+}
+:root[data-theme='dark'] .status-pill .dot { background: color-mix(in srgb, var(--c) 75%, white); }
+:root[data-theme='dark'] .label-chip { color: color-mix(in srgb, var(--c) 65%, white); }

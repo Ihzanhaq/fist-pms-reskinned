@@ -60,10 +60,10 @@
 .prop-select:focus { border-color: var(--accent); }
 .prop-select:disabled { opacity: 0.6; cursor: default; }
 .priority-select { text-transform: capitalize; }
-.priority-select.priority-urgent { color: #dc2626; }
-.priority-select.priority-high { color: #ea580c; }
-.priority-select.priority-medium { color: #b7791f; }
-.priority-select.priority-low { color: #2f7de1; }
+.priority-select.priority-urgent { color: var(--danger); }
+.priority-select.priority-high { color: var(--p-high); }
+.priority-select.priority-medium { color: var(--p-medium); }
+.priority-select.priority-low { color: var(--p-low); }
 .locked { color: var(--text-2); cursor: help; border-bottom: 1px dashed var(--muted); }
 .timeline { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); }
 .labels { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -71,7 +71,7 @@
   display: inline-flex; align-items: center;
   padding: 3px 10px; border-radius: 999px;
   font-size: 12px; font-weight: 500;
-  color: var(--c); background: color-mix(in srgb, var(--c) 12%, white);
+  color: var(--c); background: color-mix(in srgb, var(--c) 12%, var(--surface));
   border: 1px solid transparent;
 }
 
@@ -109,7 +109,7 @@
   background: var(--surface); text-align: left; font-size: 13px; color: var(--muted);
   transition: border-color 0.15s, background 0.15s;
 }
-.sub-list button:hover { border-color: #d9d0fa; background: #fbfaff; }
+.sub-list button:hover { border-color: var(--accent-border); background: var(--accent-wash); }
 .sub-title { flex: 1; min-width: 0; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .attachment-list li {
@@ -175,7 +175,7 @@ input.input { height: 40px; }
 textarea.input { resize: vertical; line-height: 1.55; }
 .title-input { font-size: 15px; font-weight: 500; }
 .loading-line { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; }
-.form-error { margin: 0; padding: 10px 12px; border-radius: 8px; background: #fff5f5; color: #b91c1c; font-size: 13px; }
+.form-error { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--danger-soft); color: var(--danger-text); font-size: 13px; }
 
 .segmented { display: flex; gap: 6px; flex-wrap: wrap; }
 .segmented button {
@@ -184,12 +184,12 @@ textarea.input { resize: vertical; line-height: 1.55; }
   font-size: 12px; font-weight: 600; text-transform: capitalize; color: var(--text-2);
   transition: border-color 0.12s, background 0.12s, color 0.12s;
 }
-.segmented button:hover { border-color: #d9d0fa; }
-.segmented button.active { border-color: currentColor; background: color-mix(in srgb, currentColor 9%, white); }
-.segmented .priority-urgent { color: #dc2626; }
-.segmented .priority-high { color: #ea580c; }
-.segmented .priority-medium { color: #b7791f; }
-.segmented .priority-low { color: #2f7de1; }
+.segmented button:hover { border-color: var(--accent-border); }
+.segmented button.active { border-color: currentColor; background: color-mix(in srgb, currentColor 9%, var(--surface)); }
+.segmented .priority-urgent { color: var(--danger); }
+.segmented .priority-high { color: var(--p-high); }
+.segmented .priority-medium { color: var(--p-medium); }
+.segmented .priority-low { color: var(--p-low); }
 .segmented .priority-none { color: #4b5563; }
 
 .label-picker { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -197,7 +197,7 @@ textarea.input { resize: vertical; line-height: 1.55; }
 .label-chip.selectable::before {
   content: ''; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; background: var(--c);
 }
-.label-chip.selectable.on { color: var(--c); background: color-mix(in srgb, var(--c) 12%, white); border-color: color-mix(in srgb, var(--c) 35%, white); }
+.label-chip.selectable.on { color: var(--c); background: color-mix(in srgb, var(--c) 12%, var(--surface)); border-color: color-mix(in srgb, var(--c) 35%, var(--surface)); }
 
 @keyframes fade-in { from { opacity: 0; } }
 @keyframes drawer-in { from { transform: translateX(40px); opacity: 0; } }
@@ -213,8 +213,8 @@ textarea.input { resize: vertical; line-height: 1.55; }
 .drop-zone {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   width: 100%; padding: 18px 16px;
-  border: 1.5px dashed #d6d3e6; border-radius: 10px;
-  background: #fcfcfe; color: var(--text-2); font-size: 13px;
+  border: 1.5px dashed var(--border-strong); border-radius: 10px;
+  background: var(--accent-wash); color: var(--text-2); font-size: 13px;
   transition: border-color 0.15s, background 0.15s;
 }
 .drop-zone svg { color: var(--accent); margin-bottom: 2px; }

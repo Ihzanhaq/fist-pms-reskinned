@@ -21,7 +21,7 @@
   border: 1px solid transparent; border-radius: 8px;
   background: var(--surface); box-shadow: var(--shadow-sm);
 }
-.sel-filter .sel-trigger:hover:not(:disabled) { border-color: #e4defb; }
+.sel-filter .sel-trigger:hover:not(:disabled) { border-color: var(--accent-border); }
 .sel-filter .sel-trigger.open, .sel-filter .sel-trigger:focus-visible { border-color: var(--accent); outline: 0; }
 
 /* form fields */
@@ -29,7 +29,7 @@
   height: 40px; padding: 0 12px;
   border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
 }
-.sel-input .sel-trigger:hover:not(:disabled) { border-color: #d9d0fa; }
+.sel-input .sel-trigger:hover:not(:disabled) { border-color: var(--accent-border); }
 .sel-input .sel-trigger.open, .sel-input .sel-trigger:focus-visible {
   border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); outline: 0;
 }
@@ -41,10 +41,10 @@
   border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font-weight: 500;
 }
 .sel-prop .sel-trigger:hover:not(:disabled), .sel-prop .sel-trigger.open { border-color: var(--accent); }
-.sel-prop.priority-urgent .sel-value { color: #dc2626; }
-.sel-prop.priority-high .sel-value { color: #ea580c; }
-.sel-prop.priority-medium .sel-value { color: #b7791f; }
-.sel-prop.priority-low .sel-value { color: #2f7de1; }
+.sel-prop.priority-urgent .sel-value { color: var(--danger); }
+.sel-prop.priority-high .sel-value { color: var(--p-high); }
+.sel-prop.priority-medium .sel-value { color: var(--p-medium); }
+.sel-prop.priority-low .sel-value { color: var(--p-low); }
 .sel-prop .sel-value, .sel-prop li .sel-label { text-transform: none; }
 .sel-prop.capitalize .sel-value, .sel-prop.capitalize .sel-label { text-transform: capitalize; }
 
@@ -54,7 +54,7 @@
   height: 34px; padding: 0 10px 0 12px; border: 1px solid transparent; border-radius: 8px;
   background: var(--surface); box-shadow: var(--shadow-sm);
 }
-.sel-compact .sel-trigger:hover, .sel-compact .sel-trigger.open { border-color: #d9d0fa; }
+.sel-compact .sel-trigger:hover, .sel-compact .sel-trigger.open { border-color: var(--accent-border); }
 
 /* menu */
 .sel-menu {
@@ -110,9 +110,9 @@
   font-size: 12.5px; color: var(--text);
 }
 .cal-day:hover:not(:disabled) { background: var(--accent-soft); color: var(--accent); }
-.cal-day.outside { color: #c3c5d4; }
+.cal-day.outside { color: var(--faint); }
 .cal-day.today { box-shadow: inset 0 0 0 1px var(--accent); font-weight: 600; }
 .cal-day.selected { background: var(--accent); color: #fff; font-weight: 600; }
-.cal-day:disabled { color: #d9dae3; cursor: not-allowed; }
+.cal-day:disabled { color: var(--faint); cursor: not-allowed; }
 .cal-foot { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
 .cal-foot .link-btn:disabled { color: var(--muted); text-decoration: none; cursor: default; }

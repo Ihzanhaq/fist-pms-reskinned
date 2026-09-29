@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { foldRows } from '../foldRows.js';
 
-const ACCENT = '#8b6fe8';
-const RECEDE = '#d8d0f6';
-const GRID = '#ecebf3';
+// Theme colours (see styles.css); SVG takes CSS variables only through style.
+const ACCENT = 'var(--accent)';
+const RECEDE = 'var(--chart-recede)';
+const GRID = 'var(--chart-grid)';
 
 function useWidth() {
   const ref = useRef(null);
@@ -54,7 +55,7 @@ export function ColumnChart({ data, height = 220, ariaLabel }) {
         <svg width={width} height={height} role="img" aria-label={ariaLabel}>
           {ticks.map((t) => (
             <g key={t}>
-              <line x1={pad.left} x2={width - pad.right} y1={y(t)} y2={y(t)} stroke={GRID} strokeWidth="1" />
+              <line x1={pad.left} x2={width - pad.right} y1={y(t)} y2={y(t)} style={{ stroke: GRID }} strokeWidth="1" />
               <text x={pad.left - 8} y={y(t)} className="chart-tick" textAnchor="end" dominantBaseline="middle">
                 {t}
               </text>
@@ -67,8 +68,8 @@ export function ColumnChart({ data, height = 220, ariaLabel }) {
             return (
               <g key={d.key} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}>
                 <rect x={cx - band / 2} y={pad.top} width={band} height={plotH + pad.bottom} fill="transparent" />
-                {hover === i && <rect x={cx - band / 2 + 2} y={pad.top} width={band - 4} height={plotH} rx="6" fill="#f6f4fd" />}
-                <path d={columnPath(cx - barW / 2, y(d.value), barW, h)} fill={isLast || hover === i ? ACCENT : RECEDE} />
+                {hover === i && <rect x={cx - band / 2 + 2} y={pad.top} width={band - 4} height={plotH} rx="6" style={{ fill: 'var(--accent-wash)' }} />}
+                <path d={columnPath(cx - barW / 2, y(d.value), barW, h)} style={{ fill: isLast || hover === i ? ACCENT : RECEDE }} />
                 {isLast && d.value > 0 && (
                   <text x={cx} y={y(d.value) - 7} textAnchor="middle" className="chart-value">
                     {d.value}
@@ -106,8 +107,8 @@ export function Sparkline({ values, width = 96, height = 28 }) {
   const [lx, ly] = pts.at(-1);
   return (
     <svg width={width} height={height} className="sparkline" aria-hidden="true">
-      <polyline points={pts.map((p) => p.join(',')).join(' ')} fill="none" stroke={RECEDE} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-      <circle cx={lx} cy={ly} r="3.5" fill={ACCENT} stroke="#fff" strokeWidth="2" />
+      <polyline points={pts.map((p) => p.join(',')).join(' ')} fill="none" style={{ stroke: RECEDE }} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={lx} cy={ly} r="3.5" style={{ fill: ACCENT, stroke: 'var(--surface)' }} strokeWidth="2" />
     </svg>
   );
 }

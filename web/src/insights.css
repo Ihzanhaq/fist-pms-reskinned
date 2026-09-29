@@ -35,7 +35,7 @@
   position: absolute; transform: translate(-50%, -100%); pointer-events: none;
   display: flex; flex-direction: column; gap: 2px; min-width: 120px;
   padding: 8px 12px; border-radius: 8px;
-  background: var(--text); color: #fff; font-size: 12px; white-space: nowrap;
+  background: var(--inverse); color: #fff; font-size: 12px; white-space: nowrap;
   box-shadow: 0 8px 24px rgba(34, 36, 58, 0.22);
 }
 .chart-tip .muted { color: #b9bbd0; }
@@ -56,7 +56,7 @@
   padding: 10px 4px; border: 0; background: none; text-align: left; font-size: 13px;
 }
 .done-list button:hover .done-title { color: var(--accent); }
-.done-icon { flex-shrink: 0; color: #16a34a; }
+.done-icon { flex-shrink: 0; color: var(--success); }
 .done-title { flex: 1; min-width: 0; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .done-project { flex-shrink: 0; max-width: 150px; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -64,7 +64,7 @@
 .bar-list li { display: grid; grid-template-columns: minmax(90px, 38%) 1fr 32px; align-items: center; gap: 12px; font-size: 13px; }
 .bar-label { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--text); }
 .bar-label span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bar-track { height: 8px; border-radius: 4px; background: #f3f1fa; overflow: hidden; }
+.bar-track { height: 8px; border-radius: 4px; background: var(--accent-wash); overflow: hidden; }
 .bar-fill { display: block; height: 100%; border-radius: 0 4px 4px 0; background: var(--accent); }
 .bar-value { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
 
@@ -93,14 +93,14 @@
 .report-project { font-size: 12px; }
 .done-badge {
   display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px;
-  background: #ecfdf3; color: #15803d; font-size: 11.5px; font-weight: 600;
+  background: color-mix(in srgb, #16a34a 14%, transparent); color: var(--success-text); font-size: 11.5px; font-weight: 600;
 }
 .report-entries { list-style: none; margin: 12px 0 0; padding: 0 0 0 2px; display: flex; flex-direction: column; gap: 8px; }
 .report-entries li { display: flex; align-items: center; gap: 14px; font-size: 13px; color: var(--text-2); }
 .report-time { width: 42px; flex-shrink: 0; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .report-what { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .pill-status { padding: 2px 9px; border-radius: 6px; background: var(--bg); font-size: 12px; color: var(--text-2); }
-.pill-status.to { background: var(--accent-soft); color: #5b47c4; font-weight: 500; }
+.pill-status.to { background: var(--accent-soft); color: var(--accent-ink); font-weight: 500; }
 .report-what .arrow { color: var(--muted); }
 .report-note { margin: 0; font-size: 12px; }
 
@@ -124,7 +124,7 @@
 .next-list button:hover .next-title { color: var(--accent); }
 .next-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .next-due { flex-shrink: 0; font-size: 12px; color: var(--muted); }
-.next-due.overdue { color: #dc2626; font-weight: 500; }
+.next-due.overdue { color: var(--danger); font-weight: 500; }
 
 .done-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; }
 .done-grid li { border-top: 1px solid var(--border); }
@@ -147,8 +147,8 @@
 .report-section h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; font-weight: 600; }
 .report-section header p { margin: 3px 0 0; font-size: 12.5px; }
 .report-section ul { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--border); }
-.report-section.completed ul { border-left-color: #86efac; }
-.report-section.inProgress ul { border-left-color: #c4b5fd; }
+.report-section.completed ul { border-left-color: var(--success-line); }
+.report-section.inProgress ul { border-left-color: var(--accent-border); }
 .report-section li { padding: 9px 0 9px 16px; }
 .report-line { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .report-issue {

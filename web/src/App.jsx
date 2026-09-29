@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertOctagon, Loader2, Plus } from 'lucide-react';
 import { api, errorMessage, loadStates, runPool } from './api.js';
 import { parseRoute, routeToPath } from './route.js';
+import { useTheme } from './theme.js';
 import BulkBar from './components/BulkBar.jsx';
 import ConnectClaude from './components/ConnectClaude.jsx';
 import DailyReport from './components/DailyReport.jsx';
@@ -32,6 +33,7 @@ export default function App() {
   const [savingIds, setSavingIds] = useState(() => new Set());
   const [toast, setToast] = useState(null);
   const [route, setRoute] = useState(parseRoute);
+  const [theme, toggleTheme] = useTheme();
   const [projectCard, setProjectCard] = useState(null); // card for route.projectId
   const [lastChange, setLastChange] = useState(null); // latest edit from the detail panel
   const [projectReload, setProjectReload] = useState(0);
@@ -291,6 +293,8 @@ export default function App() {
         userId={session.userId}
         userName={session.userName}
         loggedIn={session.loggedIn}
+        theme={theme}
+        onToggleTheme={toggleTheme}
         refreshing={loading}
         onRefresh={loadIssues}
         onLogout={logout}
