@@ -1,9 +1,11 @@
-import { ExternalLink, FolderKanban, ListChecks } from 'lucide-react';
+import { ExternalLink, FileText, FolderKanban, LayoutDashboard, ListChecks } from 'lucide-react';
 import ClaudeIcon from './ClaudeIcon.jsx';
 
 const NAV = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'issues', label: 'My Issues', icon: ListChecks },
   { id: 'projects', label: 'Projects', icon: FolderKanban },
+  { id: 'report', label: 'Daily report', icon: FileText },
   { id: 'claude', label: 'Connect to Claude', icon: ClaudeIcon },
 ];
 

@@ -58,6 +58,8 @@ export const api = {
   setPriority: (id, priority) => call(`/api/issues/${id}/priority`, { method: 'POST', body: { priority } }),
   setAssignee: (id, userId) => call(`/api/issues/${id}/assignee`, { method: 'POST', body: { userId } }),
   projects: () => call('/api/projects').then(({ projects }) => ({ projects: projects.map(normalizeProject) })),
+  dashboard: (days = 14) => call(`/api/dashboard?days=${days}`),
+  report: (date) => call(`/api/report?date=${date}`),
   projectIssues: (projectId) => call(`/api/projects/${projectId}/issues`),
   issueForm: (projectId, parentId) =>
     call(`/api/projects/${projectId}/issue-form${parentId ? `?parentId=${parentId}` : ''}`),

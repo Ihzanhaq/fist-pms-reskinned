@@ -6,6 +6,7 @@ import './panels.css';
 import './connect.css';
 import './projects.css';
 import './controls.css';
+import './insights.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

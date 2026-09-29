@@ -4,6 +4,9 @@ import { api, errorMessage, loadStates, runPool } from './api.js';
 import { parseRoute, routeToPath } from './route.js';
 import BulkBar from './components/BulkBar.jsx';
 import ConnectClaude from './components/ConnectClaude.jsx';
+import DailyReport from './components/DailyReport.jsx';
+import DashboardView from './components/DashboardView.jsx';
+import { todayIso } from './dates.js';
 import ProjectsGrid from './components/ProjectsGrid.jsx';
 import ProjectView from './components/ProjectView.jsx';
 import CreateIssueModal from './components/CreateIssueModal.jsx';
@@ -49,10 +52,10 @@ export default function App() {
   }, []);
 
   const setOpenIssueId = useCallback((issueId) => setRoute((r) => ({ ...r, issueId: issueId ?? null })), []);
-  const navigate = useCallback((next) => setRoute({ view: next, projectId: null, issueId: null }), []);
+  const navigate = useCallback((next) => setRoute({ view: next, projectId: null, date: null, issueId: null }), []);
   const setOpenProject = useCallback((card) => {
     if (card) setProjectCard(card);
-    setRoute({ view: 'projects', projectId: card?.id ?? null, issueId: null });
+    setRoute({ view: 'projects', projectId: card?.id ?? null, date: null, issueId: null });
   }, []);
 
   // After a refresh only the project id is known; look up its card.
@@ -65,7 +68,7 @@ export default function App() {
         if (!live) return;
         const card = projects.find((p) => p.id === route.projectId);
         if (card) setProjectCard(card);
-        else setRoute({ view: 'projects', projectId: null, issueId: null });
+        else setRoute({ view: 'projects', projectId: null, date: null, issueId: null });
       })
       .catch(() => {});
     return () => {
@@ -296,6 +299,25 @@ export default function App() {
       {view === 'claude' ? (
         <main className="page">
           <ConnectClaude />
+        </main>
+      ) : view === 'dashboard' || view === 'report' ? (
+        <main className="page">
+          {!session.checked ? null : !session.loggedIn ? (
+            <LoginBanner expired={session.expired} loggingIn={loggingIn} onLogin={login} />
+          ) : view === 'dashboard' ? (
+            <DashboardView
+              onOpenIssue={setOpenIssueId}
+              onOpenReport={() => navigate('report')}
+              onError={handlePanelError}
+            />
+          ) : (
+            <DailyReport
+              date={route.date ?? todayIso()}
+              onDateChange={(date) => setRoute((r) => ({ ...r, date, issueId: null }))}
+              onOpenIssue={setOpenIssueId}
+              onError={handlePanelError}
+            />
+          )}
         </main>
       ) : view === 'projects' ? (
         <main className="page">
