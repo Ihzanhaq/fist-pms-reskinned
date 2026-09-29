@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>FIST PMS</title></head>
+<body>
+<main>
+  <h1>My Issues</h1>
+  <form action="/my-issues" method="get"><input name="q" value=""></form>
+  <div class="mi-list">
+    <div class="mi-item" style="--accent-col:#94a3b8">
+      <span class="mi-key">DEMO-99</span>
+      <a href="/issues/33333333-3333-4333-8333-333333333333?back=/my-issues" class="mi-title" title="Write release notes">Write release notes</a>
+      <a href="/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" class="mi-proj">
+        <span class="ic">📊</span>
+        <span class="nm">DEMO</span>
+      </a>
+      <span class="mi-status" style="background:#16A34A1f;color:#16A34A">
+        <span class="dot" style="background:#16A34A"></span>
+        <span>Done</span></span>
+      <span class="mi-target"> <span>29 Sep 2026</span> </span>
+    </div>
+  </div>
+  <div class="inline-flex items-center gap-1.5">
+    <a class="pg-btn" href="/my-issues?scope=active&amp;size=100&amp;page=0"><span class="material-symbols-rounded">chevron_left</span> Prev</a>
+    <span class="px-3 py-1.5 text-xs">Page <span>2</span> / <span>2</span></span>
+    <span class="pg-btn disabled"> Next <span class="material-symbols-rounded">chevron_right</span></span>
+  </div>
+</main>
+</body>
+</html>

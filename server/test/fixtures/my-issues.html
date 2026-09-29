@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>FIST PMS</title></head>
+<body>
+<header class="topbar">
+  <details class="topbar-menu">
+    <summary class="topbar-account">
+      <span class="topbar-avatar">J</span>
+      <span class="topbar-account-meta">
+        <span class="topbar-account-name">Jane Tester</span>
+        <span class="topbar-account-role">FIST PMS</span>
+      </span>
+    </summary>
+  </details>
+</header>
+<main>
+  <h1>My Issues</h1>
+  <form action="/my-issues" method="get">
+    <input name="q" value="">
+    <select name="scope"><option value="all">All statuses</option><option value="active" selected>Active only</option></select>
+  </form>
+  <div class="mi-list">
+    <div class="mi-item" style="--accent-col:#ea580c">
+      <span class="mi-key">DEMO-12</span>
+      <a href="/issues/11111111-1111-4111-8111-111111111111?back=/my-issues" class="mi-title" title="Fix login &amp; signup flow">Fix login &amp; signup flow</a>
+      <a href="/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" class="mi-proj">
+        <span class="ic" style="background:#0d9488;color:#fff">📊</span>
+        <span class="nm">DEMO</span>
+      </a>
+      <span class="mi-status" style="background:#2563EB1f;color:#2563EB">
+        <span class="dot" style="background:#2563EB"></span>
+        <span>In Progress</span></span>
+      <span class="pill pill-rose error urgent">
+        <span class="material-symbols-rounded" style="font-size:14px">priority_high</span>
+        <span>urgent</span>
+      </span>
+      <span class="mi-target is-over">
+        <span class="material-symbols-rounded" style="font-size:14px">warning</span>
+        <span>11 Sep 2026</span>
+      </span>
+    </div>
+    <div class="mi-item" style="--accent-col:#94a3b8">
+      <span class="mi-key">SHOP-7</span>
+      <a href="/issues/22222222-2222-4222-8222-222222222222?back=/my-issues" class="mi-title" title="Update product images">Update product images</a>
+      <a href="/projects/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" class="mi-proj">
+        <span class="ic" style="background:#7c3aed;color:#fff">🛒</span>
+        <span class="nm">Shop Site</span>
+      </a>
+      <span class="mi-status" style="background:#64748B1f;color:#64748B">
+        <span class="dot" style="background:#64748B"></span>
+        <span>Todo</span></span>
+      <span class="pill pill-slate">
+        <span class="material-symbols-rounded" style="font-size:14px">remove</span>
+        <span>low</span>
+      </span>
+      <span class="mi-target" style="color:var(--txt-placeholder)">—</span>
+    </div>
+  </div>
+  <div class="inline-flex items-center gap-1.5">
+    <span class="pg-btn disabled"><span class="material-symbols-rounded">chevron_left</span> Prev</span>
+    <span class="px-3 py-1.5 text-xs">Page <span>1</span> / <span>2</span></span>
+    <a class="pg-btn" href="/my-issues?q=&amp;prio=all&amp;scope=active&amp;sort=default&amp;size=100&amp;page=1"> Next <span class="material-symbols-rounded">chevron_right</span></a>
+  </div>
+</main>
+</body>
+</html>

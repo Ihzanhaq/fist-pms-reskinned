@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="_csrf" content="meta-token-not-used">
+  <title>FIST PMS</title>
+</head>
+<body>
+<header class="topbar">
+  <span class="topbar-account-name">Jane Tester</span>
+  <form action="/logout" method="post"><input type="hidden" name="_csrf" value="logout-token"></form>
+</header>
+<main>
+  <h1>Fix login &amp; signup flow</h1>
+  <form action="/issues/11111111-1111-4111-8111-111111111111/delete" method="post"><input type="hidden" name="_csrf" value="delete-token"></form>
+  <form action="/issues/11111111-1111-4111-8111-111111111111/state" method="post"><input type="hidden" name="_csrf" value="state-token-abc"> <select name="stateId" onchange="this.form.submit()" class="field-input">
+    <option value="aaaa0001-0000-4000-8000-000000000001">Todo</option>
+    <option value="aaaa0002-0000-4000-8000-000000000002" selected="selected">In Progress</option>
+    <option value="aaaa0003-0000-4000-8000-000000000003">Done</option>
+  </select> </form>
+</main>
+</body>
+</html>
