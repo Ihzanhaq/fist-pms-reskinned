@@ -241,6 +241,15 @@ export default function WelcomeTour({ userName, onClose, onNavigate }) {
         </div>
 
         <div className="tour-foot">
+          {step > 0 ? (
+            <button className="secondary-btn" onClick={() => go(step - 1)}>
+              <ArrowLeft size={15} /> Back
+            </button>
+          ) : (
+            <button className="link-btn tour-skip" onClick={onClose}>
+              Skip tour
+            </button>
+          )}
           <div className="tour-dots" role="tablist" aria-label="Tour steps">
             {STEPS.map((s, i) => (
               <button
@@ -253,20 +262,9 @@ export default function WelcomeTour({ userName, onClose, onNavigate }) {
               />
             ))}
           </div>
-          <div className="tour-actions">
-            {step > 0 ? (
-              <button className="secondary-btn" onClick={() => go(step - 1)}>
-                <ArrowLeft size={15} /> Back
-              </button>
-            ) : (
-              <button className="link-btn tour-skip" onClick={onClose}>
-                Skip tour
-              </button>
-            )}
-            <button className="primary-btn tour-next" onClick={() => (last ? onClose() : go(step + 1))}>
-              {last ? 'Start using the dashboard' : 'Next'} {!last && <ArrowRight size={15} />}
-            </button>
-          </div>
+          <button className="primary-btn tour-next" onClick={() => (last ? onClose() : go(step + 1))}>
+            {last ? 'Get started' : 'Next'} {!last && <ArrowRight size={15} />}
+          </button>
         </div>
       </div>
     </div>
