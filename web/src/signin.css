@@ -4,96 +4,43 @@
 .splash svg { animation: splash-pulse 1.6s ease-in-out infinite; }
 @keyframes splash-pulse { 50% { transform: scale(0.94); opacity: 0.7; } }
 
-.signin {
-  position: relative; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(380px, 0.9fr);
-  min-height: 100vh;
-}
+.signin { position: relative; display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(380px, 1.1fr); min-height: 100vh; }
 .signin-theme { position: absolute; top: 18px; right: 22px; z-index: 2; }
 
-/* ---------- brand side ---------- */
+/* brand side: a quiet block of the brand colour, logo on top, one line at the bottom */
 .signin-brand {
-  position: relative; overflow: hidden;
-  display: flex; flex-direction: column; justify-content: space-between; gap: 40px;
-  padding: 40px 56px 48px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 40px 48px;
   color: #fff;
-  background:
-    radial-gradient(600px 420px at 12% 8%, rgba(255, 255, 255, 0.16), transparent 60%),
-    radial-gradient(700px 520px at 100% 100%, rgba(0, 0, 0, 0.25), transparent 60%),
-    linear-gradient(150deg, var(--brand-2), var(--brand-3));
+  background: linear-gradient(180deg, var(--brand-2), var(--brand-3));
 }
-/* faint dot grid for texture */
-.signin-brand::before {
-  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.18;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.9) 1px, transparent 1.2px);
-  background-size: 22px 22px;
-  mask-image: linear-gradient(180deg, transparent, #000 30%, #000 70%, transparent);
-}
-.signin-brand > * { position: relative; }
-
 .signin-logo { display: flex; align-items: center; gap: 12px; }
-.signin-logo svg { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25); border-radius: 12px; }
-.signin-logo > span { display: flex; flex-direction: column; line-height: 1.25; }
-.signin-logo strong { font-size: 16px; letter-spacing: 0.02em; }
-.signin-logo span span { font-size: 12.5px; opacity: 0.75; }
+.signin-logo svg { border-radius: 11px; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25); }
+.signin-logo strong { font-size: 16px; font-weight: 600; letter-spacing: 0.01em; }
+.signin-tagline { margin: 0; max-width: 320px; font-size: 15px; line-height: 1.55; color: rgba(255, 255, 255, 0.82); }
 
-.signin-pitch { max-width: 520px; }
-.signin-pitch h1 { margin: 0 0 14px; font-size: clamp(30px, 3.4vw, 44px); line-height: 1.08; letter-spacing: -0.035em; font-weight: 600; }
-.signin-pitch p { margin: 0 0 26px; font-size: 15.5px; line-height: 1.6; opacity: 0.85; max-width: 440px; }
-.signin-pitch ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
-.signin-pitch li { display: flex; align-items: center; gap: 12px; font-size: 14px; opacity: 0.95; }
-.signin-feature-icon {
-  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px;
-  background: rgba(255, 255, 255, 0.14); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
-}
-
-/* floating task cards */
-.task-stack { position: relative; width: min(420px, 100%); height: 196px; }
-.task-card {
-  position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 14px;
-  padding: 14px 16px; border-radius: 14px;
-  background: rgba(255, 255, 255, 0.14);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.16), 0 18px 40px rgba(0, 0, 0, 0.18);
-  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-  animation: task-float 7s ease-in-out infinite;
-}
-.task-card.done { top: 0; transform: rotate(-2deg); }
-.task-card.progress { top: 66px; left: 28px; right: -28px; animation-delay: -2.3s; opacity: 0.92; }
-.task-card.next { top: 132px; left: 56px; right: -56px; animation-delay: -4.6s; opacity: 0.7; }
-@keyframes task-float { 50% { translate: 0 -5px; } }
-.task-check { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #fff; color: var(--brand-3); flex-shrink: 0; }
-.task-ring { width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0; background: conic-gradient(#fff 0 55%, rgba(255, 255, 255, 0.25) 55% 100%); mask: radial-gradient(circle, transparent 7px, #000 7.5px); }
-.task-dot { width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.55); }
-.task-lines { flex: 1; display: flex; flex-direction: column; gap: 7px; }
-.task-line { display: block; height: 7px; border-radius: 4px; background: rgba(255, 255, 255, 0.85); }
-.task-line.soft { background: rgba(255, 255, 255, 0.35); height: 6px; }
-.w70 { width: 70%; } .w55 { width: 55%; } .w45 { width: 45%; } .w40 { width: 40%; } .w30 { width: 30%; } .w25 { width: 25%; }
-.task-pill { padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; background: rgba(255, 255, 255, 0.2); white-space: nowrap; }
-
-/* ---------- sign-in side ---------- */
+/* sign-in side */
 .signin-panel { display: grid; place-items: center; padding: 48px 32px; }
-.signin-card { width: min(400px, 100%); }
+.signin-card { width: min(380px, 100%); }
 .signin-card h2 { margin: 0 0 10px; font-size: 28px; font-weight: 600; letter-spacing: -0.03em; }
 .signin-lead { margin: 0 0 28px; font-size: 14.5px; line-height: 1.6; color: var(--text-2); }
 .signin-btn { width: 100%; height: 48px; font-size: 14.5px; border-radius: 12px; }
 .signin-help { margin: 14px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--muted); }
-.signin-note {
-  display: flex; align-items: flex-start; gap: 10px; margin-top: 28px; padding: 14px 16px;
-  border-radius: 12px; background: var(--accent-wash); box-shadow: inset 0 0 0 1px var(--border);
-  font-size: 12.5px; line-height: 1.5; color: var(--text-2);
-}
-.signin-note svg { flex-shrink: 0; margin-top: 2px; color: var(--accent); }
 
-/* glass: the brand side becomes a frosted pane over the wallpaper */
+/* dark themes: a deep shade of the brand colour rather than a bright block */
+:root[data-mode='dark']:not([data-theme='glass']) .signin-brand {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--brand-3) 55%, #07080c), color-mix(in srgb, var(--brand-3) 25%, #06070a));
+  box-shadow: inset -1px 0 0 var(--border);
+}
+
+/* glass: both halves are frosted panes over the wallpaper */
 :root[data-theme='glass'] .signin-brand {
-  margin: 16px; border-radius: 24px;
-  background: rgba(255, 255, 255, 0.12);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+  margin: 16px; border-radius: 22px;
+  background: rgba(24, 26, 44, 0.34);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   backdrop-filter: blur(var(--glass-blur)) saturate(160%);
 }
-:root[data-theme='glass'][data-mode='dark'] .signin-brand { background: rgba(10, 12, 20, 0.35); }
-/* white text needs a smoky pane even in light glass */
-:root[data-theme='glass'][data-mode='light'] .signin-brand { background: rgba(24, 26, 44, 0.34); }
 :root[data-theme='glass'] .signin-card {
   padding: 32px; border-radius: 22px; background: var(--surface); box-shadow: var(--shadow-md);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(170%);
@@ -101,20 +48,10 @@
 }
 
 @media (max-width: 900px) {
-  .signin { grid-template-columns: 1fr; }
-  .signin-brand { padding: 28px 24px 32px; gap: 24px; }
-  .task-stack { display: none; }
-  .signin-pitch h1 { font-size: 30px; }
+  .signin { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .signin-brand { flex-direction: row; align-items: center; padding: 18px 22px; }
+  .signin-tagline { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .task-card, .splash svg { animation: none; }
-}
-
-/* Dark themes: the brand colour glows out of the dark instead of filling the half. */
-:root[data-mode='dark']:not([data-theme='glass']) .signin-brand {
-  background:
-    radial-gradient(520px 380px at 18% 12%, color-mix(in srgb, var(--brand-2) 45%, transparent), transparent 65%),
-    radial-gradient(620px 460px at 90% 100%, color-mix(in srgb, var(--brand-3) 55%, transparent), transparent 60%),
-    linear-gradient(160deg, color-mix(in srgb, var(--brand-3) 40%, #07080c), #06070a);
-  box-shadow: inset -1px 0 0 var(--border);
+  .splash svg { animation: none; }
 }
