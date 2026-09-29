@@ -58,6 +58,11 @@ test('summarize counts pending, completions per day and today', () => {
   assert.equal(s.pending.dueToday, 1);
   assert.deepEqual(s.pending.byStatus.map((x) => [x.name, x.count]), [['New', 2], ['In Progress', 1]]);
   assert.deepEqual(s.pending.byProject, [{ name: 'Demo', count: 2 }, { name: 'Other', count: 1 }]);
+  assert.deepEqual(s.pending.upcoming.map((i) => [i.key, i.targetDate, i.overdue]), [
+    ['A-1', '2026-09-20', true],
+    ['A-2', '2026-09-29', false],
+    ['B-1', null, false],
+  ]);
   assert.equal(s.completed.total, 2);
   assert.equal(s.completed.today, 1);
   assert.deepEqual(s.completed.todayIssues, [
@@ -84,4 +89,11 @@ test('buildReport groups a day by issue in time order', () => {
   assert.deepEqual(r.groups[0].entries.map((e) => e.time), ['09:00', '16:00']);
   assert.equal(r.groups[1].issue.title, null);
   assert.equal(r.groups[1].completed, false);
+});
+
+test('buildReport keeps same-minute entries in the order they happened', () => {
+  // The PMS feed lists newest first.
+  const feed = [statusEvent('2026-09-29', 'A-1', 'New', '19:20'), statusEvent('2026-09-29', 'A-1', 'In Progress', '19:20')];
+  const r = buildReport({ date: '2026-09-29', entries: feed, titles: new Map() });
+  assert.deepEqual(r.groups[0].entries.map((e) => e.toStatus), ['In Progress', 'New']);
 });

@@ -103,6 +103,23 @@ export function summarize({ active: activeScope, completed, activity, today, day
       dueToday: active.filter((i) => listDateToIso(i.targetDate) === today).length,
       byStatus,
       byProject,
+      // Overdue first, then soonest target date, undated last.
+      upcoming: [...active]
+        .sort(
+          (a, b) =>
+            Number(b.overdue) - Number(a.overdue) ||
+            (listDateToIso(a.targetDate) ?? '9999').localeCompare(listDateToIso(b.targetDate) ?? '9999'),
+        )
+        .slice(0, 5)
+        .map((i) => ({
+          id: i.id,
+          key: i.key,
+          title: i.title,
+          project: i.projectName,
+          status: i.status,
+          targetDate: listDateToIso(i.targetDate),
+          overdue: i.overdue,
+        })),
     },
     completed: {
       total: completed.length,
@@ -120,7 +137,8 @@ export function summarize({ active: activeScope, completed, activity, today, day
 }
 
 export function buildReport({ date, entries, titles }) {
-  const sorted = [...entries].sort((a, b) => a.time.localeCompare(b.time));
+  // The feed is newest first; reverse before a stable sort so same-minute entries stay in order.
+  const sorted = [...entries].reverse().sort((a, b) => a.time.localeCompare(b.time));
   const groups = new Map();
   for (const e of sorted) {
     const key = e.issue?.key ?? `other:${e.project?.name ?? ''}`;

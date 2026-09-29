@@ -313,6 +313,7 @@ export default function App() {
           ) : (
             <DailyReport
               date={route.date ?? todayIso()}
+              userName={session.userName}
               onDateChange={(date) => setRoute((r) => ({ ...r, date, issueId: null }))}
               onOpenIssue={setOpenIssueId}
               onError={handlePanelError}

@@ -109,3 +109,59 @@
   .dash-grid { grid-template-columns: 1fr; }
   .report-summary { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* ---------- layout v2: chart beside the pending cards ---------- */
+.dash-grid { grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr); }
+.chart-card { align-self: stretch; }
+.small { font-size: 12px; }
+
+.next-list { list-style: none; margin: 0; padding: 0; }
+.next-list li + li { border-top: 1px solid var(--border); }
+.next-list button {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 9px 2px; border: 0; background: none; text-align: left; font-size: 13px;
+}
+.next-list button:hover .next-title { color: var(--accent); }
+.next-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.next-due { flex-shrink: 0; font-size: 12px; color: var(--muted); }
+.next-due.overdue { color: #dc2626; font-weight: 500; }
+
+.done-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; }
+.done-grid li { border-top: 1px solid var(--border); }
+.done-grid li:nth-child(-n + 2) { border-top: 0; }
+.done-grid button {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 10px 2px; border: 0; background: none; text-align: left; font-size: 13px;
+}
+.done-grid button:hover .done-title { color: var(--accent); }
+.done-grid .key { flex-shrink: 0; font-size: 10.5px; }
+.show-all { margin-top: 10px; }
+
+/* ---------- daily report as a written document ---------- */
+.report-doc {
+  display: flex; flex-direction: column; gap: 28px;
+  padding: 28px 32px; border-radius: 12px; background: var(--surface); box-shadow: var(--shadow-sm);
+}
+.report-headline { margin: 0; font-size: 16px; line-height: 1.6; color: var(--text); }
+.report-section header { margin-bottom: 10px; }
+.report-section h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; font-weight: 600; }
+.report-section header p { margin: 3px 0 0; font-size: 12.5px; }
+.report-section ul { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--border); }
+.report-section.completed ul { border-left-color: #86efac; }
+.report-section.inProgress ul { border-left-color: #c4b5fd; }
+.report-section li { padding: 9px 0 9px 16px; }
+.report-line { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.report-issue {
+  border: 0; background: none; padding: 0; text-align: left;
+  font-size: 14px; font-weight: 500; color: var(--text); line-height: 1.45;
+}
+button.report-issue:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.report-ref { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; }
+.report-ref .key { font-size: 10.5px; padding: 2px 6px; }
+.report-sentence { margin: 3px 0 0; font-size: 13px; line-height: 1.55; color: var(--text-2); }
+
+@media (max-width: 1100px) {
+  .done-grid { grid-template-columns: 1fr; }
+  .done-grid li:nth-child(2) { border-top: 1px solid var(--border); }
+  .report-doc { padding: 22px 20px; }
+}

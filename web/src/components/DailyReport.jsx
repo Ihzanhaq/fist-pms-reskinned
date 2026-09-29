@@ -1,47 +1,36 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowRight, Check, CheckCircle2, ChevronLeft, ChevronRight, Copy, FileText } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Copy, FileText } from 'lucide-react';
 import { api, errorMessage } from '../api.js';
 import { formatLong, relativeDay, shiftIso, todayIso } from '../dates.js';
+import { reportText, sections, sentence } from '../reportWording.js';
 import DatePicker from './DatePicker.jsx';
 
-const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+const SECTION_NOTE = {
+  completed: (n) => `You finished ${n === 1 ? 'this issue' : `these ${n} issues`}.`,
+  inProgress: (n) => `Work started or continued on ${n === 1 ? 'this issue' : `${n} issues`}.`,
+  created: (n) => `You raised ${n === 1 ? 'a new issue' : `${n} new issues`}.`,
+  other: () => 'Status changes, dates and assignments.',
+};
 
-function describe(entry) {
-  if (entry.kind === 'status') {
-    return (
-      <>
-        <span className="pill-status">{entry.fromStatus}</span>
-        <ArrowRight size={13} className="arrow" />
-        <span className="pill-status to">{entry.toStatus}</span>
-      </>
-    );
-  }
-  return <span>{entry.text[0].toUpperCase() + entry.text.slice(1)}</span>;
+function Headline({ report, date }) {
+  const s = report.summary;
+  if (!s.actions) return null;
+  const day = relativeDay(date) === 'Today' ? 'Today' : `On ${formatLong(date).split(',')[0]}`;
+  const bits = [];
+  if (s.completed) bits.push(`completed ${s.completed} ${s.completed === 1 ? 'issue' : 'issues'}`);
+  const touched = s.issues - s.completed;
+  if (touched > 0) bits.push(`worked on ${touched} ${s.completed ? 'more' : touched === 1 ? 'issue' : 'issues'}`);
+  if (s.created) bits.push(`created ${s.created}`);
+  if (s.comments) bits.push(`left ${s.comments} ${s.comments === 1 ? 'comment' : 'comments'}`);
+  const text = bits.length > 1 ? `${bits.slice(0, -1).join(', ')} and ${bits.at(-1)}` : bits[0];
+  return (
+    <p className="report-headline">
+      {day} you {text ?? `made ${s.actions} updates`}.
+    </p>
+  );
 }
 
-// Plain-text version for pasting into chat or email.
-function reportText(report) {
-  const lines = [`Daily report – ${formatLong(report.date)}`, ''];
-  const done = report.groups.filter((g) => g.completed);
-  const other = report.groups.filter((g) => !g.completed);
-  const name = (g) => (g.issue ? `${g.issue.key}${g.issue.title ? ` ${g.issue.title}` : ''}` : g.project ?? 'Other');
-  if (done.length) {
-    lines.push(`Completed (${done.length})`);
-    done.forEach((g) => lines.push(`- ${name(g)}${g.project ? ` (${g.project})` : ''}`));
-    lines.push('');
-  }
-  if (other.length) {
-    lines.push(`Other updates (${other.length})`);
-    other.forEach((g) => {
-      const what = g.entries.map((e) => (e.kind === 'status' ? `${e.fromStatus} → ${e.toStatus}` : e.text)).join('; ');
-      lines.push(`- ${name(g)}: ${what}`);
-    });
-  }
-  if (!report.groups.length) lines.push('No PMS activity.');
-  return lines.join('\n').trim();
-}
-
-export default function DailyReport({ date, onDateChange, onOpenIssue, onError }) {
+export default function DailyReport({ date, userName, onDateChange, onOpenIssue, onError }) {
   const [report, setReport] = useState(null);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
@@ -63,12 +52,10 @@ export default function DailyReport({ date, onDateChange, onOpenIssue, onError }
   }, [load]);
 
   const copy = async () => {
-    await navigator.clipboard.writeText(reportText(report));
+    await navigator.clipboard.writeText(reportText(report, formatLong(date), { me: userName }));
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
   };
-
-  const s = report?.summary;
 
   return (
     <div className="report">
@@ -110,70 +97,48 @@ export default function DailyReport({ date, onDateChange, onOpenIssue, onError }
 
       {!report && !error && <div className="dash-loading">Loading {relativeDay(date).toLowerCase()}…</div>}
 
-      {report && (
-        <>
-          <div className="report-summary">
-            <div>
-              <strong>{s.completed}</strong>
-              <span>completed</span>
-            </div>
-            <div>
-              <strong>{s.issues}</strong>
-              <span>{s.issues === 1 ? 'issue touched' : 'issues touched'}</span>
-            </div>
-            <div>
-              <strong>{s.statusChanges}</strong>
-              <span>status {s.statusChanges === 1 ? 'change' : 'changes'}</span>
-            </div>
-            <div>
-              <strong>{s.created}</strong>
-              <span>created</span>
-            </div>
-            <div>
-              <strong>{s.comments}</strong>
-              <span>{s.comments === 1 ? 'comment' : 'comments'}</span>
-            </div>
-          </div>
+      {report && report.groups.length === 0 && (
+        <div className="empty">
+          <FileText size={28} />
+          <p>No PMS activity {relativeDay(date) === 'Today' ? 'yet today' : 'on this day'}.</p>
+        </div>
+      )}
 
-          {report.groups.length === 0 ? (
-            <div className="empty">
-              <FileText size={28} />
-              <p>No PMS activity on {relativeDay(date) === 'Today' ? 'this day yet' : 'this day'}.</p>
-            </div>
-          ) : (
-            <ol className="report-list">
-              {report.groups.map((g, i) => (
-                <li key={g.issue?.key ?? `g${i}`} className="report-item">
-                  <div className="report-item-head">
-                    {g.issue ? (
-                      <button className="report-issue" onClick={() => onOpenIssue(g.issue.id)}>
-                        <span className="key">{g.issue.key}</span>
-                        <span className="report-title">{g.issue.title ?? 'Issue not assigned to you'}</span>
-                      </button>
-                    ) : (
-                      <span className="report-title">{g.project ?? 'Other'}</span>
-                    )}
-                    {g.completed && (
-                      <span className="done-badge">
-                        <CheckCircle2 size={13} /> Completed
+      {report && report.groups.length > 0 && (
+        <article className="report-doc">
+          <Headline report={report} date={date} />
+
+          {sections(report.groups).map((section) => (
+            <section key={section.id} className={`report-section ${section.id}`}>
+              <header>
+                <h2>
+                  {section.title} <span className="count-badge">{section.groups.length}</span>
+                </h2>
+                <p className="muted">{SECTION_NOTE[section.id](section.groups.length)}</p>
+              </header>
+              <ul>
+                {section.groups.map((g, i) => (
+                  <li key={g.issue?.key ?? `${section.id}-${i}`}>
+                    <div className="report-line">
+                      {g.issue ? (
+                        <button className="report-issue" onClick={() => onOpenIssue(g.issue.id)}>
+                          {g.issue.title ?? g.issue.key}
+                        </button>
+                      ) : (
+                        <span className="report-issue plain">{g.project ?? 'Other'}</span>
+                      )}
+                      <span className="report-ref">
+                        {g.issue?.title && <span className="key">{g.issue.key}</span>}
+                        {g.project && g.issue && <span className="muted">{g.project}</span>}
                       </span>
-                    )}
-                    {g.project && g.issue && <span className="muted report-project">{g.project}</span>}
-                  </div>
-                  <ul className="report-entries">
-                    {g.entries.map((e, j) => (
-                      <li key={j}>
-                        <span className="report-time">{e.time}</span>
-                        <span className="report-what">{describe(e)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </li>
-              ))}
-            </ol>
-          )}
-          <p className="muted report-note">{plural(s.actions, 'update')} recorded in the PMS activity log.</p>
-        </>
+                    </div>
+                    <p className="report-sentence">{sentence(g.entries, { me: userName })}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </article>
       )}
     </div>
   );

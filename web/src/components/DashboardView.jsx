@@ -24,6 +24,7 @@ function StatTile({ label, value, detail, children }) {
   );
 }
 
+const DONE_PREVIEW = 10;
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 export default function DashboardView({ onOpenIssue, onOpenReport, onError }) {
@@ -32,6 +33,7 @@ export default function DashboardView({ onOpenIssue, onOpenReport, onError }) {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [asTable, setAsTable] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -97,7 +99,8 @@ export default function DashboardView({ onOpenIssue, onOpenReport, onError }) {
             <StatTile label="Completed · all time" value={data.completed.total.toLocaleString()} detail="Issues assigned to you" />
           </section>
 
-          <section className="card">
+          <div className="dash-grid">
+          <section className="card chart-card">
             <header className="card-head">
               <div>
                 <h2>Completed per day</h2>
@@ -154,33 +157,30 @@ export default function DashboardView({ onOpenIssue, onOpenReport, onError }) {
             )}
           </section>
 
-          <div className="dash-grid">
-            <section className="card">
-              <header className="card-head">
-                <h2>Completed today</h2>
-                <button className="link-btn" onClick={onOpenReport}>
-                  Daily report <ArrowRight size={14} />
-                </button>
-              </header>
-              {data.completed.todayIssues.length ? (
-                <ul className="done-list">
-                  {data.completed.todayIssues.map((i) => (
-                    <li key={i.key}>
-                      <button onClick={() => onOpenIssue(i.id)}>
-                        <CheckCircle2 size={16} className="done-icon" />
-                        <span className="key">{i.key}</span>
-                        <span className="done-title">{i.title ?? i.key}</span>
-                        <span className="muted done-project">{i.project}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="muted empty-note">Nothing completed yet today.</p>
-              )}
-            </section>
-
             <div className="dash-side">
+              <section className="card">
+                <header className="card-head">
+                  <h2>Up next</h2>
+                  <span className="muted small">{data.pending.total} pending</span>
+                </header>
+                {data.pending.upcoming.length ? (
+                  <ul className="next-list">
+                    {data.pending.upcoming.map((i) => (
+                      <li key={i.key}>
+                        <button onClick={() => onOpenIssue(i.id)}>
+                          <span className="dot" style={{ background: i.status.color ?? '#94a3b8' }} title={i.status.name} />
+                          <span className="next-title">{i.title}</span>
+                          <span className={i.overdue ? 'next-due overdue' : 'next-due'}>
+                            {i.targetDate ? (i.overdue ? `Overdue · ${formatShort(i.targetDate)}` : formatShort(i.targetDate)) : 'No date'}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="muted empty-note">Nothing pending. Nice.</p>
+                )}
+              </section>
               <section className="card">
                 <header className="card-head">
                   <h2>Pending by status</h2>
@@ -203,6 +203,38 @@ export default function DashboardView({ onOpenIssue, onOpenReport, onError }) {
               </section>
             </div>
           </div>
+
+          <section className="card">
+            <header className="card-head">
+              <div>
+                <h2>Completed today</h2>
+                <p className="muted">{data.completed.today ? plural(data.completed.today, 'issue') + ' finished' : 'Nothing finished yet today'}</p>
+              </div>
+              <button className="link-btn" onClick={onOpenReport}>
+                Daily report <ArrowRight size={14} />
+              </button>
+            </header>
+            {data.completed.todayIssues.length > 0 && (
+              <>
+                <ul className="done-grid">
+                  {(showAll ? data.completed.todayIssues : data.completed.todayIssues.slice(0, DONE_PREVIEW)).map((i) => (
+                    <li key={i.key}>
+                      <button onClick={() => onOpenIssue(i.id)}>
+                        <CheckCircle2 size={16} className="done-icon" />
+                        <span className="done-title">{i.title ?? i.key}</span>
+                        <span className="key">{i.key}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                {data.completed.todayIssues.length > DONE_PREVIEW && (
+                  <button className="link-btn show-all" onClick={() => setShowAll((v) => !v)}>
+                    {showAll ? 'Show fewer' : `Show all ${data.completed.todayIssues.length}`}
+                  </button>
+                )}
+              </>
+            )}
+          </section>
         </>
       )}
     </div>
