@@ -85,7 +85,7 @@
 .sel-empty { padding: 8px 10px; font-size: 12px; color: var(--muted); }
 
 /* bulk bar sits on a dark background */
-.bulkbar .sel-filter { min-width: 230px; }
+.bulkbar .sel-filter { min-width: 190px; }
 .bulkbar .sel-filter .sel-trigger { height: 38px; box-shadow: none; }
 
 /* date picker */
@@ -123,3 +123,7 @@
 .sel-icon-only .sel-prefix { display: grid; place-items: center; color: var(--text-2); }
 .sel-icon-only .sel-trigger:hover .sel-prefix, .sel-icon-only .sel-trigger.open .sel-prefix { color: var(--accent); }
 .sel-icon-only .sel-menu { left: auto; right: 0; min-width: 190px; }
+
+/* Pop-up menus set their own text colour so they stay readable inside dark
+   containers (the bulk bar uses white text on every theme). */
+.sel-menu, .status-menu, .assignee-menu { color: var(--text); }

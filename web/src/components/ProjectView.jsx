@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, ArrowLeft, ExternalLink, Inbox, Plus, RefreshCw, Search, Users, X } from 'lucide-react';
-import { api, errorMessage, seedStates } from '../api.js';
+import { api, errorMessage, seedPeople, seedStates } from '../api.js';
+import { runBulk } from '../bulk.js';
+import BulkBar from './BulkBar.jsx';
+import Checkbox from './Checkbox.jsx';
 import { PMS_BASE } from '../richText.js';
 import Pagination from './Pagination.jsx';
 import AssigneeSelect from './AssigneeSelect.jsx';
@@ -39,6 +42,8 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [savingIds, setSavingIds] = useState(() => new Set());
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [bulkRunning, setBulkRunning] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -46,6 +51,7 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
     try {
       const result = await api.projectIssues(project.id);
       seedStates(project.id, result.states);
+      seedPeople(project.id, result.assignees);
       setData({ ...result, issues: result.issues.map((i) => ({ ...i, projectId: project.id })) });
     } catch (err) {
       if (err.code === 'session_expired') onError(err);
@@ -57,6 +63,7 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
 
   useEffect(() => {
     setData(null);
+    setSelectedIds(new Set());
     setFilters(EMPTY_FILTERS);
     setPage(1);
     load();
@@ -158,6 +165,32 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
   }, [data, filters, sort]);
 
   const pageItems = filtered.slice((page - 1) * pageSize, page * pageSize);
+
+  // Bulk actions only touch issues that are both selected and currently shown by the filters.
+  const selectedVisible = filtered.filter((i) => selectedIds.has(i.id));
+  const pageSelected = pageItems.filter((i) => selectedIds.has(i.id)).length;
+  const allPageSelected = pageItems.length > 0 && pageSelected === pageItems.length;
+  const toggleSelected = (id) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  const togglePage = (select) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const i of pageItems) select ? next.add(i.id) : next.delete(i.id);
+      return next;
+    });
+
+  const bulkUpdate = async (change) => {
+    const targets = selectedVisible;
+    setBulkRunning(true);
+    const { message, failed } = await runBulk(targets, change, { patch: patchIssue, colorFor, onError });
+    setBulkRunning(false);
+    setSelectedIds(new Set(failed.map((i) => i.id)));
+    showToast(failed.length ? 'error' : 'success', message);
+  };
   const set = (key) => (value) => setFilters((f) => ({ ...f, [key]: value }));
   const filtersActive = JSON.stringify(filters) !== JSON.stringify(EMPTY_FILTERS);
 
@@ -290,6 +323,13 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
       {!error && (
         <div className="table project-table">
           <div className="table-head">
+            <Checkbox
+              checked={allPageSelected}
+              indeterminate={pageSelected > 0 && !allPageSelected}
+              disabled={!data || pageItems.length === 0 || bulkRunning}
+              onChange={() => togglePage(!allPageSelected)}
+              label="Select all issues on this page"
+            />
             <span>Key</span>
             <span>Title</span>
             <span>Assignee</span>
@@ -301,6 +341,7 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
           {!data &&
             Array.from({ length: 8 }, (_, i) => (
               <div className="row skeleton" key={i}>
+                <span />
                 {Array.from({ length: 6 }, (_, j) => (
                   <span key={j} className="bone" />
                 ))}
@@ -315,7 +356,17 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
           )}
 
           {pageItems.map((issue) => (
-            <div className="row clickable" key={issue.id} onClick={rowClick(() => onOpenIssue(issue.id))}>
+            <div
+              className={selectedIds.has(issue.id) ? 'row clickable selected' : 'row clickable'}
+              key={issue.id}
+              onClick={rowClick(() => onOpenIssue(issue.id))}
+            >
+              <Checkbox
+                checked={selectedIds.has(issue.id)}
+                disabled={bulkRunning}
+                onChange={() => toggleSelected(issue.id)}
+                label={`Select ${issue.key}`}
+              />
               <span className="key">{issue.key}</span>
               <button className="title" onClick={() => onOpenIssue(issue.id)} title={issue.title}>
                 {issue.title}
@@ -339,6 +390,15 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
 
       {data && filtered.length > 0 && (
         <Pagination page={page} pageSize={pageSize} total={filtered.length} onPage={setPage} onPageSize={setPageSize} />
+      )}
+      {selectedVisible.length > 0 && (
+        <BulkBar
+          issues={selectedVisible}
+          running={bulkRunning}
+          colorFor={colorFor}
+          onApply={bulkUpdate}
+          onClear={() => setSelectedIds(new Set())}
+        />
       )}
     </>
   );

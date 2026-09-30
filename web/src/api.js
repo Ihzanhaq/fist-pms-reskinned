@@ -93,6 +93,25 @@ export function loadStates(issue) {
   return statesByProject.get(issue.projectId);
 }
 
+// People who can be assigned, per project. The project issue list carries them.
+const peopleByProject = new Map();
+
+export function seedPeople(projectId, people) {
+  if (people.length) peopleByProject.set(projectId, Promise.resolve(people));
+}
+
+export function loadPeople(issue) {
+  if (!peopleByProject.has(issue.projectId)) {
+    const pending = api.projectIssues(issue.projectId).then((r) => {
+      seedStates(issue.projectId, r.states);
+      return r.assignees;
+    });
+    pending.catch(() => peopleByProject.delete(issue.projectId));
+    peopleByProject.set(issue.projectId, pending);
+  }
+  return peopleByProject.get(issue.projectId);
+}
+
 // Runs worker over items with at most `limit` in flight.
 export async function runPool(items, limit, worker) {
   let next = 0;

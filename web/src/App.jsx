@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertOctagon, Loader2, Plus } from 'lucide-react';
-import { api, errorMessage, loadStates, runPool } from './api.js';
+import { api, errorMessage } from './api.js';
 import { parseRoute, routeToPath } from './route.js';
 import { THEMES, useAppearance } from './theme.js';
 import BulkBar from './components/BulkBar.jsx';
+import { runBulk } from './bulk.js';
 import ConnectClaude from './components/ConnectClaude.jsx';
 import SettingsView from './components/SettingsView.jsx';
 import WelcomeTour, { hasSeenTour, markTourSeen } from './components/WelcomeTour.jsx';
@@ -213,41 +214,17 @@ export default function App() {
     [],
   );
 
-  const bulkUpdate = async (targets, statusName) => {
-    const wanted = statusName.toLowerCase();
-    const jobs = [];
-    const failed = [];
-    let unchanged = 0;
-    let unavailable = 0;
-
+  const bulkUpdate = async (targets, change) => {
     setBulkRunning(true);
-    for (const issue of targets) {
-      if (issue.status.name.toLowerCase() === wanted) {
-        unchanged++;
-        continue;
-      }
-      const states = await loadStates(issue).catch(() => null);
-      const state = states?.find((s) => s.name.toLowerCase() === wanted);
-      if (!states) failed.push(issue);
-      else if (!state) unavailable++;
-      else jobs.push({ issue, state });
-    }
-
-    let updated = 0;
-    await runPool(jobs, 3, async ({ issue, state }) => {
-      const result = await applyStatus(issue, state);
-      result.ok ? updated++ : failed.push(issue);
-    });
+    targets.forEach((i) => setSaving(i.id, true));
+    const { message, failed } = await runBulk(targets, change, { patch: updateIssue, colorFor, onError: handleError });
+    targets.forEach((i) => setSaving(i.id, false));
     setBulkRunning(false);
-
     // Keep only failures selected so they can be retried.
     setSelectedIds(new Set(failed.map((i) => i.id)));
-
-    const parts = [`${updated} moved to ${statusName}`];
-    if (unchanged) parts.push(`${unchanged} already there`);
-    if (unavailable) parts.push(`${unavailable} skipped (status not in project)`);
-    if (failed.length) parts.push(`${failed.length} failed`);
-    showToast(failed.length ? 'error' : 'success', parts.join(' · '));
+    showToast(failed.length ? 'error' : 'success', message);
+    // Reassigned issues may no longer be yours.
+    if (change.person !== undefined) loadIssues();
   };
 
   // Keep the list in step with edits made in the detail panel.
@@ -475,7 +452,7 @@ export default function App() {
           issues={selectedVisible}
           running={bulkRunning}
           colorFor={colorFor}
-          onApply={(statusName) => bulkUpdate(selectedVisible, statusName)}
+          onApply={(change) => bulkUpdate(selectedVisible, change)}
           onClear={() => setSelectedIds(new Set())}
         />
       )}
