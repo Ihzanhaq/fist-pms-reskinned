@@ -11,8 +11,11 @@ import Select from './Select.jsx';
 import Avatar from './Avatar.jsx';
 import StatusSelect from './StatusSelect.jsx';
 import KanbanBoard, { ViewSwitch, savedView } from './KanbanBoard.jsx';
+import { todayIso } from '../dates.js';
+import { matchIssueDates } from '../issueFilters.js';
 import { projectIconLabel } from '../projectDisplay.js';
 import { rowClick } from '../rowClick.js';
+import DatePicker from './DatePicker.jsx';
 
 const PRIORITY_RANK = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
 const PRIORITY_COLORS = { urgent: '#dc2626', high: '#ea580c', medium: '#ca8a04', low: '#2f7de1', none: '#9ca3af' };
@@ -33,7 +36,17 @@ function keyNum(issue) {
   return Number(issue.key.split('-').pop()) || 0;
 }
 
-const EMPTY_FILTERS = { q: '', status: 'all', priority: 'all', assignee: 'all', overdue: false };
+const EMPTY_FILTERS = {
+  q: '',
+  status: 'all',
+  priority: 'all',
+  assignee: 'all',
+  overdue: false,
+  createdFrom: '',
+  createdTo: '',
+  targetFrom: '',
+  targetTo: '',
+};
 
 const filtersFromRoute = (routeQuery = {}) => ({
   q: routeQuery.q ?? '',
@@ -41,6 +54,10 @@ const filtersFromRoute = (routeQuery = {}) => ({
   priority: routeQuery.pPriority ?? 'all',
   assignee: routeQuery.pAssignee ?? 'all',
   overdue: Boolean(routeQuery.pOverdue),
+  createdFrom: routeQuery.createdFrom ?? '',
+  createdTo: routeQuery.createdTo ?? '',
+  targetFrom: routeQuery.targetFrom ?? '',
+  targetTo: routeQuery.targetTo ?? '',
 });
 
 export default function ProjectView({
@@ -98,7 +115,11 @@ export default function ProjectView({
       prev.status === next.status &&
       prev.priority === next.priority &&
       prev.assignee === next.assignee &&
-      prev.overdue === next.overdue
+      prev.overdue === next.overdue &&
+      prev.createdFrom === next.createdFrom &&
+      prev.createdTo === next.createdTo &&
+      prev.targetFrom === next.targetFrom &&
+      prev.targetTo === next.targetTo
         ? prev
         : next,
     );
@@ -111,6 +132,10 @@ export default function ProjectView({
     routeQuery?.pPriority,
     routeQuery?.pAssignee,
     routeQuery?.pOverdue,
+    routeQuery?.createdFrom,
+    routeQuery?.createdTo,
+    routeQuery?.targetFrom,
+    routeQuery?.targetTo,
     routeQuery?.pSort,
     routeQuery?.pPage,
     routeQuery?.layout,
@@ -125,6 +150,10 @@ export default function ProjectView({
       (routeQuery?.pPriority ?? 'all') === filters.priority &&
       (routeQuery?.pAssignee ?? 'all') === filters.assignee &&
       Boolean(routeQuery?.pOverdue) === filters.overdue &&
+      (routeQuery?.createdFrom ?? '') === filters.createdFrom &&
+      (routeQuery?.createdTo ?? '') === filters.createdTo &&
+      (routeQuery?.targetFrom ?? '') === filters.targetFrom &&
+      (routeQuery?.targetTo ?? '') === filters.targetTo &&
       (routeQuery?.pSort ?? 'default') === sort &&
       (routeQuery?.pPage ?? 1) === page &&
       (routeQuery?.layout ?? 'list') === view;
@@ -135,6 +164,10 @@ export default function ProjectView({
       pPriority: filters.priority,
       pAssignee: filters.assignee,
       pOverdue: filters.overdue,
+      createdFrom: filters.createdFrom,
+      createdTo: filters.createdTo,
+      targetFrom: filters.targetFrom,
+      targetTo: filters.targetTo,
       pSort: sort,
       pPage: page,
       layout: view,
@@ -150,6 +183,10 @@ export default function ProjectView({
     routeQuery?.pPriority,
     routeQuery?.pAssignee,
     routeQuery?.pOverdue,
+    routeQuery?.createdFrom,
+    routeQuery?.createdTo,
+    routeQuery?.targetFrom,
+    routeQuery?.targetTo,
     routeQuery?.pSort,
     routeQuery?.pPage,
     routeQuery?.layout,
@@ -245,7 +282,8 @@ export default function ProjectView({
         (filters.status === 'all' || i.status.name === filters.status) &&
         (filters.priority === 'all' || i.priority === filters.priority) &&
         (filters.assignee === 'all' || (i.assignee?.name ?? UNASSIGNED) === filters.assignee) &&
-        (!filters.overdue || i.overdue),
+        (!filters.overdue || i.overdue) &&
+        matchIssueDates(i, filters),
     );
     return sort === 'default' ? list : [...list].sort(SORTS[sort].fn);
   }, [data, filters, sort]);
@@ -279,6 +317,8 @@ export default function ProjectView({
   };
   const set = (key) => (value) => setFilters((f) => ({ ...f, [key]: value }));
   const filtersActive = JSON.stringify(filters) !== JSON.stringify(EMPTY_FILTERS);
+  const today = todayIso();
+  const datesActive = filters.createdFrom || filters.createdTo || filters.targetFrom || filters.targetTo;
 
   return (
     <>
@@ -394,6 +434,60 @@ export default function ProjectView({
             </button>
           )}
           <ViewSwitch view={view} onChange={setView} />
+        </div>
+        <div className="filter-dates">
+          <div className="filter-date-row">
+            <span className="filter-date-label">Created</span>
+            <DatePicker
+              ariaLabel="Created from"
+              placeholder="From"
+              value={filters.createdFrom}
+              max={filters.createdTo || today}
+              onChange={set('createdFrom')}
+            />
+            <DatePicker
+              ariaLabel="Created to"
+              placeholder="To"
+              value={filters.createdTo}
+              min={filters.createdFrom || undefined}
+              max={today}
+              onChange={set('createdTo')}
+            />
+          </div>
+          <div className="filter-date-row">
+            <span className="filter-date-label">Target</span>
+            <DatePicker
+              ariaLabel="Target from"
+              placeholder="From"
+              value={filters.targetFrom}
+              max={filters.targetTo || undefined}
+              onChange={set('targetFrom')}
+            />
+            <DatePicker
+              ariaLabel="Target to"
+              placeholder="To"
+              value={filters.targetTo}
+              min={filters.targetFrom || undefined}
+              onChange={set('targetTo')}
+            />
+          </div>
+          {datesActive && (
+            <button
+              type="button"
+              className="link-btn filter-date-clear"
+              onClick={() =>
+                setFilters((f) => ({
+                  ...f,
+                  createdFrom: '',
+                  createdTo: '',
+                  targetFrom: '',
+                  targetTo: '',
+                }))
+              }
+            >
+              Clear dates
+            </button>
+          )}
         </div>
       </div>
 

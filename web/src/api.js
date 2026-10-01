@@ -62,8 +62,16 @@ export const api = {
   projects: () => call('/api/projects').then(({ projects }) => ({ projects: projects.map(normalizeProject) })),
   myProjects: () => call('/api/my-projects').then(({ projects }) => ({ projects: projects.map(normalizeProject) })),
   dashboard: (days = 14) => call(`/api/dashboard?days=${days}`),
-  leaderboard: (period, projectId) =>
-    call(`/api/leaderboard?period=${period}${projectId ? `&project=${projectId}` : ''}`),
+  leaderboard: (period, projectId, from, to, refresh = false) => {
+    const params = new URLSearchParams({ period });
+    if (projectId) params.set('project', projectId);
+    if (refresh) params.set('refresh', '1');
+    if (period === 'custom' && from && to) {
+      params.set('from', from);
+      params.set('to', to);
+    }
+    return call(`/api/leaderboard?${params}`);
+  },
   report: (date) => call(`/api/report?date=${date}`),
   updates: () => call('/api/updates'),
   applyUpdate: () => call('/api/updates/apply', { method: 'POST' }),

@@ -1,22 +1,33 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { periodRange, rankPeople } from '../leaderboard.js';
+import { periodRange, rankLifetime, rankPeople, resolveLeaderboardRange } from '../leaderboard.js';
 
 const status = (who, key, to, date = '2026-09-29', project = 'Demo') => ({
   who,
   date,
   kind: 'status',
   toStatus: to,
-  issue: { key },
+  issue: { key, id: key },
   project: { name: project },
+});
+
+test('resolveLeaderboardRange checks custom dates; all time is not a date range', () => {
+  assert.throws(() => resolveLeaderboardRange({ period: 'alltime' }));
+  assert.deepEqual(resolveLeaderboardRange({ period: 'custom', from: '2026-09-01', to: '2026-09-15' }), {
+    period: 'custom',
+    from: '2026-09-01',
+    to: '2026-09-15',
+  });
+  assert.throws(() => resolveLeaderboardRange({ period: 'custom', from: '2026-09-20', to: '2026-09-01' }));
+  assert.throws(() => resolveLeaderboardRange({ period: 'custom', from: 'bad', to: '2026-09-01' }));
 });
 
 test('periodRange covers this week, this month and the last 30 days', () => {
   assert.deepEqual(periodRange('week', '2026-09-30'), { from: '2026-09-28', to: '2026-09-30' }); // Wed -> Mon
   assert.deepEqual(periodRange('week', '2026-09-28'), { from: '2026-09-28', to: '2026-09-28' });
   assert.deepEqual(periodRange('week', '2026-10-04'), { from: '2026-09-28', to: '2026-10-04' }); // Sunday
+  assert.deepEqual(periodRange('today', '2026-09-30'), { from: '2026-09-30', to: '2026-09-30' });
   assert.deepEqual(periodRange('month', '2026-09-30'), { from: '2026-09-01', to: '2026-09-30' });
-  assert.deepEqual(periodRange('30d', '2026-09-30'), { from: '2026-09-01', to: '2026-09-30' });
   assert.throws(() => periodRange('year', '2026-09-30'));
 });
 
@@ -61,4 +72,48 @@ test('rankPeople gives ties the same rank', () => {
 test('rankPeople counts Feedback as completed', () => {
   const rows = rankPeople([status('A', 'X-1', 'Feedback')]);
   assert.equal(rows[0].completed, 1);
+});
+
+test('rankPeople credits completed work to the assignee and skips reopened issues', () => {
+  const issues = new Map([
+    ['A-1', { status: 'Resolved', assignee: { id: 'id-asha', name: 'Asha' } }],
+    ['A-2', { status: 'In Progress', assignee: { id: 'id-asha', name: 'Asha' } }], // reopened
+    ['A-3', { status: 'Closed', assignee: { id: 'id-asha', name: 'Asha' } }],
+  ]);
+  const rows = rankPeople(
+    [
+      status('Ravi', 'A-1', 'Resolved'), // Ravi resolved Asha's issue
+      status('Asha', 'A-2', 'Done'),
+      status('Ravi', 'A-3', 'Closed'),
+      status('Ravi', 'Z-9', 'Done'), // not in the index: stays with Ravi
+    ],
+    [],
+    issues,
+  );
+  const by = Object.fromEntries(rows.map((r) => [r.name, [r.completed, r.closed]]));
+  assert.deepEqual(by, { Asha: [1, 0], Ravi: [1, 1] });
+  assert.equal(rows.find((r) => r.name === 'Asha').id, 'id-asha');
+});
+
+test('rankLifetime counts by assignee like the PMS project dashboard', () => {
+  const issue = (status, name, id = null) => ({ status: { name: status }, assignee: name ? { id, name } : null });
+  const rows = rankLifetime([
+    {
+      id: 'p1',
+      issues: [
+        issue('Resolved', 'Vector'),
+        issue('Closed', 'Vector', 'id-v'),
+        issue('Rejected', 'Vector'),
+        issue('New', 'Vector'),
+        issue('Done', 'Athul'),
+        issue('New', null),
+      ],
+    },
+    { id: 'p2', issues: [issue('In Progress', 'Athul'), issue('Cancelled', 'Mia')] },
+  ]);
+  assert.deepEqual(rows.map((r) => [r.rank, r.name, r.completed, r.closed, r.open, r.projects]), [
+    [1, 'Vector', 2, 1, 1, 1],
+    [2, 'Athul', 1, 0, 1, 2],
+  ]);
+  assert.equal(rows[0].id, 'id-v');
 });

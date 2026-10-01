@@ -24,6 +24,7 @@ function parseIssueRow(item) {
   const titleLink = item.querySelector('a.mi-title');
   const projectLink = item.querySelector('a.mi-proj');
   const statusEl = item.querySelector('.mi-status');
+  const startEl = item.querySelector('.mi-start');
   const dateEl = item.querySelector('.mi-target');
 
   const id = titleLink?.getAttribute('href')?.match(UUID)?.[0];
@@ -33,6 +34,7 @@ function parseIssueRow(item) {
   }
 
   const dotStyle = statusEl.querySelector('.dot')?.getAttribute('style') ?? '';
+  const startDate = lastSpanText(startEl);
   const targetDate = lastSpanText(dateEl);
   const projectIconEl = projectLink?.querySelector('.ic');
 
@@ -46,6 +48,7 @@ function parseIssueRow(item) {
     projectColor: projectIconEl?.getAttribute('style')?.match(HEX_COLOR)?.[0] ?? null,
     status: { name: clean(statusEl), color: dotStyle.match(HEX_COLOR)?.[0] ?? null },
     priority: lastSpanText(item.querySelector('.pill')) || 'none',
+    startDate: startDate && startDate !== '—' ? startDate : null,
     targetDate: targetDate && targetDate !== '—' ? targetDate : null,
     overdue: Boolean(dateEl?.classList.contains('is-over')),
   };
@@ -308,6 +311,7 @@ export function parseProjectIssues(html) {
   const issues = root.querySelectorAll('.mi-item').map((item) => {
     const titleLink = item.querySelector('a.mi-title');
     const statusEl = item.querySelector('.mi-status');
+    const startEl = item.querySelector('.mi-start');
     const dateEl = item.querySelector('.mi-target');
     const id = uuidIn(titleLink);
     if (!id || !statusEl) throw new LayoutChangedError('A project issue row has an unexpected layout');
@@ -321,6 +325,13 @@ export function parseProjectIssues(html) {
       const name = trigger?.getAttribute('title')?.match(/^Assigned to (.+)$/)?.[1];
       if (name) assignee = { id: uuidIn(trigger.querySelector('img'), 'src'), name };
     }
+    // Finished issues show the assignee read-only, without a picker.
+    if (!assignee) {
+      const fixed = item.querySelector('.ap-static');
+      const name = fixed?.getAttribute('title')?.trim();
+      if (name && !/^unassigned$/i.test(name)) assignee = { id: uuidIn(fixed.querySelector('img'), 'src'), name };
+    }
+    const startDate = lastSpanText(startEl);
     const targetDate = lastSpanText(dateEl);
 
     return {
@@ -335,6 +346,7 @@ export function parseProjectIssues(html) {
       assignee,
       // Closed issues have no assignee picker; the PMS only allows reassigning after reopening.
       assigneeLocked: !item.querySelector('form[action$="/assignee"]'),
+      startDate: startDate && startDate !== '—' ? startDate : null,
       targetDate: targetDate && targetDate !== '—' ? targetDate : null,
       overdue: Boolean(dateEl?.classList.contains('is-over')),
     };

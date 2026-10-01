@@ -30,7 +30,7 @@ function monthGrid(y, m) {
   });
 }
 
-export default function DatePicker({ value, onChange, min, placeholder = 'Pick a date', ariaLabel, disabled }) {
+export default function DatePicker({ value, onChange, min, max, placeholder = 'Pick a date', ariaLabel, disabled }) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState(() => parseIso(value) ?? parseIso(todayIso()));
   const rootRef = useRef(null);
@@ -122,7 +122,7 @@ export default function DatePicker({ value, onChange, min, placeholder = 'Pick a
               <span key={w} className="cal-weekday">{w}</span>
             ))}
             {monthGrid(view.y, view.m).map(({ iso, day, inMonth }) => {
-              const blocked = Boolean(min && iso < min);
+              const blocked = Boolean((min && iso < min) || (max && iso > max));
               const cls = ['cal-day', !inMonth && 'outside', iso === today && 'today', iso === value && 'selected']
                 .filter(Boolean)
                 .join(' ');
@@ -137,7 +137,12 @@ export default function DatePicker({ value, onChange, min, placeholder = 'Pick a
             <button type="button" className="link-btn" onClick={() => choose('')}>
               Clear
             </button>
-            <button type="button" className="link-btn" disabled={Boolean(min && today < min)} onClick={() => choose(today)}>
+            <button
+              type="button"
+              className="link-btn"
+              disabled={Boolean((min && today < min) || (max && today > max))}
+              onClick={() => choose(today)}
+            >
               Today
             </button>
           </div>

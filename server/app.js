@@ -45,7 +45,15 @@ export function createApp() {
 
   app.get('/api/dashboard', async (req, res) => res.json(await insights.dashboard(req.query.days)));
   app.get('/api/leaderboard', async (req, res) =>
-    res.json(await leaderboard({ period: req.query.period || 'week', projectId: req.query.project || null })),
+    res.json(
+      await leaderboard({
+        period: req.query.period || 'week',
+        projectId: req.query.project || null,
+        from: req.query.from,
+        to: req.query.to,
+        refresh: req.query.refresh === '1',
+      }),
+    ),
   );
   app.get('/api/report', async (req, res) => res.json(await insights.dailyReport(req.query.date || undefined)));
 

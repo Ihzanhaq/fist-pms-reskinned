@@ -24,7 +24,7 @@ export default function ProjectsGrid({
   const [projects, setProjects] = useState(null);
   const [error, setError] = useState(null);
   const [q, setQ] = useState('');
-  const [sort, setSort] = useState(mineOnly ? 'name' : 'pinned');
+  const [sort, setSort] = useState('name');
   const [pinning, setPinning] = useState(() => new Set());
 
   // Optimistic; reverts if the PMS refuses.
@@ -68,9 +68,10 @@ export default function ProjectsGrid({
 
   const visible = useMemo(() => {
     const term = q.trim().toLowerCase();
+    const cmp = SORTS[sort].fn;
     return pool
       .filter((p) => !term || [p.name, p.key, p.description].some((t) => t.toLowerCase().includes(term)))
-      .sort(SORTS[sort].fn);
+      .sort((a, b) => (b.pinned - a.pinned) || cmp(a, b));
   }, [pool, q, sort]);
 
   const sortOptions = useMemo(() => {
@@ -169,16 +170,16 @@ export default function ProjectsGrid({
                 <div className="project-cover" style={{ '--c': p.color ?? '#059669' }}>
                   {p.hasCover && <img src={`/api/project-covers/${p.id}`} alt="" loading="lazy" onError={(e) => e.currentTarget.remove()} />}
                   <button
-                  className={p.pinned ? 'pin-btn on' : 'pin-btn'}
-                  title={p.pinned ? 'Unpin' : 'Pin to your list'}
-                  aria-label={p.pinned ? `Unpin ${p.name}` : `Pin ${p.name}`}
-                  aria-pressed={p.pinned}
-                  disabled={pinning.has(p.id)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    togglePin(p);
-                  }}
-                >
+                    className={p.pinned ? 'pin-btn on' : 'pin-btn'}
+                    title={p.pinned ? 'Unpin' : 'Pin to your list'}
+                    aria-label={p.pinned ? `Unpin ${p.name}` : `Pin ${p.name}`}
+                    aria-pressed={p.pinned}
+                    disabled={pinning.has(p.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      togglePin(p);
+                    }}
+                  >
                     {pinning.has(p.id) ? <Loader2 size={14} className="spin" /> : p.pinned ? <PinOff size={14} /> : <Pin size={14} />}
                   </button>
                 </div>

@@ -4,7 +4,6 @@
 .lb-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 .lb-controls .segmented button { height: 34px; }
 .lb-controls .sel-compact { min-width: 170px; }
-
 .avatar.large { width: 68px; height: 68px; font-size: 24px; flex-shrink: 0; }
 .you-pill {
   display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; vertical-align: 2px;
@@ -113,3 +112,27 @@
 }
 :root[data-theme='glass'] .podium-avatar span.avatar { background: color-mix(in srgb, var(--medal) 30%, #1a1c26); }
 :root[data-theme='glass'][data-mode='light'] .podium-avatar span.avatar { background: color-mix(in srgb, var(--medal) 25%, #ffffff); }
+
+/* all time: lifetime table has fewer columns */
+.lb-table.lifetime :is(.lb-head, .lb-row) {
+  grid-template-columns: 34px minmax(180px, 1.4fr) minmax(150px, 1.2fr) repeat(3, minmax(64px, 0.5fr));
+}
+@media (max-width: 1100px) {
+  .lb-table.lifetime :is(.lb-head, .lb-row) { grid-template-columns: 30px minmax(150px, 1fr) minmax(120px, 1fr) repeat(2, 56px); }
+}
+
+/* all time: background counting progress */
+.lb-progress {
+  display: flex; flex-direction: column; gap: 10px; padding: 22px 24px; margin-bottom: 18px;
+  border-radius: 16px; background: var(--surface); box-shadow: var(--shadow-sm);
+}
+.lb-progress strong { font-size: 15px; font-weight: 600; }
+.lb-progress .muted { font-size: 12.5px; }
+.lb-progress-bar { position: relative; height: 8px; border-radius: 999px; background: var(--accent-soft); overflow: hidden; }
+.lb-progress-bar > span {
+  position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--accent);
+  transition: width 0.4s ease;
+}
+:root[data-theme='glass'] .lb-progress {
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(170%); backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+}

@@ -37,9 +37,15 @@ export const DEFAULT_ROUTE = {
   q: '',
   filterProject: 'all',
   filterStatus: 'all',
+  createdFrom: '',
+  createdTo: '',
+  targetFrom: '',
+  targetTo: '',
   layout: 'list',
   days: 14,
   period: 'week',
+  lbFrom: null,
+  lbTo: null,
   lbProject: '',
   pStatus: 'all',
   pPriority: 'all',
@@ -55,6 +61,7 @@ const int = (params, key, fallback) => {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
 };
 const bool = (params, key) => params.get(key) === '1';
+const isoParam = (params, key) => (ISO_DATE.test(params.get(key) ?? '') ? params.get(key) : '');
 
 export function parseRoute(location = typeof window !== 'undefined' ? window.location : { pathname: '/', search: '' }) {
   const [section, id] = location.pathname.split('/').filter(Boolean);
@@ -77,10 +84,19 @@ export function parseRoute(location = typeof window !== 'undefined' ? window.loc
     q: view === 'issues' || projectId ? str(params, 'q') : DEFAULT_ROUTE.q,
     filterProject: view === 'issues' ? str(params, 'project', 'all') || 'all' : DEFAULT_ROUTE.filterProject,
     filterStatus: view === 'issues' ? str(params, 'status', 'all') || 'all' : DEFAULT_ROUTE.filterStatus,
+    createdFrom: view === 'issues' || projectId ? isoParam(params, 'cFrom') : DEFAULT_ROUTE.createdFrom,
+    createdTo: view === 'issues' || projectId ? isoParam(params, 'cTo') : DEFAULT_ROUTE.createdTo,
+    targetFrom: view === 'issues' || projectId ? isoParam(params, 'tFrom') : DEFAULT_ROUTE.targetFrom,
+    targetTo: view === 'issues' || projectId ? isoParam(params, 'tTo') : DEFAULT_ROUTE.targetTo,
     layout:
       view === 'issues' || projectId ? (layoutRaw === 'board' ? 'board' : 'list') : DEFAULT_ROUTE.layout,
     days: [7, 14, 30].includes(daysRaw) ? daysRaw : DEFAULT_ROUTE.days,
-    period: ['week', 'month', '30d'].includes(periodRaw ?? '') ? periodRaw : DEFAULT_ROUTE.period,
+    period: ['today', 'week', 'month', 'custom', 'alltime'].includes(periodRaw ?? '')
+      ? periodRaw
+      : DEFAULT_ROUTE.period,
+    lbFrom:
+      view === 'leaderboard' && ISO_DATE.test(params.get('from') ?? '') ? params.get('from') : DEFAULT_ROUTE.lbFrom,
+    lbTo: view === 'leaderboard' && ISO_DATE.test(params.get('to') ?? '') ? params.get('to') : DEFAULT_ROUTE.lbTo,
     lbProject: view === 'leaderboard' ? idOrNull(params.get('project')) ?? '' : DEFAULT_ROUTE.lbProject,
     pStatus: projectId ? str(params, 'st', 'all') || 'all' : DEFAULT_ROUTE.pStatus,
     pPriority: projectId ? str(params, 'pri', 'all') || 'all' : DEFAULT_ROUTE.pPriority,
@@ -97,6 +113,10 @@ function issuesQuery(route) {
   if (route.q) params.set('q', route.q);
   if (route.filterProject !== 'all') params.set('project', route.filterProject);
   if (route.filterStatus !== 'all') params.set('status', route.filterStatus);
+  if (route.createdFrom) params.set('cFrom', route.createdFrom);
+  if (route.createdTo) params.set('cTo', route.createdTo);
+  if (route.targetFrom) params.set('tFrom', route.targetFrom);
+  if (route.targetTo) params.set('tTo', route.targetTo);
   if (route.layout === 'board') params.set('layout', 'board');
   return params;
 }
@@ -104,6 +124,10 @@ function issuesQuery(route) {
 function projectQuery(route) {
   const params = new URLSearchParams();
   if (route.q) params.set('q', route.q);
+  if (route.createdFrom) params.set('cFrom', route.createdFrom);
+  if (route.createdTo) params.set('cTo', route.createdTo);
+  if (route.targetFrom) params.set('tFrom', route.targetFrom);
+  if (route.targetTo) params.set('tTo', route.targetTo);
   if (route.pStatus !== 'all') params.set('st', route.pStatus);
   if (route.pPriority !== 'all') params.set('pri', route.pPriority);
   if (route.pAssignee !== 'all') params.set('asn', route.pAssignee);
@@ -139,6 +163,10 @@ export function routeToPath(route) {
     params = issuesQuery(route);
   } else if (route.view === 'leaderboard') {
     if (route.period !== DEFAULT_ROUTE.period) params.set('period', route.period);
+    if (route.period === 'custom' && route.lbFrom && route.lbTo) {
+      params.set('from', route.lbFrom);
+      params.set('to', route.lbTo);
+    }
     if (route.lbProject) params.set('project', route.lbProject);
   } else if (route.projectId && (route.view === 'projects' || route.view === 'my-projects')) {
     params = projectQuery(route);

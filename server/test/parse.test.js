@@ -30,6 +30,7 @@ test('parseMyIssues reads every field of a row', () => {
     projectColor: '#0d9488',
     status: { name: 'In Progress', color: '#2563EB' },
     priority: 'urgent',
+    startDate: '02 Sep 2026',
     targetDate: '11 Sep 2026',
     overdue: true,
   });
@@ -37,6 +38,7 @@ test('parseMyIssues reads every field of a row', () => {
 
 test('parseMyIssues handles missing target date', () => {
   const { issues } = parseMyIssues(fixture('my-issues.html'));
+  assert.equal(issues[1].startDate, null);
   assert.equal(issues[1].targetDate, null);
   assert.equal(issues[1].overdue, false);
   assert.equal(issues[1].priority, 'low');
@@ -203,7 +205,7 @@ test('parseProjectCards reads the project grid on the home page', () => {
 
 test('parseProjectIssues reads every issue with assignee and status options', () => {
   const { issues, states, assignees } = parseProjectIssues(fixture('project-issues.html'));
-  assert.equal(issues.length, 2);
+  assert.equal(issues.length, 3);
   assert.deepEqual(issues[0], {
     id: '11111111-1111-4111-8111-111111111111',
     key: 'DEMO-264',
@@ -212,6 +214,7 @@ test('parseProjectIssues reads every issue with assignee and status options', ()
     priority: 'high',
     assignee: { id: '66666666-6666-4666-8666-666666666666', name: 'Sam Reviewer' },
     assigneeLocked: false,
+    startDate: '01 Sep 2026',
     targetDate: '11 Sep 2026',
     overdue: true,
   });
@@ -219,6 +222,9 @@ test('parseProjectIssues reads every issue with assignee and status options', ()
   assert.equal(issues[1].assigneeLocked, true);
   assert.deepEqual(issues[1].status, { name: 'Closed', color: '#16A34A' });
   assert.equal(issues[1].targetDate, null);
+  // finished issues show the assignee read-only
+  assert.deepEqual(issues[2].assignee, { id: '88888888-8888-4888-8888-888888888888', name: 'Jane Tester' });
+  assert.equal(issues[2].assigneeLocked, true);
   assert.deepEqual(states, [
     { id: 'aaaa0001-0000-4000-8000-000000000001', name: 'New' },
     { id: 'aaaa0002-0000-4000-8000-000000000002', name: 'In Progress' },

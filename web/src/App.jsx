@@ -24,8 +24,17 @@ import IssueTable from './components/IssueTable.jsx';
 import KanbanBoard, { ViewSwitch, saveView } from './components/KanbanBoard.jsx';
 import LoginBanner from './components/LoginBanner.jsx';
 import Toast from './components/Toast.jsx';
+import { matchIssueDates } from './issueFilters.js';
 
-const EMPTY_FILTERS = { q: '', project: 'all', status: 'all' };
+const EMPTY_FILTERS = {
+  q: '',
+  project: 'all',
+  status: 'all',
+  createdFrom: '',
+  createdTo: '',
+  targetFrom: '',
+  targetTo: '',
+};
 const uniqueSorted = (values) => [...new Set(values)].sort((a, b) => a.localeCompare(b));
 
 const stubProject = (p) => ({
@@ -52,8 +61,16 @@ export default function App() {
   const scope = route.scope;
   const issueView = route.layout;
   const filters = useMemo(
-    () => ({ q: route.q, project: route.filterProject, status: route.filterStatus }),
-    [route.q, route.filterProject, route.filterStatus],
+    () => ({
+      q: route.q,
+      project: route.filterProject,
+      status: route.filterStatus,
+      createdFrom: route.createdFrom,
+      createdTo: route.createdTo,
+      targetFrom: route.targetFrom,
+      targetTo: route.targetTo,
+    }),
+    [route.q, route.filterProject, route.filterStatus, route.createdFrom, route.createdTo, route.targetFrom, route.targetTo],
   );
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -102,6 +119,10 @@ export default function App() {
         q: next.q,
         filterProject: next.project,
         filterStatus: next.status,
+        createdFrom: next.createdFrom,
+        createdTo: next.createdTo,
+        targetFrom: next.targetFrom,
+        targetTo: next.targetTo,
       }),
     [patchRoute],
   );
@@ -315,7 +336,8 @@ export default function App() {
       (i) =>
         (filters.project === 'all' || i.projectName === filters.project) &&
         (filters.status === 'all' || i.status.name === filters.status) &&
-        (!q || i.key.toLowerCase().includes(q) || i.title.toLowerCase().includes(q)),
+        (!q || i.key.toLowerCase().includes(q) || i.title.toLowerCase().includes(q)) &&
+        matchIssueDates(i, filters),
     );
   }, [issues, filters]);
 
@@ -405,8 +427,22 @@ export default function App() {
           ) : (
             <LeaderboardView
               period={route.period}
+              rangeFrom={route.lbFrom}
+              rangeTo={route.lbTo}
               projectId={route.lbProject}
-              onPeriodChange={(period) => patchRoute({ period })}
+              onPeriodChange={(period) => {
+                if (period === 'custom') {
+                  const today = todayIso();
+                  patchRoute({
+                    period,
+                    lbFrom: route.lbFrom ?? `${today.slice(0, 7)}-01`,
+                    lbTo: route.lbTo ?? today,
+                  });
+                } else {
+                  patchRoute({ period, lbFrom: null, lbTo: null });
+                }
+              }}
+              onRangeChange={(lbFrom, lbTo) => patchRoute({ period: 'custom', lbFrom, lbTo })}
               onProjectChange={(lbProject) => patchRoute({ lbProject })}
               userName={session.userName}
               onError={handlePanelError}
@@ -513,6 +549,7 @@ export default function App() {
               projects={projects}
               statuses={statuses}
               colorFor={colorFor}
+              showDateFilters
             />
             {error ? (
               <div className="error-card">
