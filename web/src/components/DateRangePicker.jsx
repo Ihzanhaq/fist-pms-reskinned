@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useDropUp } from '../useDropUp.js';
+import { useMenuPlacement } from '../useDropUp.js';
 
 const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -30,14 +30,25 @@ function monthGrid(y, m) {
 
 const orderRange = (a, b) => (a <= b ? [a, b] : [b, a]);
 
-export default function DateRangePicker({ from, to, onChange, max, open, onOpenChange, ariaLabel = 'Date range' }) {
+export default function DateRangePicker({
+  from,
+  to,
+  onChange,
+  max,
+  capFuture = true,
+  open,
+  onOpenChange,
+  ariaLabel = 'Date range',
+  emptyLabel,
+  variant,
+}) {
   const [pendingStart, setPendingStart] = useState(null);
   const [view, setView] = useState(() => parseIso(from) ?? parseIso(to) ?? parseIso(todayIso()));
   const rootRef = useRef(null);
   const menuRef = useRef(null);
-  const up = useDropUp(open, rootRef, menuRef);
+  const { up, alignRight } = useMenuPlacement(open, rootRef, menuRef, `${view.y}-${view.m}`);
   const today = todayIso();
-  const cap = max && max < today ? max : today;
+  const cap = capFuture ? (max && max < today ? max : today) : max ?? null;
 
   useEffect(() => {
     if (!open) {
@@ -71,12 +82,30 @@ export default function DateRangePicker({ from, to, onChange, max, open, onOpenC
   const previewEnd = pendingStart && !rangeFrom ? pendingStart : rangeTo;
   const previewStart = pendingStart ?? rangeFrom;
 
+  const active = Boolean(from || to);
   const label =
-    from && to ? `${formatShort(from)} – ${formatShort(to)}` : 'Pick date range';
+    from && to
+      ? `${formatShort(from)} – ${formatShort(to)}`
+      : from
+        ? `${emptyLabel ? `${emptyLabel}: ` : ''}from ${formatShort(from)}`
+        : to
+          ? `${emptyLabel ? `${emptyLabel}: ` : ''}until ${formatShort(to)}`
+          : emptyLabel ?? 'Pick date range';
+
+  const rootClass = [
+    'sel',
+    'sel-input',
+    'date-picker',
+    'date-range-picker',
+    variant === 'filter' && 'date-range-filter',
+    active && variant === 'filter' && 'on',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div
-      className="sel sel-input date-picker date-range-picker"
+      className={rootClass}
       ref={rootRef}
       onKeyDown={(e) => {
         if (e.key === 'Escape' && open) {
@@ -94,13 +123,13 @@ export default function DateRangePicker({ from, to, onChange, max, open, onOpenC
         aria-label={ariaLabel}
       >
         <CalendarDays size={15} className="date-icon" />
-        <span className={from && to ? 'sel-value' : 'sel-value placeholder'}>{label}</span>
+        <span className={active ? 'sel-value' : 'sel-value placeholder'}>{label}</span>
       </button>
 
       {open && (
         <div
           ref={menuRef}
-          className={up ? 'sel-menu calendar range-calendar up' : 'sel-menu calendar range-calendar'}
+          className={['sel-menu', 'calendar', 'range-calendar', up && 'up', alignRight && 'right'].filter(Boolean).join(' ')}
           role="dialog"
           aria-label={ariaLabel}
         >
@@ -123,7 +152,7 @@ export default function DateRangePicker({ from, to, onChange, max, open, onOpenC
               </span>
             ))}
             {monthGrid(view.y, view.m).map(({ iso, day, inMonth }) => {
-              const blocked = iso > cap;
+              const blocked = cap ? iso > cap : false;
               const [lo, hi] =
                 previewStart && (previewEnd || pendingStart)
                   ? orderRange(previewStart, previewEnd || pendingStart)
@@ -150,21 +179,36 @@ export default function DateRangePicker({ from, to, onChange, max, open, onOpenC
             })}
           </div>
           <div className="cal-foot">
+            {active && (
+              <button
+                type="button"
+                className="link-btn"
+                onClick={() => {
+                  onChange('', '');
+                  setPendingStart(null);
+                  onOpenChange(false);
+                }}
+              >
+                Clear
+              </button>
+            )}
             <button type="button" className="link-btn" onClick={() => setPendingStart(null)}>
               Reset
             </button>
-            <button
-              type="button"
-              className="link-btn"
-              disabled={cap !== today}
-              onClick={() => {
-                onChange(cap, cap);
-                setPendingStart(null);
-                onOpenChange(false);
-              }}
-            >
-              Today
-            </button>
+            {capFuture && (
+              <button
+                type="button"
+                className="link-btn"
+                disabled={cap !== today}
+                onClick={() => {
+                  onChange(cap, cap);
+                  setPendingStart(null);
+                  onOpenChange(false);
+                }}
+              >
+                Today
+              </button>
+            )}
           </div>
         </div>
       )}

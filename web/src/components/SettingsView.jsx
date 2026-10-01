@@ -386,6 +386,11 @@ export default function SettingsView({ appearance, tab = 'appearance', onTabChan
                 </label>
               </div>
             </section>
+          </>
+        )}
+
+        {tab === 'preferences' && (
+          <>
             <section className="settings-card">
               <header className="settings-head">
                 <div>
@@ -393,38 +398,30 @@ export default function SettingsView({ appearance, tab = 'appearance', onTabChan
                   <p className="muted">How project cards and headers look in this dashboard.</p>
                 </div>
               </header>
-              <div className="settings-toggle-row">
-                <div className="settings-toggle-item">
-                  <span className="settings-toggle-label">Cover banners</span>
-                  <button
-                    type="button"
-                    role="switch"
-                    className={display.projectCovers ? 'ui-switch on' : 'ui-switch'}
-                    aria-checked={display.projectCovers}
-                    onClick={() => updateDisplay({ projectCovers: !display.projectCovers })}
-                  >
-                    <span className="ui-switch-thumb" aria-hidden />
-                  </button>
+              <div className="pref-row first">
+                <div>
+                  <strong>Cover banners</strong>
+                  <p className="muted">Show cover images on project cards when the PMS has one.</p>
                 </div>
-                <div className="settings-toggle-item">
-                  <span className="settings-toggle-label">Project emojis</span>
-                  <button
-                    type="button"
-                    role="switch"
-                    className={display.projectEmojis ? 'ui-switch on' : 'ui-switch'}
-                    aria-checked={display.projectEmojis}
-                    onClick={() => updateDisplay({ projectEmojis: !display.projectEmojis })}
-                  >
-                    <span className="ui-switch-thumb" aria-hidden />
-                  </button>
+                <Switch
+                  on={display.projectCovers}
+                  onChange={(on) => updateDisplay({ projectCovers: on })}
+                  label="Cover banners"
+                />
+              </div>
+              <div className="pref-row">
+                <div>
+                  <strong>Project emojis</strong>
+                  <p className="muted">Show emoji icons on project cards and headers.</p>
                 </div>
+                <Switch
+                  on={display.projectEmojis}
+                  onChange={(on) => updateDisplay({ projectEmojis: on })}
+                  label="Project emojis"
+                />
               </div>
             </section>
-          </>
-        )}
 
-        {tab === 'preferences' && (
-          <>
             <section className="settings-card">
               <header className="settings-head">
                 <div>

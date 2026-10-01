@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { todayIso } from '../dates.js';
-import DatePicker from './DatePicker.jsx';
+import DateRangePicker from './DateRangePicker.jsx';
 import Select from './Select.jsx';
 
 export default function Filters({
@@ -13,13 +14,10 @@ export default function Filters({
   colorFor,
   showDateFilters = false,
 }) {
+  const [dateMenu, setDateMenu] = useState(null);
   const set = (key) => (value) => onChange({ ...filters, [key]: value });
   const today = todayIso();
-  const datesActive =
-    filters.createdFrom ||
-    filters.createdTo ||
-    filters.targetFrom ||
-    filters.targetTo;
+  const openMenu = (key) => (open) => setDateMenu(open ? key : null);
 
   return (
     <div className="filters">
@@ -62,63 +60,34 @@ export default function Filters({
             { value: 'all', label: 'Include completed' },
           ]}
         />
-      </div>
-      {showDateFilters && (
-        <div className="filter-dates">
-          <div className="filter-date-row">
-            <span className="filter-date-label">Created</span>
-            <DatePicker
-              ariaLabel="Created from"
-              placeholder="From"
-              value={filters.createdFrom}
-              max={filters.createdTo || today}
-              onChange={set('createdFrom')}
-            />
-            <DatePicker
-              ariaLabel="Created to"
-              placeholder="To"
-              value={filters.createdTo}
-              min={filters.createdFrom || undefined}
+        {showDateFilters && (
+          <>
+            <DateRangePicker
+              variant="filter"
+              emptyLabel="Created"
+              from={filters.createdFrom}
+              to={filters.createdTo}
               max={today}
-              onChange={set('createdTo')}
+              capFuture
+              open={dateMenu === 'created'}
+              onOpenChange={openMenu('created')}
+              onChange={(createdFrom, createdTo) => onChange({ ...filters, createdFrom, createdTo })}
+              ariaLabel="Created date range"
             />
-          </div>
-          <div className="filter-date-row">
-            <span className="filter-date-label">Target</span>
-            <DatePicker
-              ariaLabel="Target from"
-              placeholder="From"
-              value={filters.targetFrom}
-              max={filters.targetTo || undefined}
-              onChange={set('targetFrom')}
+            <DateRangePicker
+              variant="filter"
+              emptyLabel="Target"
+              from={filters.targetFrom}
+              to={filters.targetTo}
+              capFuture={false}
+              open={dateMenu === 'target'}
+              onOpenChange={openMenu('target')}
+              onChange={(targetFrom, targetTo) => onChange({ ...filters, targetFrom, targetTo })}
+              ariaLabel="Target date range"
             />
-            <DatePicker
-              ariaLabel="Target to"
-              placeholder="To"
-              value={filters.targetTo}
-              min={filters.targetFrom || undefined}
-              onChange={set('targetTo')}
-            />
-          </div>
-          {datesActive && (
-            <button
-              type="button"
-              className="link-btn filter-date-clear"
-              onClick={() =>
-                onChange({
-                  ...filters,
-                  createdFrom: '',
-                  createdTo: '',
-                  targetFrom: '',
-                  targetTo: '',
-                })
-              }
-            >
-              Clear dates
-            </button>
-          )}
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

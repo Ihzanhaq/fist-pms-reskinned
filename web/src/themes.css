@@ -225,7 +225,8 @@
 }
 
 /* ---------- Settings page ---------- */
-.settings { display: flex; flex-direction: column; gap: 20px; max-width: 1080px; margin-inline: auto; }
+.settings { display: flex; flex-direction: column; gap: 12px; max-width: 1080px; margin-inline: auto; }
+.settings .page-head { padding-bottom: 10px; margin-bottom: 0; border-bottom: 0; }
 .settings-card { padding: 22px 24px; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-sm); }
 .settings-card.dimmed .settings-row { opacity: 0.55; }
 .settings-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
@@ -334,11 +335,13 @@
 :root[data-theme='glass'] .settings-tabs {
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(170%); backdrop-filter: blur(var(--glass-blur)) saturate(170%);
 }
-.settings-body { display: flex; flex-direction: column; gap: 20px; animation: settings-in 0.22s ease-out; }
+.settings-body { display: flex; flex-direction: column; gap: 16px; animation: settings-in 0.22s ease-out; }
 @keyframes settings-in { from { opacity: 0; transform: translateY(6px); } }
 
 /* settings: preference rows */
 .pref-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 16px 0; border-top: 1px solid var(--border); }
+.pref-row.first { border-top: 0; padding-top: 0; }
+.settings-head + .pref-row.first { padding-top: 0; }
 .pref-row strong { font-size: 13.5px; font-weight: 600; color: var(--text); }
 .pref-row p { margin: 4px 0 0; font-size: 12.5px; line-height: 1.5; }
 .pref-row .secondary-btn { flex-shrink: 0; height: 36px; color: var(--text); }

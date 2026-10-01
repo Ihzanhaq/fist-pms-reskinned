@@ -15,7 +15,8 @@ import { todayIso } from '../dates.js';
 import { matchIssueDates } from '../issueFilters.js';
 import { projectIconLabel } from '../projectDisplay.js';
 import { rowClick } from '../rowClick.js';
-import DatePicker from './DatePicker.jsx';
+import DateRangePicker from './DateRangePicker.jsx';
+import { useFilterState } from '../useStoredState.js';
 
 const PRIORITY_RANK = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
 const PRIORITY_COLORS = { urgent: '#dc2626', high: '#ea580c', medium: '#ca8a04', low: '#2f7de1', none: '#9ca3af' };
@@ -80,11 +81,12 @@ export default function ProjectView({
   const [filters, setFilters] = useState(() => filtersFromRoute(routeQuery));
   const [sort, setSort] = useState(() => routeQuery?.pSort ?? 'default');
   const [page, setPage] = useState(() => routeQuery?.pPage ?? 1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useFilterState('project-page-size', 25, (v) => Number.isInteger(v) && v > 0);
   const [savingIds, setSavingIds] = useState(() => new Set());
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [bulkRunning, setBulkRunning] = useState(false);
   const [view, setView] = useState(() => routeQuery?.layout ?? savedView());
+  const [dateMenu, setDateMenu] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -318,7 +320,7 @@ export default function ProjectView({
   const set = (key) => (value) => setFilters((f) => ({ ...f, [key]: value }));
   const filtersActive = JSON.stringify(filters) !== JSON.stringify(EMPTY_FILTERS);
   const today = todayIso();
-  const datesActive = filters.createdFrom || filters.createdTo || filters.targetFrom || filters.targetTo;
+  const openDateMenu = (key) => (open) => setDateMenu(open ? key : null);
 
   return (
     <>
@@ -428,66 +430,35 @@ export default function ProjectView({
           >
             <AlertTriangle size={14} /> Overdue
           </button>
+          <DateRangePicker
+            variant="filter"
+            emptyLabel="Created"
+            from={filters.createdFrom}
+            to={filters.createdTo}
+            max={today}
+            capFuture
+            open={dateMenu === 'created'}
+            onOpenChange={openDateMenu('created')}
+            onChange={(createdFrom, createdTo) => setFilters((f) => ({ ...f, createdFrom, createdTo }))}
+            ariaLabel="Created date range"
+          />
+          <DateRangePicker
+            variant="filter"
+            emptyLabel="Target"
+            from={filters.targetFrom}
+            to={filters.targetTo}
+            capFuture={false}
+            open={dateMenu === 'target'}
+            onOpenChange={openDateMenu('target')}
+            onChange={(targetFrom, targetTo) => setFilters((f) => ({ ...f, targetFrom, targetTo }))}
+            ariaLabel="Target date range"
+          />
           {filtersActive && (
             <button className="link-btn" onClick={() => setFilters(EMPTY_FILTERS)}>
               Clear filters
             </button>
           )}
           <ViewSwitch view={view} onChange={setView} />
-        </div>
-        <div className="filter-dates">
-          <div className="filter-date-row">
-            <span className="filter-date-label">Created</span>
-            <DatePicker
-              ariaLabel="Created from"
-              placeholder="From"
-              value={filters.createdFrom}
-              max={filters.createdTo || today}
-              onChange={set('createdFrom')}
-            />
-            <DatePicker
-              ariaLabel="Created to"
-              placeholder="To"
-              value={filters.createdTo}
-              min={filters.createdFrom || undefined}
-              max={today}
-              onChange={set('createdTo')}
-            />
-          </div>
-          <div className="filter-date-row">
-            <span className="filter-date-label">Target</span>
-            <DatePicker
-              ariaLabel="Target from"
-              placeholder="From"
-              value={filters.targetFrom}
-              max={filters.targetTo || undefined}
-              onChange={set('targetFrom')}
-            />
-            <DatePicker
-              ariaLabel="Target to"
-              placeholder="To"
-              value={filters.targetTo}
-              min={filters.targetFrom || undefined}
-              onChange={set('targetTo')}
-            />
-          </div>
-          {datesActive && (
-            <button
-              type="button"
-              className="link-btn filter-date-clear"
-              onClick={() =>
-                setFilters((f) => ({
-                  ...f,
-                  createdFrom: '',
-                  createdTo: '',
-                  targetFrom: '',
-                  targetTo: '',
-                }))
-              }
-            >
-              Clear dates
-            </button>
-          )}
         </div>
       </div>
 

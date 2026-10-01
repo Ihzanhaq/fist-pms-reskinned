@@ -8,7 +8,11 @@ const toDate = (iso) => {
 
 /** "05 Oct 2026" (issue list format) -> "2026-10-05" */
 export function listDateToIso(text) {
-  const m = String(text ?? '').match(/(\d{1,2})\s+([a-z]{3})[a-z]*\s+(\d{4})/i);
+  const s = String(text ?? '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const embedded = s.match(/\d{4}-\d{2}-\d{2}/)?.[0];
+  if (embedded) return embedded;
+  const m = s.match(/(\d{1,2})\s+([a-z]{3})[a-z]*\s+(\d{4})/i);
   return m && LIST_MONTHS[m[2].toLowerCase()] ? `${m[3]}-${pad(LIST_MONTHS[m[2].toLowerCase()])}-${pad(m[1])}` : null;
 }
 

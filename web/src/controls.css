@@ -95,7 +95,7 @@
   border-radius: 6px; color: var(--muted); cursor: pointer;
 }
 .date-clear:hover { background: var(--bg); color: var(--text); }
-.calendar { width: 280px; max-width: none; padding: 12px; }
+.calendar { width: 280px; max-width: min(280px, calc(100vw - 16px)); padding: 12px; }
 .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .cal-head strong { font-size: 13.5px; font-weight: 600; }
 .cal-nav {
@@ -120,7 +120,7 @@
 .cal-hint { margin: 0 0 8px; font-size: 12px; color: var(--muted); text-align: center; }
 .cal-day:disabled { color: var(--faint); cursor: not-allowed; }
 .cal-foot { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
-.date-range-picker .sel-trigger { height: 34px; min-width: 200px; }
+.date-range-picker:not(.date-range-filter) .sel-trigger { height: 34px; min-width: 200px; }
 .cal-foot .link-btn:disabled { color: var(--muted); text-decoration: none; cursor: default; }
 
 /* icon-only trigger (e.g. the theme picker in the top bar) */

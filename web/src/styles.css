@@ -176,13 +176,18 @@ button:disabled { cursor: default; }
 .search input::-webkit-search-cancel-button { display: none; }
 .search-clear { border: 0; background: none; color: var(--muted); display: grid; padding: 2px; }
 .filter-group { display: flex; gap: 12px; flex-wrap: wrap; }
-.filter-dates {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; width: 100%;
+.date-range-picker.date-range-filter .sel-trigger {
+  height: 38px;
+  min-width: 0;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 500;
 }
-.filter-date-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.filter-date-label { font-size: 12px; font-weight: 600; color: var(--muted); min-width: 52px; }
-.filter-dates .date-picker .sel-trigger { height: 38px; min-width: 118px; }
-.filter-date-clear { margin-left: auto; }
+.date-range-picker.date-range-filter.on .sel-trigger {
+  border-color: var(--accent-border);
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+}
 .filter-select {
   appearance: none;
   height: 42px; min-width: 150px; padding: 0 36px 0 14px;

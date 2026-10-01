@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { useDropUp } from '../useDropUp.js';
+import { useMenuPlacement } from '../useDropUp.js';
 
 // Styled replacement for <input type="date">. Value is 'YYYY-MM-DD' or ''.
 const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
@@ -35,7 +35,7 @@ export default function DatePicker({ value, onChange, min, max, placeholder = 'P
   const [view, setView] = useState(() => parseIso(value) ?? parseIso(todayIso()));
   const rootRef = useRef(null);
   const menuRef = useRef(null);
-  const up = useDropUp(open, rootRef, menuRef);
+  const { up, alignRight } = useMenuPlacement(open, rootRef, menuRef, `${view.y}-${view.m}`);
 
   useEffect(() => {
     if (!open) return;
@@ -105,7 +105,12 @@ export default function DatePicker({ value, onChange, min, max, placeholder = 'P
       </button>
 
       {open && (
-        <div ref={menuRef} className={up ? 'sel-menu calendar up' : 'sel-menu calendar'} role="dialog" aria-label={ariaLabel}>
+        <div
+          ref={menuRef}
+          className={['sel-menu', 'calendar', up && 'up', alignRight && 'right'].filter(Boolean).join(' ')}
+          role="dialog"
+          aria-label={ariaLabel}
+        >
           <div className="cal-head">
             <button type="button" className="cal-nav" onClick={() => shiftMonth(-1)} aria-label="Previous month">
               <ChevronLeft size={16} />

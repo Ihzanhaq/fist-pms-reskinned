@@ -20,11 +20,32 @@ const lastSpanText = (el) => {
   return clean(spans.length ? spans[spans.length - 1] : el);
 };
 
+const normalizeListDate = (text) => {
+  if (!text || text === '—') return null;
+  const iso = text.match(/\d{4}-\d{2}-\d{2}/)?.[0];
+  return iso ?? text;
+};
+
+// Start/created column: `.mi-start` when present, otherwise the date span before target.
+function startDateElForRow(item) {
+  for (const sel of ['.mi-start', '.mi-created']) {
+    const el = item.querySelector(sel);
+    if (el) return el;
+  }
+  const targetEl = item.querySelector('.mi-target');
+  if (!targetEl) return null;
+  for (let s = targetEl.previousElementSibling; s; s = s.previousElementSibling) {
+    if (s.matches('a, .mi-key, .mi-status, .pill, .mi-proj, .mi-assignees, .ap, .inline-pick')) continue;
+    if (normalizeListDate(lastSpanText(s))) return s;
+  }
+  return null;
+}
+
 function parseIssueRow(item) {
   const titleLink = item.querySelector('a.mi-title');
   const projectLink = item.querySelector('a.mi-proj');
   const statusEl = item.querySelector('.mi-status');
-  const startEl = item.querySelector('.mi-start');
+  const startEl = startDateElForRow(item);
   const dateEl = item.querySelector('.mi-target');
 
   const id = titleLink?.getAttribute('href')?.match(UUID)?.[0];
@@ -34,8 +55,8 @@ function parseIssueRow(item) {
   }
 
   const dotStyle = statusEl.querySelector('.dot')?.getAttribute('style') ?? '';
-  const startDate = lastSpanText(startEl);
-  const targetDate = lastSpanText(dateEl);
+  const startDate = normalizeListDate(lastSpanText(startEl));
+  const targetDate = normalizeListDate(lastSpanText(dateEl));
   const projectIconEl = projectLink?.querySelector('.ic');
 
   return {
@@ -48,8 +69,8 @@ function parseIssueRow(item) {
     projectColor: projectIconEl?.getAttribute('style')?.match(HEX_COLOR)?.[0] ?? null,
     status: { name: clean(statusEl), color: dotStyle.match(HEX_COLOR)?.[0] ?? null },
     priority: lastSpanText(item.querySelector('.pill')) || 'none',
-    startDate: startDate && startDate !== '—' ? startDate : null,
-    targetDate: targetDate && targetDate !== '—' ? targetDate : null,
+    startDate,
+    targetDate,
     overdue: Boolean(dateEl?.classList.contains('is-over')),
   };
 }
@@ -311,7 +332,7 @@ export function parseProjectIssues(html) {
   const issues = root.querySelectorAll('.mi-item').map((item) => {
     const titleLink = item.querySelector('a.mi-title');
     const statusEl = item.querySelector('.mi-status');
-    const startEl = item.querySelector('.mi-start');
+    const startEl = startDateElForRow(item);
     const dateEl = item.querySelector('.mi-target');
     const id = uuidIn(titleLink);
     if (!id || !statusEl) throw new LayoutChangedError('A project issue row has an unexpected layout');
@@ -331,8 +352,8 @@ export function parseProjectIssues(html) {
       const name = fixed?.getAttribute('title')?.trim();
       if (name && !/^unassigned$/i.test(name)) assignee = { id: uuidIn(fixed.querySelector('img'), 'src'), name };
     }
-    const startDate = lastSpanText(startEl);
-    const targetDate = lastSpanText(dateEl);
+    const startDate = normalizeListDate(lastSpanText(startEl));
+    const targetDate = normalizeListDate(lastSpanText(dateEl));
 
     return {
       id,
@@ -346,8 +367,8 @@ export function parseProjectIssues(html) {
       assignee,
       // Closed issues have no assignee picker; the PMS only allows reassigning after reopening.
       assigneeLocked: !item.querySelector('form[action$="/assignee"]'),
-      startDate: startDate && startDate !== '—' ? startDate : null,
-      targetDate: targetDate && targetDate !== '—' ? targetDate : null,
+      startDate,
+      targetDate,
       overdue: Boolean(dateEl?.classList.contains('is-over')),
     };
   });
