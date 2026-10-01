@@ -9,6 +9,7 @@ import { LayoutChangedError } from './parse.js';
 import { SessionExpiredError } from './pms-client.js';
 import * as insights from './insights.js';
 import { leaderboard } from './leaderboard.js';
+import * as updates from './updates.js';
 import * as service from './service.js';
 import { BadRequestError } from './service.js';
 
@@ -32,6 +33,8 @@ export function createApp() {
     if (info.loggedIn) info.userId = await insights.myActorId().catch(() => null);
     res.json(info);
   });
+  app.get('/api/updates', async (req, res) => res.json(await updates.status()));
+  app.post('/api/updates/apply', async (req, res) => res.json(await updates.apply()));
   app.get('/api/browsers', (req, res) => res.json(service.browsers()));
   app.post('/api/login', async (req, res) => {
     const info = await service.login(req.body?.browser);

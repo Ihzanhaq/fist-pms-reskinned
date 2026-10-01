@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Check, ImagePlus, Loader2, Monitor, Trash2 } from 'lucide-react';
+import UpdatesCard from './UpdatesCard.jsx';
 import { GLASS_PRESETS, THEMES, glassBackgroundCss, hexLuminance, prepareImage, tintFor } from '../theme.js';
 
 const MAX_UPLOAD_MB = 20;
@@ -304,6 +305,7 @@ export default function SettingsView({ appearance, onShowTour }) {
           </button>
         </header>
       </section>
+      <UpdatesCard />
     </div>
   );
 }

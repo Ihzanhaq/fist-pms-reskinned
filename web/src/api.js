@@ -64,6 +64,8 @@ export const api = {
   leaderboard: (period, projectId) =>
     call(`/api/leaderboard?period=${period}${projectId ? `&project=${projectId}` : ''}`),
   report: (date) => call(`/api/report?date=${date}`),
+  updates: () => call('/api/updates'),
+  applyUpdate: () => call('/api/updates/apply', { method: 'POST' }),
   setPinned: (projectId, pinned) => call(`/api/projects/${projectId}/pin`, { method: 'POST', body: { pinned } }),
   projectIssues: (projectId) => call(`/api/projects/${projectId}/issues`),
   issueForm: (projectId, parentId) =>

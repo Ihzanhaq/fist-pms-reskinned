@@ -204,3 +204,11 @@
 .project-card:hover .pin-btn, .project-card:focus-within .pin-btn, .pin-btn.on, .pin-btn:disabled { opacity: 1; }
 .pin-btn.on { color: var(--accent); }
 .project-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Settings: updates */
+.update-note { display: flex; align-items: center; gap: 8px; margin: 14px 0 0; font-size: 13px; color: var(--text-2); }
+.update-note.ok { color: var(--accent); }
+.update-note.error { color: var(--danger); }
+.update-list { margin: 10px 0 14px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.update-list li { display: flex; justify-content: space-between; gap: 16px; padding: 8px 12px; border-radius: 8px; background: var(--bg); }
+.update-log { margin: 12px 0 0; padding: 12px; max-height: 220px; overflow: auto; border-radius: 8px; background: var(--bg); font-size: 11.5px; white-space: pre-wrap; }
