@@ -50,7 +50,7 @@ It pulls the latest code, installs dependencies, rebuilds the web app and stops 
 ## Login data and security
 
 - The PMS session is saved in `~/.fist-pms-dashboard` (`cookie.json` plus a dedicated browser profile). The dashboard and the Claude extension share it. **Anyone with this folder can act as you in the PMS until the session ends** — don't share or sync it. Delete the folder to sign out everywhere.
-- PMS sessions time out when idle; they are renewed silently from the saved browser profile, and a sign-in window opens only when that fails.
+- PMS sessions time out when idle; the dashboard pings PMS every 8 minutes while the API (or Claude MCP) is running to reset idle time. When the servlet session still expires, it is renewed silently from the saved browser profile, and a sign-in window opens only when that fails. Override the interval with `PMS_KEEPALIVE_MS` (milliseconds).
 - The dashboard server listens on `127.0.0.1` only.
 - Comments and descriptions from the PMS are sanitized (DOMPurify) before the dashboard displays them.
 

@@ -4,7 +4,7 @@ import { api, errorMessage, seedPeople, seedStates } from '../api.js';
 import { runBulk } from '../bulk.js';
 import BulkBar from './BulkBar.jsx';
 import Checkbox from './Checkbox.jsx';
-import { PMS_BASE } from '../richText.js';
+import { openInPms } from '../openInPms.js';
 import Pagination from './Pagination.jsx';
 import AssigneeSelect from './AssigneeSelect.jsx';
 import Select from './Select.jsx';
@@ -342,9 +342,13 @@ export default function ProjectView({
           <button className="icon-btn" onClick={load} disabled={loading} title="Reload issues">
             <RefreshCw size={17} className={loading ? 'spin' : undefined} />
           </button>
-          <a className="secondary-btn" href={`${PMS_BASE}/projects/${project.id}`} target="_blank" rel="noreferrer">
+          <button
+            type="button"
+            className="secondary-btn"
+            onClick={() => openInPms(`/projects/${project.id}`, onError)}
+          >
             <ExternalLink size={15} /> Open in PMS
-          </a>
+          </button>
           <button className="primary-btn new-issue-btn" onClick={() => onNewIssue(project)}>
             <Plus size={16} /> New issue
           </button>

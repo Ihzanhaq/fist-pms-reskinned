@@ -42,6 +42,7 @@ export function createApp() {
     res.json(info);
   });
   app.post('/api/logout', (req, res) => res.json(service.logout()));
+  app.post('/api/open-pms', async (req, res) => res.json(await service.openPms(req.body?.path)));
 
   app.get('/api/dashboard', async (req, res) => res.json(await insights.dashboard(req.query.days)));
   app.get('/api/leaderboard', async (req, res) =>

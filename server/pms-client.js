@@ -1,6 +1,6 @@
 // Talks to the PMS like a browser would: session cookie in, HTML out.
 import { PMS_BASE } from './config.js';
-import { getCookie, silentLogin } from './session.js';
+import { getCookie, renewCookieFromResponse, silentLogin } from './session.js';
 
 export class SessionExpiredError extends Error {
   constructor() {
@@ -41,6 +41,7 @@ async function request(path, init = {}, canRetry = true) {
     if (isGet && canRetry && (await silentLogin())) return request(path, init, false);
     throw new SessionExpiredError();
   }
+  renewCookieFromResponse(res);
   return res;
 }
 

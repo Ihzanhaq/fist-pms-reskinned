@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import { chromium } from 'playwright-core';
 import { COOKIE_FILE, DATA_DIR, PMS_BASE } from './config.js';
 import { BROWSER_NAMES, chosenBrowser, findExecutable, profileDir, saveChoice } from './browsers.js';
+import { CHROMIUM_WINDOW_ARGS, focusBrowserWindow, keepBrowserOnTop } from './browser-window.js';
 
 const LOGIN_TIMEOUT_MS = 5 * 60_000;
 const SILENT_TIMEOUT_MS = 20_000;
@@ -23,6 +24,22 @@ export function getCookie() {
 function saveCookie(value) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   fs.writeFileSync(COOKIE_FILE, JSON.stringify({ jsessionid: value }), { mode: 0o600 });
+}
+
+/** Store a rotated JSESSIONID when PMS sends Set-Cookie on a response. */
+export function renewCookieFromResponse(res) {
+  const lines =
+    typeof res.headers.getSetCookie === 'function'
+      ? res.headers.getSetCookie()
+      : [];
+  if (!lines.length) {
+    const single = res.headers.get('set-cookie');
+    if (single) lines.push(single);
+  }
+  for (const line of lines) {
+    const match = line.match(/\bJSESSIONID=([^;]+)/i);
+    if (match) saveCookie(match[1]);
+  }
 }
 
 export function clearCookie() {
@@ -66,10 +83,71 @@ export async function silentLogin() {
 const isBackOnPms = (url) =>
   url.origin === PMS_BASE && !url.pathname.startsWith('/login') && !url.pathname.startsWith('/oauth2');
 
-async function signIn({ visible, browser: id }) {
-  const browser = BROWSER_NAMES[id] ?? 'a browser';
+const pmsCookie = (value) => ({
+  name: 'JSESSIONID',
+  value,
+  domain: 'pms.fistinnovations.com',
+  path: '/',
+  secure: true,
+  httpOnly: true,
+  sameSite: 'Lax',
+});
+
+// Opens PMS in the user's Chromium browser using the saved session cookie.
+// Uses a one-off browser window so it does not fight the login profile lock.
+export async function openBrowser(path = '/') {
+  let jsessionid = getCookie();
+  if (!jsessionid) throw new Error('Not signed in to PMS');
+
+  if (loginInFlight?.kind === 'window') {
+    throw new Error('Finish signing in in the login window first.');
+  }
+
+  const id = chosenBrowser();
   const executablePath = id && findExecutable(id);
-  if (!executablePath) throw new Error(`Could not find ${browser} on this computer.`);
+  if (!executablePath) throw new Error('No Chromium browser found on this computer.');
+
+  const browser = await chromium.launch({
+    executablePath,
+    headless: false,
+    args: CHROMIUM_WINDOW_ARGS,
+  });
+  try {
+    const context = await browser.newContext({ viewport: null });
+    const page = await context.newPage();
+    const url = PMS_BASE + (path.startsWith('/') ? path : `/${path}`);
+
+    const go = async (cookie) => {
+      await context.clearCookies();
+      await context.addCookies([pmsCookie(cookie)]);
+      await page.goto(url, { timeout: 45_000, waitUntil: 'domcontentloaded' });
+    };
+
+    await go(jsessionid);
+    if (!isBackOnPms(new URL(page.url()))) {
+      if (loginInFlight?.kind === 'window' || !(await silentLogin())) {
+        throw new Error('Session expired — sign in again from the dashboard.');
+      }
+      jsessionid = getCookie();
+      if (!jsessionid) throw new Error('Session expired — sign in again from the dashboard.');
+      await go(jsessionid);
+      if (!isBackOnPms(new URL(page.url()))) {
+        throw new Error('Session expired — sign in again from the dashboard.');
+      }
+    }
+
+    await focusBrowserWindow(browser, page);
+    // Leave the window open until the user closes it.
+  } catch (err) {
+    await browser.close().catch(() => {});
+    throw err;
+  }
+}
+
+async function signIn({ visible, browser: id }) {
+  const browserLabel = BROWSER_NAMES[id] ?? 'a browser';
+  const executablePath = id && findExecutable(id);
+  if (!executablePath) throw new Error(`Could not find ${browserLabel} on this computer.`);
   const profile = profileDir(id);
   fs.mkdirSync(profile, { recursive: true });
   let context;
@@ -78,19 +156,26 @@ async function signIn({ visible, browser: id }) {
       executablePath,
       headless: !visible,
       viewport: null,
+      args: CHROMIUM_WINDOW_ARGS,
     });
   } catch (err) {
     if (/ProcessSingleton|in use|lock/i.test(err.message)) {
       throw new Error('The PMS login window is already open in another app (dashboard or Claude). Finish signing in there.');
     }
-    throw new Error(`Could not open ${browser} for the PMS login. Is it installed? (${err.message.split('\n')[0]})`);
+    throw new Error(`Could not open ${browserLabel} for the PMS login. Is it installed? (${err.message.split('\n')[0]})`);
   }
   try {
     const page = context.pages()[0] ?? (await context.newPage());
+    const chromiumBrowser = context.browser();
     await page.goto(PMS_BASE, { timeout: SILENT_TIMEOUT_MS });
     if (visible) {
-      await page.bringToFront();
-      await page.waitForURL(isBackOnPms, { timeout: LOGIN_TIMEOUT_MS });
+      const stopFocus = keepBrowserOnTop(chromiumBrowser, page);
+      try {
+        await focusBrowserWindow(chromiumBrowser, page);
+        await page.waitForURL(isBackOnPms, { timeout: LOGIN_TIMEOUT_MS });
+      } finally {
+        clearInterval(stopFocus);
+      }
     } else if (!isBackOnPms(new URL(page.url()))) {
       throw new Error('Keycloak needs the user to sign in');
     }

@@ -3,6 +3,7 @@
 // so nothing else may write to it.
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { startSessionKeepalive } from '../server/keepalive.js';
 import { registerTools } from './tools.js';
 
 const server = new McpServer(
@@ -15,4 +16,5 @@ const server = new McpServer(
   },
 );
 registerTools(server);
+startSessionKeepalive();
 await server.connect(new StdioServerTransport());

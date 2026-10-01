@@ -15,7 +15,8 @@ import {
   X,
 } from 'lucide-react';
 import { api, attachmentUrl, errorMessage } from '../api.js';
-import { PMS_BASE, isBlank, sanitizeRichText } from '../richText.js';
+import { openInPms } from '../openInPms.js';
+import { isBlank, sanitizeRichText } from '../richText.js';
 import Avatar from './Avatar.jsx';
 import Select from './Select.jsx';
 
@@ -131,9 +132,14 @@ export default function IssueDrawer({
         <div className="drawer-top">
           <span className="key">{detail?.key ?? '…'}</span>
           <div className="drawer-top-actions">
-            <a className="icon-btn" href={`${PMS_BASE}/issues/${issueId}`} target="_blank" rel="noreferrer" title="Open in PMS">
+            <button
+              type="button"
+              className="icon-btn"
+              title="Open in PMS"
+              onClick={() => openInPms(`/issues/${issueId}`, onError)}
+            >
               <ExternalLink size={17} />
-            </a>
+            </button>
             <button className="icon-btn" onClick={onClose} title="Close (Esc)">
               <X size={18} />
             </button>

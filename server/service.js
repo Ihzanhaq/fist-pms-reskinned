@@ -67,6 +67,29 @@ export function logout() {
   return { loggedIn: false };
 }
 
+function safePmsPath(path) {
+  const p = (path ?? '/').trim();
+  if (!p.startsWith('/') || p.startsWith('//') || p.includes('..') || /[\0\r\n]/.test(p)) {
+    throw new BadRequestError('bad_request', 'Invalid path');
+  }
+  if (p.length > 2048) throw new BadRequestError('bad_request', 'Invalid path');
+  return p;
+}
+
+export async function openPms(path) {
+  if (!session.getCookie()) throw new SessionExpiredError();
+  const safePath = safePmsPath(path);
+  try {
+    await session.openBrowser(safePath);
+  } catch (err) {
+    if (err instanceof SessionExpiredError) throw err;
+    const msg = err.message ?? 'Could not open PMS';
+    if (/not signed in|session expired/i.test(msg)) throw new SessionExpiredError();
+    throw new BadRequestError('open_failed', msg);
+  }
+  return { ok: true };
+}
+
 // ---------- reading ----------
 
 export async function listMyIssues(scope = 'active') {

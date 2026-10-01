@@ -1,4 +1,5 @@
 import { ExternalLink, FileText, FolderKanban, LayoutDashboard, ListChecks, LogOut, Settings, Star, Trophy } from 'lucide-react';
+import { openInPms } from '../openInPms.js';
 import Avatar from './Avatar.jsx';
 import BrandMark from './BrandMark.jsx';
 import ClaudeIcon from './ClaudeIcon.jsx';
@@ -34,7 +35,7 @@ function isProjectListActive(view, id, activeProjectId) {
   return view === id && !activeProjectId;
 }
 
-export default function Sidebar({ view, activeProjectId, onNavigate, user, onLogout }) {
+export default function Sidebar({ view, activeProjectId, onNavigate, user, onLogout, onOpenPmsError }) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -66,10 +67,10 @@ export default function Sidebar({ view, activeProjectId, onNavigate, user, onLog
               );
             })}
             {group.label === 'Integrations' && (
-              <a className="nav-item" href="https://pms.fistinnovations.com/" target="_blank" rel="noreferrer">
+              <button type="button" className="nav-item" onClick={() => openInPms('/', onOpenPmsError)}>
                 <ExternalLink size={17} />
                 <span>Open PMS</span>
-              </a>
+              </button>
             )}
           </div>
         ))}

@@ -419,6 +419,7 @@ export default function App() {
           onNavigate={navigate}
           user={{ id: session.userId, name: session.userName }}
           onLogout={logout}
+          onOpenPmsError={handlePanelError}
         />
       )}
       <TopBar

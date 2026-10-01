@@ -1,16 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ExternalLink, Loader2, LogOut, Pencil } from 'lucide-react';
-import { api, errorMessage } from '../api.js';
-import Avatar, { refreshAvatars } from './Avatar.jsx';
-import ProfilePhotoCropModal from './ProfilePhotoCropModal.jsx';
-import ProfilePhotoMenuModal from './ProfilePhotoMenuModal.jsx';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ExternalLink, Loader2, LogOut, Pencil } from "lucide-react";
+import { api, errorMessage } from "../api.js";
+import Avatar, { refreshAvatars } from "./Avatar.jsx";
+import ProfilePhotoCropModal from "./ProfilePhotoCropModal.jsx";
+import ProfilePhotoMenuModal from "./ProfilePhotoMenuModal.jsx";
 
-const SSO_PROFILE = 'https://sso.fistinnovations.com/profile';
+const SSO_PROFILE = "https://sso.fistinnovations.com/profile";
 
 export default function AccountSettings({ user, onLogout, onProfileUpdate }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
   const [cropFile, setCropFile] = useState(null);
   const [savingPhoto, setSavingPhoto] = useState(false);
@@ -21,7 +21,7 @@ export default function AccountSettings({ user, onLogout, onProfileUpdate }) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError('');
+    setError("");
     try {
       const data = await api.profile();
       setProfile(data);
@@ -38,20 +38,20 @@ export default function AccountSettings({ user, onLogout, onProfileUpdate }) {
   }, [load]);
 
   const userId = profile?.userId ?? user?.id;
-  const displayName = profile?.name ?? user?.name ?? '';
+  const displayName = profile?.name ?? user?.name ?? "";
 
   const onPickFile = (file) => {
-    if (!file?.type.startsWith('image/')) {
-      setError('Choose an image file (PNG, JPG, WEBP or GIF).');
+    if (!file?.type.startsWith("image/")) {
+      setError("Choose an image file (PNG, JPG, WEBP or GIF).");
       return;
     }
-    setError('');
+    setError("");
     setCropFile(file);
   };
 
   const onSavePhoto = async (blob) => {
     setSavingPhoto(true);
-    setError('');
+    setError("");
     try {
       const data = await api.uploadProfilePhoto(blob);
       setProfile(data);
@@ -67,9 +67,9 @@ export default function AccountSettings({ user, onLogout, onProfileUpdate }) {
 
   const onRemovePhoto = async () => {
     if (!profile?.hasPhoto || removing) return;
-    if (!window.confirm('Remove your profile photo?')) return;
+    if (!window.confirm("Remove your profile photo?")) return;
     setRemoving(true);
-    setError('');
+    setError("");
     try {
       const data = await api.deleteProfilePhoto();
       setProfile(data);
@@ -89,7 +89,9 @@ export default function AccountSettings({ user, onLogout, onProfileUpdate }) {
         <header className="settings-head">
           <div>
             <h2>Your account</h2>
-            <p className="muted">Update your photo here. Name and email are managed in FIST SSO.</p>
+            <p className="muted">
+              Update your photo here. Name and email are managed in FIST SSO.
+            </p>
           </div>
         </header>
 
@@ -106,7 +108,12 @@ export default function AccountSettings({ user, onLogout, onProfileUpdate }) {
             onClick={() => setPhotoMenuOpen(true)}
             aria-haspopup="dialog"
           >
-            <Avatar id={userId} name={displayName} size="large" className="account-avatar" />
+            <Avatar
+              id={userId}
+              name={displayName}
+              size="large"
+              className="account-avatar"
+            />
             <span className="account-photo-edit">
               <Pencil size={14} aria-hidden /> Edit photo
             </span>
@@ -118,27 +125,47 @@ export default function AccountSettings({ user, onLogout, onProfileUpdate }) {
             hidden
             onChange={(e) => {
               onPickFile(e.target.files?.[0]);
-              e.target.value = '';
+              e.target.value = "";
             }}
           />
           <div className="account-fields">
             <label className="field">
               <span>Name</span>
-              <input className="input" type="text" value={displayName} readOnly aria-readonly="true" />
+              <input
+                className="input"
+                type="text"
+                value={displayName}
+                readOnly
+                aria-readonly="true"
+              />
             </label>
             <label className="field">
               <span>Email</span>
-              <input className="input" type="text" value={profile?.email ?? ''} readOnly aria-readonly="true" />
+              <input
+                className="input"
+                type="text"
+                value={profile?.email ?? ""}
+                readOnly
+                aria-readonly="true"
+              />
             </label>
           </div>
         </div>
 
-        <div className="account-actions">
-          <a className="secondary-btn" href={SSO_PROFILE} target="_blank" rel="noreferrer">
-            <ExternalLink size={15} /> Update name &amp; email in SSO
+        <div className="account-footer">
+          <a
+            className="account-footer-link"
+            href={SSO_PROFILE}
+            target="_blank"
+            rel="noreferrer"
+            title="Update name and email in FIST SSO"
+          >
+            <ExternalLink size={14} strokeWidth={2} aria-hidden />
+            Edit in SSO
           </a>
-          <button className="secondary-btn danger" onClick={onLogout}>
-            <LogOut size={15} /> Sign out
+          <button type="button" className="account-footer-signout" onClick={onLogout}>
+            <LogOut size={14} strokeWidth={2} aria-hidden />
+            Sign out
           </button>
         </div>
 
