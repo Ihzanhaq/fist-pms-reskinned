@@ -28,12 +28,14 @@ const hasBuild = fs.existsSync(path.join(root, 'web', 'dist', 'index.html'));
 const changed = Boolean(head) && built !== head;
 
 // Install and build on first run, and again whenever the code has changed.
-if (!fs.existsSync(path.join(root, 'node_modules')) || changed) run('npm install');
+// A server started from older code is stopped first so it restarts on the new
+// version. `npm ci` never rewrites package-lock.json, which would otherwise
+// count as a local edit and block the next update.
+if (changed && hasBuild) (await import('./stop-server.mjs')).stopServer();
+if (!fs.existsSync(path.join(root, 'node_modules')) || changed) run('npm ci');
 if (!hasBuild || changed) {
   run('npm run build');
   if (head) fs.writeFileSync(builtFile, head);
-  // A server started from older code must restart to run the new version.
-  if (hasBuild) (await import('./stop-server.mjs')).stopServer();
 }
 
 const { PORT } = await import('../server/config.js');

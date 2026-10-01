@@ -21,11 +21,12 @@ run('git pull --ff-only');
 const after = read('git rev-parse HEAD');
 if (before === after) console.log('Already on the latest version; rebuilding anyway.');
 
-run('npm install');
+// Stop the background server first; the shortcut starts a fresh one.
+stopServer();
+
+// `npm ci` installs exactly what package-lock.json says and never rewrites it.
+run('npm ci');
 run('npm run build');
 fs.writeFileSync(path.join(root, 'web', 'dist', '.built-commit'), after);
-
-// Stop the background server; the shortcut starts a fresh one.
-stopServer();
 
 console.log('\nUpdated. Open the FIST PMS shortcut to start the new version.');
