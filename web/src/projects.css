@@ -204,8 +204,3 @@
 .project-card:hover .pin-btn, .project-card:focus-within .pin-btn, .pin-btn.on, .pin-btn:disabled { opacity: 1; }
 .pin-btn.on { color: var(--accent); }
 .project-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.project-banner {
-  position: relative; height: 140px; margin-bottom: 18px; border-radius: 12px; overflow: hidden;
-  background: linear-gradient(135deg, var(--c), #1e293b);
-}
-.project-banner img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }

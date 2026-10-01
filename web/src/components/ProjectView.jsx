@@ -202,10 +202,6 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
         <ArrowLeft size={15} /> All projects
       </button>
 
-      <div className="project-banner" style={{ '--c': project.color ?? '#059669' }}>
-        {project.hasCover && <img src={`/api/project-covers/${project.id}`} alt="" onError={(e) => e.currentTarget.remove()} />}
-      </div>
-
       <div className="project-head">
         <span className="project-icon large" style={{ '--c': project.color ?? '#059669' }}>
           {project.icon || project.name[0] || '?'}
