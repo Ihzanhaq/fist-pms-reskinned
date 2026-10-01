@@ -61,7 +61,6 @@ export default function LeaderboardView({
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState(null);
   const [rangeOpen, setRangeOpen] = useState(false);
 
   const today = todayIso();
@@ -75,8 +74,8 @@ export default function LeaderboardView({
       .catch(() => {});
   }, []);
 
-  // All time is counted on the server in the background; poll its progress
-  // until it's ready. A newer load cancels an older one's polling.
+  // All time is counted on the server in the background; poll until
+  // it is ready. A newer load cancels an older one's polling.
   const loadId = useRef(0);
   const load = useCallback(
     async (refresh = false) => {
@@ -84,7 +83,6 @@ export default function LeaderboardView({
       const id = ++loadId.current;
       setLoading(true);
       setError(null);
-      setProgress(null);
       if (period === 'alltime') setData(null);
       try {
         let first = true;
@@ -100,10 +98,8 @@ export default function LeaderboardView({
           if (id !== loadId.current) return;
           if (result.status !== 'running') {
             setData(result);
-            setProgress(null);
             break;
           }
-          setProgress(result.progress);
           await new Promise((r) => setTimeout(r, 1200));
           if (id !== loadId.current) return;
         }
@@ -208,20 +204,7 @@ export default function LeaderboardView({
         </div>
       )}
 
-      {progress && (
-        <div className="lb-progress" role="status">
-          <strong>Counting every issue across {projectId ? 'this project' : 'all projects'}…</strong>
-          <span className="lb-progress-bar">
-            <span style={{ width: `${progress.total ? Math.max(4, (progress.done / progress.total) * 100) : 4}%` }} />
-          </span>
-          <span className="muted">
-            {progress.total ? `${progress.done} of ${plural(progress.total, 'project')} read` : 'Finding projects…'} · this runs
-            in the background, so you can leave this page and come back
-          </span>
-        </div>
-      )}
-
-      {!data && !error && !progress && <div className="dash-loading">Counting everyone’s work…</div>}
+      {!data && !error && <div className="dash-loading">Counting everyone’s work…</div>}
 
       {data && people.length === 0 && (
         <div className="empty">
