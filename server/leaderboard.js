@@ -6,7 +6,7 @@ import { BadRequestError, requireUuid } from './service.js';
 
 // "Completed" is the person who finished the work; "Closed" is usually a
 // reviewer signing it off, so the two are counted separately.
-const COMPLETED = /^(done|resolved|completed)$/i;
+const COMPLETED = /^(done|resolved|completed|feedback)$/i;
 const CLOSED = /^closed$/i;
 const STARTED = /progress/i;
 

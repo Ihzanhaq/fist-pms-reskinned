@@ -206,7 +206,7 @@ export default function LeaderboardView({ userName, onError }) {
           )}
 
           <p className="muted lb-note">
-            Ranked by issues moved to Done, Resolved or Completed. “Closed” counts sign-offs separately. From the PMS activity
+            Ranked by issues moved to Done, Resolved, Completed or Feedback. “Closed” counts sign-offs separately. From the PMS activity
             log{data.truncated ? '; this period is very busy, so only the most recent activity was counted' : ''}.
           </p>
         </>

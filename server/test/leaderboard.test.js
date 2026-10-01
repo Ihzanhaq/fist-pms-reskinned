@@ -57,3 +57,8 @@ test('rankPeople gives ties the same rank', () => {
   ]);
   assert.deepEqual(rows.map((r) => [r.name, r.rank]), [['C', 1], ['A', 2], ['B', 2]]);
 });
+
+test('rankPeople counts Feedback as completed', () => {
+  const rows = rankPeople([status('A', 'X-1', 'Feedback')]);
+  assert.equal(rows[0].completed, 1);
+});
