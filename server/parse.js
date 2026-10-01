@@ -106,6 +106,34 @@ export function parseUserName(html) {
   return name;
 }
 
+export function parseProfile(html) {
+  const root = parse(html);
+  const form = root.querySelector('form[action="/profile/photo"]');
+  if (!form) throw new LayoutChangedError('The profile page has an unexpected layout');
+
+  const csrf = form.querySelector('input[name="_csrf"]')?.getAttribute('value') ?? '';
+  const avatarEl = root.querySelector('img.pf-avatar-lg');
+  const avatarPath = avatarEl?.getAttribute('src') ?? '';
+  const userId = avatarPath.match(UUID)?.[0] ?? null;
+
+  let name = '';
+  let email = '';
+  for (const field of root.querySelectorAll('.field')) {
+    const label = clean(field.querySelector('.field-label'));
+    const value = field.querySelector('input')?.getAttribute('value') ?? '';
+    if (/^name$/i.test(label)) name = value;
+    if (/^email$/i.test(label)) email = value;
+  }
+
+  return {
+    csrf,
+    userId,
+    name: name || parseUserName(html),
+    email,
+    hasPhoto: Boolean(userId && avatarPath.includes('/avatar/')),
+  };
+}
+
 // ---------- issue detail ----------
 
 const hasClass = (el, cls) => (el.getAttribute('class') ?? '').split(/\s+/).includes(cls);

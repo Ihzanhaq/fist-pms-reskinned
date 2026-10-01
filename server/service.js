@@ -7,6 +7,7 @@ import {
   parseIssuePage,
   parseMyIssues,
   parseProjectCards,
+  parseProfile,
   parseProjectIssues,
   parseUserName,
 } from './parse.js';
@@ -311,6 +312,46 @@ export async function createIssue(projectId, input, files = []) {
 export function attachment(id, download = false) {
   requireUuid(id, 'attachment id');
   return pms.getRaw(`/issue-attachment/${id}${download ? '?dl=1' : ''}`);
+}
+
+// ---------- profile ----------
+
+const PROFILE_PHOTO_MAX_MB = 8;
+
+export async function getProfile() {
+  const profile = parseProfile(await pms.get('/profile'));
+  return {
+    userId: profile.userId,
+    name: profile.name,
+    email: profile.email,
+    hasPhoto: profile.hasPhoto,
+  };
+}
+
+export async function uploadProfilePhoto(file) {
+  if (!file?.buffer?.length) throw new BadRequestError('bad_request', 'Choose a photo to upload');
+  if (file.size > PROFILE_PHOTO_MAX_MB * 1024 * 1024) {
+    throw new BadRequestError('bad_request', `Photos must be under ${PROFILE_PHOTO_MAX_MB} MB`);
+  }
+  const type = file.mimetype ?? '';
+  if (!/^image\/(png|jpe?g|webp|gif)$/i.test(type)) {
+    throw new BadRequestError('bad_request', 'Use PNG, JPG, WEBP or GIF');
+  }
+
+  const { csrf, userId } = parseProfile(await pms.get('/profile'));
+  const data = new FormData();
+  data.append('_csrf', csrf);
+  data.append('photo', new Blob([file.buffer], { type }), file.originalname || 'profile.jpg');
+  await pms.postMultipart('/profile/photo', data);
+  if (userId) avatarCache.delete(userId);
+  return getProfile();
+}
+
+export async function deleteProfilePhoto() {
+  const { csrf, userId } = parseProfile(await pms.get('/profile'));
+  await pms.postForm('/profile/photo/delete', { _csrf: csrf });
+  if (userId) avatarCache.delete(userId);
+  return getProfile();
 }
 
 // ---------- profile photos ----------

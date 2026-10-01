@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k -n api,web -c magenta,cyan \"node --watch server/index.js\" \"vite web\"",
+    "dev": "concurrently -k -n api,web -c magenta,cyan \"node --watch-path=server --watch server/index.js\" \"vite web\"",
     "build": "vite build web",
     "start": "node server/index.js",
     "test": "node --test \"server/test/*.test.js\"",

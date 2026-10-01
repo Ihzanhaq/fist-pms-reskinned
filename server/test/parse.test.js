@@ -10,6 +10,7 @@ import {
   parseProjects,
   parseProjectCards,
   parseProjectIssues,
+  parseProfile,
   parseActivity,
   LayoutChangedError,
 } from '../parse.js';
@@ -69,6 +70,16 @@ test('parseIssuePage reads csrf from the state form and the states', () => {
 
 test('parseUserName reads the account name', () => {
   assert.equal(parseUserName(fixture('my-issues.html')), 'Jane Tester');
+});
+
+test('parseProfile reads photo form and SSO fields', () => {
+  assert.deepEqual(parseProfile(fixture('profile.html')), {
+    csrf: 'profile-csrf-token',
+    userId: '88888888-8888-4888-8888-888888888888',
+    name: 'Jane Tester',
+    email: 'jane@example.com',
+    hasPhoto: true,
+  });
 });
 
 test('parsers throw LayoutChangedError on unrecognised pages', () => {

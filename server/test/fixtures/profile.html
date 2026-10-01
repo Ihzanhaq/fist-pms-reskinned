@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>FIST PMS</title></head>
+<body>
+<header class="topbar">
+  <span class="topbar-account-name">Jane Tester</span>
+</header>
+<main>
+  <h1 class="page-title">Your profile</h1>
+  <div class="surface">
+    <img class="pf-avatar-lg" src="/avatar/88888888-8888-4888-8888-888888888888" alt="Profile photo"/>
+    <form action="/profile/photo" method="post" enctype="multipart/form-data">
+      <input type="hidden" name="_csrf" value="profile-csrf-token"/>
+      <input type="file" name="photo" accept="image/png,image/jpeg,image/webp,image/gif"/>
+    </form>
+  </div>
+  <div class="surface">
+    <div class="field">
+      <label class="field-label">Name</label>
+      <input class="field-input" type="text" value="Jane Tester" disabled/>
+    </div>
+    <div class="field">
+      <label class="field-label">Email</label>
+      <input class="field-input" type="text" value="jane@example.com" disabled/>
+    </div>
+  </div>
+</main>
+</body>
+</html>

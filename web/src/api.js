@@ -9,6 +9,7 @@ const MESSAGES = {
   session_expired: 'Your PMS session expired. Log in again.',
   layout_changed: 'The PMS page layout changed, so the dashboard could not read it.',
   network: 'Could not reach the dashboard server. Is it running?',
+  not_found: 'The API server is out of date. Stop and run npm run dev again.',
 };
 
 export function errorMessage(err) {
@@ -49,6 +50,13 @@ async function call(path, { method = 'GET', body } = {}) {
 
 export const api = {
   session: () => call('/api/session'),
+  profile: () => call('/api/profile'),
+  uploadProfilePhoto: (file) => {
+    const body = new FormData();
+    body.append('photo', file, file.name || 'profile.jpg');
+    return call('/api/profile/photo', { method: 'POST', body });
+  },
+  deleteProfilePhoto: () => call('/api/profile/photo/delete', { method: 'POST' }),
   browsers: () => call('/api/browsers'),
   login: (browser) => call('/api/login', { method: 'POST', body: browser ? { browser } : undefined }),
   logout: () => call('/api/logout', { method: 'POST' }),

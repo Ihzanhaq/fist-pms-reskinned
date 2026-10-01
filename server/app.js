@@ -93,6 +93,12 @@ export function createApp() {
   });
 
   // Profile photos, fetched with the PMS login. Browsers keep a photo for 10 minutes and never keep "no photo".
+  app.get('/api/profile', async (req, res) => res.json(await service.getProfile()));
+  app.post('/api/profile/photo', upload.single('photo'), async (req, res) =>
+    res.json(await service.uploadProfilePhoto(req.file)),
+  );
+  app.post('/api/profile/photo/delete', async (req, res) => res.json(await service.deleteProfilePhoto()));
+
   app.get('/api/avatars/:id', async (req, res) => {
     const image = await service.avatar(req.params.id);
     if (!image) {

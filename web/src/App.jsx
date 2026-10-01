@@ -239,6 +239,16 @@ export default function App() {
     setIssues([]);
   };
 
+  const onProfileUpdate = useCallback(
+    (profile) =>
+      setSession((s) => ({
+        ...s,
+        userName: profile.name ?? s.userName,
+        userId: profile.userId ?? s.userId,
+      })),
+    [],
+  );
+
   // Status colors come from the list page; reuse them for dropdown options.
   const statusColors = useMemo(() => {
     const map = new Map();
@@ -458,6 +468,7 @@ export default function App() {
             user={{ id: session.userId, name: session.userName }}
             onLogout={logout}
             onShowTour={() => setTourOpen(true)}
+            onProfileUpdate={onProfileUpdate}
           />
         </main>
       ) : view === 'claude' ? (

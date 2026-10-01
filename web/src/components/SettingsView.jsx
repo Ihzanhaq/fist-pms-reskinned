@@ -2,23 +2,20 @@ import { useRef, useState } from 'react';
 import {
   Check,
   Download,
-  ExternalLink,
   ImagePlus,
   Loader2,
-  LogOut,
   Monitor,
   Palette,
   SlidersHorizontal,
   Trash2,
   UserRound,
 } from 'lucide-react';
-import Avatar from './Avatar.jsx';
+import AccountSettings from './AccountSettings.jsx';
 import UpdatesCard from './UpdatesCard.jsx';
 import { clearSavedFilters, hasSavedFilters, rememberFilters, setRememberFilters } from '../filterMemory.js';
 import { GLASS_PRESETS, THEMES, glassBackgroundCss, hexLuminance, prepareImage, tintFor } from '../theme.js';
 
 const MAX_UPLOAD_MB = 20;
-const PMS_PROFILE = 'https://pms.fistinnovations.com/profile';
 
 const TABS = [
   { id: 'appearance', label: 'Appearance', icon: Palette },
@@ -69,7 +66,7 @@ function ThemePreview({ theme, glassBg }) {
   );
 }
 
-export default function SettingsView({ appearance, tab = 'appearance', onTabChange, user, onLogout, onShowTour }) {
+export default function SettingsView({ appearance, tab = 'appearance', onTabChange, user, onLogout, onShowTour, onProfileUpdate }) {
   const { settings, resolved, update, updateGlass, updateDisplay, saveError } = appearance;
   const { glass, display } = settings;
   const fileRef = useRef(null);
@@ -469,23 +466,7 @@ export default function SettingsView({ appearance, tab = 'appearance', onTabChan
           </>
         )}
 
-        {tab === 'account' && (
-          <section className="settings-card account-card">
-            <Avatar id={user?.id} name={user?.name ?? ''} size="large" className="account-avatar" />
-            <div className="account-info">
-              <h2>{user?.name}</h2>
-              <p className="muted">Signed in to FIST PMS. Your name and photo come from your PMS profile.</p>
-              <div className="account-actions">
-                <a className="secondary-btn" href={PMS_PROFILE} target="_blank" rel="noreferrer">
-                  <ExternalLink size={15} /> Edit profile in PMS
-                </a>
-                <button className="secondary-btn danger" onClick={onLogout}>
-                  <LogOut size={15} /> Sign out
-                </button>
-              </div>
-            </div>
-          </section>
-        )}
+        {tab === 'account' && <AccountSettings user={user} onLogout={onLogout} onProfileUpdate={onProfileUpdate} />}
 
         {tab === 'updates' && <UpdatesCard />}
       </div>
