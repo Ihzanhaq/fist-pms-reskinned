@@ -37,6 +37,14 @@ npm run shortcut
 
 Adds a **FIST PMS** icon to your desktop (and the app menu on Linux). Double-click it to start the dashboard in the background and open it in its own window; it installs and builds on first use. Run the command again if you move the project folder. On some Linux desktops you may need to right-click the icon once and choose **Allow Launching**.
 
+### Updating
+
+```bash
+npm run update
+```
+
+Pulls the latest code, installs dependencies, rebuilds the web app and stops the running dashboard. Then open the shortcut again to start the new version.
+
 ## Login data and security
 
 - The PMS session is saved in `~/.fist-pms-dashboard` (`cookie.json` plus a dedicated browser profile). The dashboard and the Claude extension share it. **Anyone with this folder can act as you in the PMS until the session ends** — don't share or sync it. Delete the folder to sign out everywhere.

@@ -10,6 +10,7 @@
     "build:extension": "node scripts/build-extension.mjs",
     "mcp": "node mcp/server.js",
     "shortcut": "node scripts/install-shortcut.mjs",
+    "update": "node scripts/update.mjs",
     "icons": "node scripts/make-icons.mjs"
   },
   "dependencies": {
