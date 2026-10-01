@@ -7,9 +7,34 @@ import path from 'node:path';
 const root = path.resolve(import.meta.dirname, '..');
 const run = (cmd) => execSync(cmd, { cwd: root, stdio: 'inherit' });
 
-// First run after a fresh clone: install and build.
-if (!fs.existsSync(path.join(root, 'node_modules'))) run('npm install');
-if (!fs.existsSync(path.join(root, 'web', 'dist', 'index.html'))) run('npm run build');
+const read = (cmd) => execSync(cmd, { cwd: root, encoding: 'utf8', timeout: 20_000, windowsHide: true }).trim();
+const builtFile = path.join(root, 'web', 'dist', '.built-commit');
+
+// Auto-update: pull new commits when online and the copy has no local edits.
+// Any failure (offline, diverged history, no git) launches the current version.
+try {
+  if (!read('git status --porcelain --untracked-files=no')) {
+    read('git fetch --quiet');
+    if (read('git rev-list --count HEAD..@{u}') !== '0') read('git pull --ff-only --quiet');
+  }
+} catch {}
+
+let head = null;
+try {
+  head = read('git rev-parse HEAD');
+} catch {}
+const built = fs.existsSync(builtFile) ? fs.readFileSync(builtFile, 'utf8').trim() : null;
+const hasBuild = fs.existsSync(path.join(root, 'web', 'dist', 'index.html'));
+const changed = Boolean(head) && built !== head;
+
+// Install and build on first run, and again whenever the code has changed.
+if (!fs.existsSync(path.join(root, 'node_modules')) || changed) run('npm install');
+if (!hasBuild || changed) {
+  run('npm run build');
+  if (head) fs.writeFileSync(builtFile, head);
+  // A server started from older code must restart to run the new version.
+  if (hasBuild) (await import('./stop-server.mjs')).stopServer();
+}
 
 const { PORT } = await import('../server/config.js');
 const { chosenBrowser, findExecutable } = await import('../server/browsers.js');
