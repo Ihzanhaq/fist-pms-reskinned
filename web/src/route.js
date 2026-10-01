@@ -8,11 +8,12 @@
 //   /report?date=…      daily report (defaults to today)
 //   /claude             Connect to Claude
 //   /leaderboard        team leaderboard (?period, project)
-//   /settings           appearance settings
+//   /settings           settings (?tab=appearance|preferences|account|updates)
 //   ?issue=:id          detail panel open on top of any page
 
 import { useCallback, useSyncExternalStore } from 'react';
 import { todayIso } from './dates.js';
+import { FILTER_STORE, rememberFilters } from './filterMemory.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -53,7 +54,10 @@ export const DEFAULT_ROUTE = {
   pOverdue: false,
   pSort: 'default',
   pPage: 1,
+  settingsTab: 'appearance',
 };
+
+export const SETTINGS_TABS = ['appearance', 'preferences', 'account', 'updates'];
 
 const str = (params, key, fallback = '') => params.get(key) ?? fallback;
 const int = (params, key, fallback) => {
@@ -104,6 +108,8 @@ export function parseRoute(location = typeof window !== 'undefined' ? window.loc
     pOverdue: projectId ? bool(params, 'od') : DEFAULT_ROUTE.pOverdue,
     pSort: projectId ? str(params, 'sort', 'default') || 'default' : DEFAULT_ROUTE.pSort,
     pPage: projectId ? int(params, 'pg', 1) : DEFAULT_ROUTE.pPage,
+    settingsTab:
+      view === 'settings' && SETTINGS_TABS.includes(params.get('tab') ?? '') ? params.get('tab') : DEFAULT_ROUTE.settingsTab,
   };
 }
 
@@ -159,6 +165,8 @@ export function routeToPath(route) {
     params.set('date', date);
   } else if (route.view === 'dashboard' && route.days !== DEFAULT_ROUTE.days) {
     params.set('days', String(route.days));
+  } else if (route.view === 'settings' && route.settingsTab !== DEFAULT_ROUTE.settingsTab) {
+    params.set('tab', route.settingsTab);
   } else if (route.view === 'issues') {
     params = issuesQuery(route);
   } else if (route.view === 'leaderboard') {
@@ -216,7 +224,6 @@ export function getRoute() {
 // ---------- remembered filters ----------
 // Each section's filters are saved in localStorage and filled back in when you
 // return to it. Values given explicitly (a link with filters) win.
-const FILTER_STORE = 'pms-dashboard:filters:v1';
 const DATE_FIELDS = ['createdFrom', 'createdTo', 'targetFrom', 'targetTo'];
 const SECTION_FIELDS = {
   dashboard: ['days'],
@@ -234,6 +241,7 @@ function section(route) {
 }
 
 function readStore() {
+  if (!rememberFilters()) return {};
   try {
     return JSON.parse(localStorage.getItem(FILTER_STORE)) ?? {};
   } catch {
@@ -243,7 +251,7 @@ function readStore() {
 
 function saveFilters(route) {
   const s = section(route);
-  if (!s) return;
+  if (!s || !rememberFilters()) return;
   try {
     const store = readStore();
     store[s.key] = Object.fromEntries(s.fields.map((f) => [f, route[f]]));

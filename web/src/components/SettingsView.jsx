@@ -1,9 +1,46 @@
 import { useRef, useState } from 'react';
-import { Check, ImagePlus, Loader2, Monitor, Trash2 } from 'lucide-react';
+import {
+  Check,
+  Download,
+  ExternalLink,
+  ImagePlus,
+  Loader2,
+  LogOut,
+  Monitor,
+  Palette,
+  SlidersHorizontal,
+  Trash2,
+  UserRound,
+} from 'lucide-react';
+import Avatar from './Avatar.jsx';
 import UpdatesCard from './UpdatesCard.jsx';
+import { clearSavedFilters, hasSavedFilters, rememberFilters, setRememberFilters } from '../filterMemory.js';
 import { GLASS_PRESETS, THEMES, glassBackgroundCss, hexLuminance, prepareImage, tintFor } from '../theme.js';
 
 const MAX_UPLOAD_MB = 20;
+const PMS_PROFILE = 'https://pms.fistinnovations.com/profile';
+
+const TABS = [
+  { id: 'appearance', label: 'Appearance', icon: Palette },
+  { id: 'preferences', label: 'Preferences', icon: SlidersHorizontal },
+  { id: 'account', label: 'Account', icon: UserRound },
+  { id: 'updates', label: 'Updates', icon: Download },
+];
+
+function Switch({ on, onChange, label }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      className={on ? 'ui-switch on' : 'ui-switch'}
+      aria-checked={on}
+      aria-label={label}
+      onClick={() => onChange(!on)}
+    >
+      <span className="ui-switch-thumb" aria-hidden />
+    </button>
+  );
+}
 
 // A small drawing of the app in a theme's colours.
 function ThemePreview({ theme, glassBg }) {
@@ -32,7 +69,7 @@ function ThemePreview({ theme, glassBg }) {
   );
 }
 
-export default function SettingsView({ appearance, onShowTour }) {
+export default function SettingsView({ appearance, tab = 'appearance', onTabChange, user, onLogout, onShowTour }) {
   const { settings, resolved, update, updateGlass, updateDisplay, saveError } = appearance;
   const { glass, display } = settings;
   const fileRef = useRef(null);
@@ -40,6 +77,18 @@ export default function SettingsView({ appearance, onShowTour }) {
   const [uploadError, setUploadError] = useState(null);
   const glassBg = glassBackgroundCss(glass.background);
   const followsSystem = !settings.theme;
+  const [remember, setRemember] = useState(rememberFilters);
+  const [hasSaved, setHasSaved] = useState(hasSavedFilters);
+
+  const toggleRemember = (on) => {
+    setRememberFilters(on);
+    setRemember(on);
+    setHasSaved(hasSavedFilters());
+  };
+  const clearFilters = () => {
+    clearSavedFilters();
+    setHasSaved(false);
+  };
 
   const upload = async (file) => {
     setUploadError(null);
@@ -77,270 +126,372 @@ export default function SettingsView({ appearance, onShowTour }) {
       <div className="page-head">
         <div>
           <h1>Settings</h1>
-          <p className="subtitle">Appearance is saved in this browser only.</p>
+          <p className="subtitle">Saved in this browser only.</p>
         </div>
       </div>
 
-      <section className="settings-card">
-        <header className="settings-head">
-          <div>
-            <h2>Theme</h2>
-            <p className="muted">Pick how the dashboard looks.</p>
-          </div>
+      <nav className="settings-tabs" role="tablist" aria-label="Settings sections">
+        {TABS.map(({ id, label, icon: Icon }) => (
           <button
-            className={followsSystem ? 'toggle-btn on-accent' : 'toggle-btn'}
-            onClick={() => update({ theme: followsSystem ? resolved.mode : null })}
-            aria-pressed={followsSystem}
-            title="Use light or dark to match your computer"
+            key={id}
+            role="tab"
+            aria-selected={tab === id}
+            className={tab === id ? 'settings-tab active' : 'settings-tab'}
+            onClick={() => onTabChange(id)}
           >
-            <Monitor size={14} /> Match system
+            <Icon size={16} /> {label}
           </button>
-        </header>
-        <div className="theme-grid">
-          {THEMES.map((theme) => {
-            const active = resolved.theme === theme.id;
-            return (
-              <button
-                key={theme.id}
-                className={active ? 'theme-card active' : 'theme-card'}
-                onClick={() => update({ theme: theme.id })}
-                aria-pressed={active}
-              >
-                <ThemePreview theme={theme} glassBg={glassBg} />
-                <span className="theme-card-text">
-                  <strong>
-                    {theme.name}
-                    {active && <Check size={14} />}
-                  </strong>
-                  <span className="muted">{theme.note}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
+        ))}
+      </nav>
 
-      <section className={resolved.theme === 'glass' ? 'settings-card' : 'settings-card dimmed'}>
-        <header className="settings-head">
-          <div>
-            <h2>Liquid glass</h2>
-            <p className="muted">
-              {resolved.theme === 'glass'
-                ? 'Choose what sits behind the glass.'
-                : 'These apply when the Liquid glass theme is selected.'}
-            </p>
-          </div>
-          {resolved.theme !== 'glass' && (
-            <button className="secondary-btn" onClick={() => update({ theme: 'glass' })}>
-              Use Liquid glass
-            </button>
-          )}
-        </header>
-
-        <div className="settings-row">
-          <span className="settings-label">Background</span>
-          <div className="bg-options">
-            {GLASS_PRESETS.map((preset) => {
-              const on = glass.background.type === 'preset' && glass.background.preset === preset.id;
-              return (
-                <button key={preset.id} className={on ? 'bg-swatch active' : 'bg-swatch'} onClick={() => pickPreset(preset)} aria-pressed={on}>
-                  <span className="bg-thumb" style={{ background: preset.css }} />
-                  <span>{preset.name}</span>
-                </button>
-              );
-            })}
-            <button
-              className={glass.background.type === 'gradient' ? 'bg-swatch active' : 'bg-swatch'}
-              onClick={() => setGradient({})}
-              aria-pressed={glass.background.type === 'gradient'}
-            >
-              <span
-                className="bg-thumb"
-                style={{ background: `linear-gradient(${glass.background.angle}deg, ${glass.background.from}, ${glass.background.to})` }}
-              />
-              <span>Custom</span>
-            </button>
-            <button
-              className={glass.background.type === 'image' ? 'bg-swatch active' : 'bg-swatch'}
-              onClick={() => (glass.background.image ? updateGlass({ background: { type: 'image' } }) : fileRef.current?.click())}
-              aria-pressed={glass.background.type === 'image'}
-            >
-              <span
-                className="bg-thumb image"
-                style={glass.background.image ? { backgroundImage: `url("${glass.background.image}")` } : undefined}
-              >
-                {!glass.background.image && (uploading ? <Loader2 size={18} className="spin" /> : <ImagePlus size={18} />)}
-              </span>
-              <span>Your image</span>
-            </button>
-          </div>
-        </div>
-
-        {glass.background.type === 'gradient' && (
-          <div className="settings-row">
-            <span className="settings-label">Custom gradient</span>
-            <div className="gradient-controls">
-              <label className="color-field">
-                <input type="color" value={glass.background.from} onChange={(e) => setGradient({ from: e.target.value })} />
-                <span>From</span>
-              </label>
-              <label className="color-field">
-                <input type="color" value={glass.background.to} onChange={(e) => setGradient({ to: e.target.value })} />
-                <span>To</span>
-              </label>
-              <label className="range-field">
-                <span>Angle · {glass.background.angle}°</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="360"
-                  step="5"
-                  value={glass.background.angle}
-                  onChange={(e) => updateGlass({ background: { angle: Number(e.target.value) } })}
-                />
-              </label>
-            </div>
-          </div>
-        )}
-
-        {glass.background.type === 'image' && (
-          <div className="settings-row">
-            <span className="settings-label">Your image</span>
-            <div className="image-controls">
-              <button className="secondary-btn" onClick={() => fileRef.current?.click()} disabled={uploading}>
-                {uploading ? <Loader2 size={15} className="spin" /> : <ImagePlus size={15} />} Choose image
-              </button>
-              {glass.background.image && (
+      <div className="settings-body" key={tab} role="tabpanel">
+        {tab === 'appearance' && (
+          <>
+            <section className="settings-card">
+              <header className="settings-head">
+                <div>
+                  <h2>Theme</h2>
+                  <p className="muted">Pick how the dashboard looks.</p>
+                </div>
                 <button
-                  className="secondary-btn"
-                  onClick={() => updateGlass({ background: { type: 'preset', image: null } })}
-                  disabled={uploading}
+                  className={followsSystem ? 'toggle-btn on-accent' : 'toggle-btn'}
+                  onClick={() => update({ theme: followsSystem ? resolved.mode : null })}
+                  aria-pressed={followsSystem}
+                  title="Use light or dark to match your computer"
                 >
-                  <Trash2 size={15} /> Remove
+                  <Monitor size={14} /> Match system
                 </button>
+              </header>
+              <div className="theme-grid">
+                {THEMES.map((theme) => {
+                  const active = resolved.theme === theme.id;
+                  return (
+                    <button
+                      key={theme.id}
+                      className={active ? 'theme-card active' : 'theme-card'}
+                      onClick={() => update({ theme: theme.id })}
+                      aria-pressed={active}
+                    >
+                      <ThemePreview theme={theme} glassBg={glassBg} />
+                      <span className="theme-card-text">
+                        <strong>
+                          {theme.name}
+                          {active && <Check size={14} />}
+                        </strong>
+                        <span className="muted">{theme.note}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className={resolved.theme === 'glass' ? 'settings-card' : 'settings-card dimmed'}>
+              <header className="settings-head">
+                <div>
+                  <h2>Liquid glass</h2>
+                  <p className="muted">
+                    {resolved.theme === 'glass'
+                      ? 'Choose what sits behind the glass.'
+                      : 'These apply when the Liquid glass theme is selected.'}
+                  </p>
+                </div>
+                {resolved.theme !== 'glass' && (
+                  <button className="secondary-btn" onClick={() => update({ theme: 'glass' })}>
+                    Use Liquid glass
+                  </button>
+                )}
+              </header>
+
+              <div className="settings-row">
+                <span className="settings-label">Background</span>
+                <div className="bg-options">
+                  {GLASS_PRESETS.map((preset) => {
+                    const on = glass.background.type === 'preset' && glass.background.preset === preset.id;
+                    return (
+                      <button
+                        key={preset.id}
+                        className={on ? 'bg-swatch active' : 'bg-swatch'}
+                        onClick={() => pickPreset(preset)}
+                        aria-pressed={on}
+                      >
+                        <span className="bg-thumb" style={{ background: preset.css }} />
+                        <span>{preset.name}</span>
+                      </button>
+                    );
+                  })}
+                  <button
+                    className={glass.background.type === 'gradient' ? 'bg-swatch active' : 'bg-swatch'}
+                    onClick={() => setGradient({})}
+                    aria-pressed={glass.background.type === 'gradient'}
+                  >
+                    <span
+                      className="bg-thumb"
+                      style={{
+                        background: `linear-gradient(${glass.background.angle}deg, ${glass.background.from}, ${glass.background.to})`,
+                      }}
+                    />
+                    <span>Custom</span>
+                  </button>
+                  <button
+                    className={glass.background.type === 'image' ? 'bg-swatch active' : 'bg-swatch'}
+                    onClick={() =>
+                      glass.background.image ? updateGlass({ background: { type: 'image' } }) : fileRef.current?.click()
+                    }
+                    aria-pressed={glass.background.type === 'image'}
+                  >
+                    <span
+                      className="bg-thumb image"
+                      style={
+                        glass.background.image ? { backgroundImage: `url("${glass.background.image}")` } : undefined
+                      }
+                    >
+                      {!glass.background.image &&
+                        (uploading ? <Loader2 size={18} className="spin" /> : <ImagePlus size={18} />)}
+                    </span>
+                    <span>Your image</span>
+                  </button>
+                </div>
+              </div>
+
+              {glass.background.type === 'gradient' && (
+                <div className="settings-row">
+                  <span className="settings-label">Custom gradient</span>
+                  <div className="gradient-controls">
+                    <label className="color-field">
+                      <input
+                        type="color"
+                        value={glass.background.from}
+                        onChange={(e) => setGradient({ from: e.target.value })}
+                      />
+                      <span>From</span>
+                    </label>
+                    <label className="color-field">
+                      <input
+                        type="color"
+                        value={glass.background.to}
+                        onChange={(e) => setGradient({ to: e.target.value })}
+                      />
+                      <span>To</span>
+                    </label>
+                    <label className="range-field">
+                      <span>Angle · {glass.background.angle}°</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="360"
+                        step="5"
+                        value={glass.background.angle}
+                        onChange={(e) => updateGlass({ background: { angle: Number(e.target.value) } })}
+                      />
+                    </label>
+                  </div>
+                </div>
               )}
-              <span className="muted small">Large photos are resized. Stored only on this computer.</span>
-            </div>
-          </div>
+
+              {glass.background.type === 'image' && (
+                <div className="settings-row">
+                  <span className="settings-label">Your image</span>
+                  <div className="image-controls">
+                    <button className="secondary-btn" onClick={() => fileRef.current?.click()} disabled={uploading}>
+                      {uploading ? <Loader2 size={15} className="spin" /> : <ImagePlus size={15} />} Choose image
+                    </button>
+                    {glass.background.image && (
+                      <button
+                        className="secondary-btn"
+                        onClick={() => updateGlass({ background: { type: 'preset', image: null } })}
+                        disabled={uploading}
+                      >
+                        <Trash2 size={15} /> Remove
+                      </button>
+                    )}
+                    <span className="muted small">Large photos are resized. Stored only on this computer.</span>
+                  </div>
+                </div>
+              )}
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(e) => {
+                  upload(e.target.files?.[0]);
+                  e.target.value = '';
+                }}
+              />
+              {(uploadError || saveError) && <p className="form-error">{uploadError || saveError}</p>}
+
+              <div className="settings-row">
+                <span className="settings-label">Glass</span>
+                <div className="segmented">
+                  {['light', 'dark'].map((tint) => (
+                    <button
+                      key={tint}
+                      className={glass.tint === tint ? 'active' : undefined}
+                      onClick={() => updateGlass({ tint })}
+                    >
+                      {tint === 'light' ? 'Light glass' : 'Dark glass'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="settings-row">
+                <span className="settings-label">Background blur</span>
+                <label className="range-field wide">
+                  <input
+                    type="range"
+                    min="0"
+                    max="40"
+                    step="1"
+                    value={glass.bgBlur ?? 0}
+                    onChange={(e) => updateGlass({ bgBlur: Number(e.target.value) })}
+                    aria-label="Background blur"
+                  />
+                  <span className="muted">{glass.bgBlur ? `${glass.bgBlur}px` : 'Off'}</span>
+                </label>
+              </div>
+
+              <div className="settings-row">
+                <span className="settings-label">
+                  {glass.tint === 'dark' ? 'Darken background' : 'Lighten background'}
+                </span>
+                <label className="range-field wide">
+                  <input
+                    type="range"
+                    min="0"
+                    max="70"
+                    step="5"
+                    value={glass.dim ?? 0}
+                    onChange={(e) => updateGlass({ dim: Number(e.target.value) })}
+                    aria-label="Dim background"
+                  />
+                  <span className="muted">{glass.dim ? `${glass.dim}%` : 'Off'}</span>
+                </label>
+              </div>
+
+              <div className="settings-row">
+                <span className="settings-label">Glass blur</span>
+                <label className="range-field wide">
+                  <input
+                    type="range"
+                    min="6"
+                    max="40"
+                    step="1"
+                    value={glass.blur}
+                    onChange={(e) => updateGlass({ blur: Number(e.target.value) })}
+                    aria-label="Glass blur"
+                  />
+                  <span className="muted">{glass.blur}px</span>
+                </label>
+              </div>
+            </section>
+            <section className="settings-card">
+              <header className="settings-head">
+                <div>
+                  <h2>Projects</h2>
+                  <p className="muted">How project cards and headers look in this dashboard.</p>
+                </div>
+              </header>
+              <div className="settings-toggle-row">
+                <div className="settings-toggle-item">
+                  <span className="settings-toggle-label">Cover banners</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    className={display.projectCovers ? 'ui-switch on' : 'ui-switch'}
+                    aria-checked={display.projectCovers}
+                    onClick={() => updateDisplay({ projectCovers: !display.projectCovers })}
+                  >
+                    <span className="ui-switch-thumb" aria-hidden />
+                  </button>
+                </div>
+                <div className="settings-toggle-item">
+                  <span className="settings-toggle-label">Project emojis</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    className={display.projectEmojis ? 'ui-switch on' : 'ui-switch'}
+                    aria-checked={display.projectEmojis}
+                    onClick={() => updateDisplay({ projectEmojis: !display.projectEmojis })}
+                  >
+                    <span className="ui-switch-thumb" aria-hidden />
+                  </button>
+                </div>
+              </div>
+            </section>
+          </>
         )}
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          hidden
-          onChange={(e) => {
-            upload(e.target.files?.[0]);
-            e.target.value = '';
-          }}
-        />
-        {(uploadError || saveError) && <p className="form-error">{uploadError || saveError}</p>}
 
-        <div className="settings-row">
-          <span className="settings-label">Glass</span>
-          <div className="segmented">
-            {['light', 'dark'].map((tint) => (
-              <button key={tint} className={glass.tint === tint ? 'active' : undefined} onClick={() => updateGlass({ tint })}>
-                {tint === 'light' ? 'Light glass' : 'Dark glass'}
-              </button>
-            ))}
-          </div>
-        </div>
+        {tab === 'preferences' && (
+          <>
+            <section className="settings-card">
+              <header className="settings-head">
+                <div>
+                  <h2>Filters</h2>
+                  <p className="muted">Search, status, dates, sort and the other filters on each page.</p>
+                </div>
+              </header>
+              <div className="pref-row">
+                <div>
+                  <strong>Remember my filters</strong>
+                  <p className="muted">
+                    {remember
+                      ? 'Each page opens with the filters you used last, and every project keeps its own.'
+                      : 'Pages open with no filters. Turning this off cleared the saved ones.'}
+                  </p>
+                </div>
+                <Switch on={remember} onChange={toggleRemember} label="Remember my filters" />
+              </div>
+              {remember && (
+                <div className="pref-row">
+                  <div>
+                    <strong>Saved filters</strong>
+                    <p className="muted">
+                      {hasSaved ? 'Forget everything saved so far. New choices are saved again.' : 'Nothing saved yet.'}
+                    </p>
+                  </div>
+                  <button className="secondary-btn" onClick={clearFilters} disabled={!hasSaved}>
+                    <Trash2 size={15} /> Clear saved filters
+                  </button>
+                </div>
+              )}
+            </section>
 
-        <div className="settings-row">
-          <span className="settings-label">Background blur</span>
-          <label className="range-field wide">
-            <input
-              type="range"
-              min="0"
-              max="40"
-              step="1"
-              value={glass.bgBlur ?? 0}
-              onChange={(e) => updateGlass({ bgBlur: Number(e.target.value) })}
-              aria-label="Background blur"
-            />
-            <span className="muted">{glass.bgBlur ? `${glass.bgBlur}px` : 'Off'}</span>
-          </label>
-        </div>
+            <section className="settings-card">
+              <header className="settings-head">
+                <div>
+                  <h2>Welcome tour</h2>
+                  <p className="muted">A quick look at issues, the daily report, the leaderboard, themes and Claude.</p>
+                </div>
+                <button className="secondary-btn" onClick={onShowTour}>
+                  Show the welcome tour
+                </button>
+              </header>
+            </section>
+          </>
+        )}
 
-        <div className="settings-row">
-          <span className="settings-label">{glass.tint === 'dark' ? 'Darken background' : 'Lighten background'}</span>
-          <label className="range-field wide">
-            <input
-              type="range"
-              min="0"
-              max="70"
-              step="5"
-              value={glass.dim ?? 0}
-              onChange={(e) => updateGlass({ dim: Number(e.target.value) })}
-              aria-label="Dim background"
-            />
-            <span className="muted">{glass.dim ? `${glass.dim}%` : 'Off'}</span>
-          </label>
-        </div>
+        {tab === 'account' && (
+          <section className="settings-card account-card">
+            <Avatar id={user?.id} name={user?.name ?? ''} size="large" className="account-avatar" />
+            <div className="account-info">
+              <h2>{user?.name}</h2>
+              <p className="muted">Signed in to FIST PMS. Your name and photo come from your PMS profile.</p>
+              <div className="account-actions">
+                <a className="secondary-btn" href={PMS_PROFILE} target="_blank" rel="noreferrer">
+                  <ExternalLink size={15} /> Edit profile in PMS
+                </a>
+                <button className="secondary-btn danger" onClick={onLogout}>
+                  <LogOut size={15} /> Sign out
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
 
-        <div className="settings-row">
-          <span className="settings-label">Glass blur</span>
-          <label className="range-field wide">
-            <input
-              type="range"
-              min="6"
-              max="40"
-              step="1"
-              value={glass.blur}
-              onChange={(e) => updateGlass({ blur: Number(e.target.value) })}
-              aria-label="Glass blur"
-            />
-            <span className="muted">{glass.blur}px</span>
-          </label>
-        </div>
-      </section>
-      <section className="settings-card">
-        <header className="settings-head">
-          <div>
-            <h2>Projects</h2>
-            <p className="muted">How project cards and headers look in this dashboard.</p>
-          </div>
-        </header>
-        <div className="settings-toggle-row">
-          <div className="settings-toggle-item">
-            <span className="settings-toggle-label">Cover banners</span>
-            <button
-              type="button"
-              role="switch"
-              className={display.projectCovers ? 'ui-switch on' : 'ui-switch'}
-              aria-checked={display.projectCovers}
-              onClick={() => updateDisplay({ projectCovers: !display.projectCovers })}
-            >
-              <span className="ui-switch-thumb" aria-hidden />
-            </button>
-          </div>
-          <div className="settings-toggle-item">
-            <span className="settings-toggle-label">Project emojis</span>
-            <button
-              type="button"
-              role="switch"
-              className={display.projectEmojis ? 'ui-switch on' : 'ui-switch'}
-              aria-checked={display.projectEmojis}
-              onClick={() => updateDisplay({ projectEmojis: !display.projectEmojis })}
-            >
-              <span className="ui-switch-thumb" aria-hidden />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section className="settings-card">
-        <header className="settings-head">
-          <div>
-            <h2>Welcome tour</h2>
-            <p className="muted">A quick look at issues, the daily report, the leaderboard, themes and Claude.</p>
-          </div>
-          <button className="secondary-btn" onClick={onShowTour}>
-            Show the welcome tour
-          </button>
-        </header>
-      </section>
-      <UpdatesCard />
+        {tab === 'updates' && <UpdatesCard />}
+      </div>
     </div>
   );
 }

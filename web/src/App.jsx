@@ -451,7 +451,14 @@ export default function App() {
         </main>
       ) : view === 'settings' ? (
         <main className="page">
-          <SettingsView appearance={appearance} onShowTour={() => setTourOpen(true)} />
+          <SettingsView
+            appearance={appearance}
+            tab={route.settingsTab}
+            onTabChange={(settingsTab) => patchRoute({ settingsTab })}
+            user={{ id: session.userId, name: session.userName }}
+            onLogout={logout}
+            onShowTour={() => setTourOpen(true)}
+          />
         </main>
       ) : view === 'claude' ? (
         <main className="page">
