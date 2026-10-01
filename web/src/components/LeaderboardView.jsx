@@ -40,9 +40,14 @@ function PodiumCard({ person, place, isMe }) {
   );
 }
 
-export default function LeaderboardView({ userName, onError }) {
-  const [period, setPeriod] = useState('week');
-  const [projectId, setProjectId] = useState('');
+export default function LeaderboardView({
+  period = 'week',
+  projectId = '',
+  onPeriodChange,
+  onProjectChange,
+  userName,
+  onError,
+}) {
   const [projects, setProjects] = useState([]);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -92,7 +97,7 @@ export default function LeaderboardView({ userName, onError }) {
         <div className="lb-controls">
           <div className="segmented">
             {PERIODS.map((p) => (
-              <button key={p.value} className={period === p.value ? 'active' : undefined} onClick={() => setPeriod(p.value)}>
+              <button key={p.value} className={period === p.value ? 'active' : undefined} onClick={() => onPeriodChange(p.value)}>
                 {p.label}
               </button>
             ))}
@@ -102,7 +107,7 @@ export default function LeaderboardView({ userName, onError }) {
             ariaLabel="Project"
             searchable
             value={projectId}
-            onChange={setProjectId}
+            onChange={onProjectChange}
             options={[{ value: '', label: 'All projects' }, ...projects.map((p) => ({ value: p.id, label: p.name }))]}
           />
           <button className="icon-btn" onClick={load} disabled={loading} title="Refresh" aria-label="Refresh">

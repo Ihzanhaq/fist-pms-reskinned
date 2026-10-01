@@ -27,8 +27,7 @@ function StatTile({ label, value, detail, children }) {
 const DONE_PREVIEW = 10;
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
-export default function DashboardView({ onOpenIssue, onOpenReport, onError }) {
-  const [days, setDays] = useState(14);
+export default function DashboardView({ days = 14, onDaysChange, onOpenIssue, onOpenReport, onError }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -107,7 +106,7 @@ export default function DashboardView({ onOpenIssue, onOpenReport, onError }) {
                 <p className="muted">Issues you moved to Done, Resolved, Completed or Closed</p>
               </div>
               <div className="card-actions">
-                <Select variant="compact" ariaLabel="Period" value={days} onChange={setDays} options={RANGES} />
+                <Select variant="compact" ariaLabel="Period" value={days} onChange={onDaysChange} options={RANGES} />
                 <button
                   className="icon-btn"
                   onClick={() => setAsTable((t) => !t)}

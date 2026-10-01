@@ -35,8 +35,18 @@ function keyNum(issue) {
 
 const EMPTY_FILTERS = { q: '', status: 'all', priority: 'all', assignee: 'all', overdue: false };
 
+const filtersFromRoute = (routeQuery = {}) => ({
+  q: routeQuery.q ?? '',
+  status: routeQuery.pStatus ?? 'all',
+  priority: routeQuery.pPriority ?? 'all',
+  assignee: routeQuery.pAssignee ?? 'all',
+  overdue: Boolean(routeQuery.pOverdue),
+});
+
 export default function ProjectView({
   project,
+  routeQuery,
+  onRouteQueryChange,
   lastChange,
   reloadKey,
   onBack,
@@ -50,14 +60,14 @@ export default function ProjectView({
   const [data, setData] = useState(null); // { issues, states, assignees }
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
-  const [sort, setSort] = useState('default');
-  const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState(() => filtersFromRoute(routeQuery));
+  const [sort, setSort] = useState(() => routeQuery?.pSort ?? 'default');
+  const [page, setPage] = useState(() => routeQuery?.pPage ?? 1);
   const [pageSize, setPageSize] = useState(25);
   const [savingIds, setSavingIds] = useState(() => new Set());
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [bulkRunning, setBulkRunning] = useState(false);
-  const [view, setView] = useState(savedView);
+  const [view, setView] = useState(() => routeQuery?.layout ?? savedView());
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -78,10 +88,72 @@ export default function ProjectView({
   useEffect(() => {
     setData(null);
     setSelectedIds(new Set());
-    setFilters(EMPTY_FILTERS);
-    setPage(1);
     load();
   }, [load]);
+
+  useEffect(() => {
+    const next = filtersFromRoute(routeQuery);
+    setFilters((prev) =>
+      prev.q === next.q &&
+      prev.status === next.status &&
+      prev.priority === next.priority &&
+      prev.assignee === next.assignee &&
+      prev.overdue === next.overdue
+        ? prev
+        : next,
+    );
+    setSort((s) => ((routeQuery?.pSort ?? 'default') === s ? s : routeQuery?.pSort ?? 'default'));
+    setPage((p) => ((routeQuery?.pPage ?? 1) === p ? p : routeQuery?.pPage ?? 1));
+    setView((v) => ((routeQuery?.layout ?? 'list') === v ? v : routeQuery?.layout ?? 'list'));
+  }, [
+    routeQuery?.q,
+    routeQuery?.pStatus,
+    routeQuery?.pPriority,
+    routeQuery?.pAssignee,
+    routeQuery?.pOverdue,
+    routeQuery?.pSort,
+    routeQuery?.pPage,
+    routeQuery?.layout,
+  ]);
+
+  useEffect(() => {
+    if (!onRouteQueryChange) return;
+    const q = filters.q.trim();
+    const same =
+      (routeQuery?.q ?? '') === q &&
+      (routeQuery?.pStatus ?? 'all') === filters.status &&
+      (routeQuery?.pPriority ?? 'all') === filters.priority &&
+      (routeQuery?.pAssignee ?? 'all') === filters.assignee &&
+      Boolean(routeQuery?.pOverdue) === filters.overdue &&
+      (routeQuery?.pSort ?? 'default') === sort &&
+      (routeQuery?.pPage ?? 1) === page &&
+      (routeQuery?.layout ?? 'list') === view;
+    if (same) return;
+    onRouteQueryChange({
+      q,
+      pStatus: filters.status,
+      pPriority: filters.priority,
+      pAssignee: filters.assignee,
+      pOverdue: filters.overdue,
+      pSort: sort,
+      pPage: page,
+      layout: view,
+    });
+  }, [
+    filters,
+    sort,
+    page,
+    view,
+    onRouteQueryChange,
+    routeQuery?.q,
+    routeQuery?.pStatus,
+    routeQuery?.pPriority,
+    routeQuery?.pAssignee,
+    routeQuery?.pOverdue,
+    routeQuery?.pSort,
+    routeQuery?.pPage,
+    routeQuery?.layout,
+  ]);
 
   // Reload after a new issue is created, keeping filters and page.
   useEffect(() => {

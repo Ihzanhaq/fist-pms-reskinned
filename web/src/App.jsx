@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertOctagon, Loader2, Plus } from 'lucide-react';
 import { api, errorMessage } from './api.js';
-import { parseRoute, routeToPath } from './route.js';
+import { commitRoute, getRoute, useRoute } from './route.js';
 import { DEFAULT_DISPLAY, THEMES, useAppearance } from './theme.js';
 import BulkBar from './components/BulkBar.jsx';
 import { runBulk } from './bulk.js';
@@ -21,7 +21,7 @@ import TopBar from './components/TopBar.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import Filters from './components/Filters.jsx';
 import IssueTable from './components/IssueTable.jsx';
-import KanbanBoard, { ViewSwitch, savedView } from './components/KanbanBoard.jsx';
+import KanbanBoard, { ViewSwitch, saveView } from './components/KanbanBoard.jsx';
 import LoginBanner from './components/LoginBanner.jsx';
 import Toast from './components/Toast.jsx';
 
@@ -43,15 +43,23 @@ const stubProject = (p) => ({
 export default function App() {
   const [session, setSession] = useState({ checked: false, loggedIn: false, expired: false, userName: '' });
   const [loggingIn, setLoggingIn] = useState(false);
-  const [scope, setScope] = useState('active');
-  const [issueView, setIssueView] = useState(savedView);
+  const { route, patchRoute, navigate } = useRoute();
+
+  // Fill in default query params (e.g. report date) once, without adding a history entry.
+  useEffect(() => {
+    commitRoute(getRoute(), { replace: true });
+  }, []);
+  const scope = route.scope;
+  const issueView = route.layout;
+  const filters = useMemo(
+    () => ({ q: route.q, project: route.filterProject, status: route.filterStatus }),
+    [route.q, route.filterProject, route.filterStatus],
+  );
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [savingIds, setSavingIds] = useState(() => new Set());
   const [toast, setToast] = useState(null);
-  const [route, setRoute] = useState(parseRoute);
   const appearance = useAppearance();
   const [tourOpen, setTourOpen] = useState(false);
   const [projectCard, setProjectCard] = useState(null); // card for route.projectId
@@ -63,47 +71,73 @@ export default function App() {
   const projectDisplay = { ...DEFAULT_DISPLAY, ...appearance.settings.display };
   const openProject = route.projectId && projectCard?.id === route.projectId ? projectCard : null;
 
-  // Keep the URL in step with the route, and the route with back/forward.
-  useEffect(() => {
-    const path = routeToPath(route);
-    if (path !== window.location.pathname + window.location.search) window.history.pushState(null, '', path);
-  }, [route]);
-  useEffect(() => {
-    const onPop = () => setRoute(parseRoute());
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
-  }, []);
+  const setOpenIssueId = useCallback(
+    (issueId) => patchRoute({ issueId: issueId ?? null }),
+    [patchRoute],
+  );
+  const setOpenProject = useCallback(
+    (card) => {
+      if (card) {
+        setProjectCard(card);
+        patchRoute({ projectId: card.id, issueId: null });
+      } else {
+        patchRoute({ projectId: null });
+      }
+    },
+    [patchRoute],
+  );
 
-  const setOpenIssueId = useCallback((issueId) => setRoute((r) => ({ ...r, issueId: issueId ?? null })), []);
-  const navigate = useCallback((next) => setRoute({ view: next, projectId: null, date: null, issueId: null }), []);
-  const setOpenProject = useCallback((card) => {
-    if (card) {
-      setProjectCard(card);
-      setRoute((r) => ({ ...r, projectId: card.id, issueId: null }));
-    } else {
-      setRoute((r) => ({ ...r, projectId: null }));
-    }
-  }, []);
+  const openProjectFromIssue = useCallback(
+    (project) => {
+      setProjectCard(stubProject(project));
+      patchRoute({ view: 'projects', projectId: project.id, issueId: null });
+    },
+    [patchRoute],
+  );
 
-  const openProjectFromIssue = useCallback((project) => {
-    setProjectCard(stubProject(project));
-    setRoute((r) => ({ ...r, view: 'projects', projectId: project.id, issueId: null }));
-  }, []);
+  const setScope = useCallback((next) => patchRoute({ scope: next }), [patchRoute]);
+  const setFilters = useCallback(
+    (next) =>
+      patchRoute({
+        q: next.q,
+        filterProject: next.project,
+        filterStatus: next.status,
+      }),
+    [patchRoute],
+  );
+  const setIssueView = useCallback(
+    (layout) => {
+      saveView(layout);
+      patchRoute({ layout });
+    },
+    [patchRoute],
+  );
 
-  // After a refresh only the project id is known; look up its card.
+  // After a refresh only the project id is in the URL; look up its card (keep the URL either way).
   useEffect(() => {
     if (!route.projectId || projectCard?.id === route.projectId || !session.loggedIn) return;
     if (view !== 'projects' && view !== 'my-projects') return;
     let live = true;
-    api
-      .projects()
+    const primary = view === 'my-projects' ? api.myProjects() : api.projects();
+    const secondary = view === 'my-projects' ? api.projects() : api.myProjects();
+    primary
       .then(({ projects }) => {
         if (!live) return;
         const card = projects.find((p) => p.id === route.projectId);
-        if (card) setProjectCard(card);
-        else setRoute((r) => ({ ...r, projectId: null, issueId: null }));
+        if (card) {
+          setProjectCard(card);
+          return;
+        }
+        return secondary.then(({ projects: more }) => {
+          if (!live) return;
+          const fallback = more.find((p) => p.id === route.projectId);
+          if (fallback) setProjectCard(fallback);
+          else setProjectCard(stubProject({ id: route.projectId, name: 'Project', key: '' }));
+        });
       })
-      .catch(() => {});
+      .catch(() => {
+        if (live) setProjectCard(stubProject({ id: route.projectId, name: 'Project', key: '' }));
+      });
     return () => {
       live = false;
     };
@@ -369,7 +403,14 @@ export default function App() {
           {!session.checked ? null : !session.loggedIn ? (
             <LoginBanner expired={session.expired} loggingIn={loggingIn} onLogin={login} />
           ) : (
-            <LeaderboardView userName={session.userName} onError={handlePanelError} />
+            <LeaderboardView
+              period={route.period}
+              projectId={route.lbProject}
+              onPeriodChange={(period) => patchRoute({ period })}
+              onProjectChange={(lbProject) => patchRoute({ lbProject })}
+              userName={session.userName}
+              onError={handlePanelError}
+            />
           )}
         </main>
       ) : view === 'settings' ? (
@@ -386,6 +427,8 @@ export default function App() {
             <LoginBanner expired={session.expired} loggingIn={loggingIn} onLogin={login} />
           ) : view === 'dashboard' ? (
             <DashboardView
+              days={route.days}
+              onDaysChange={(days) => patchRoute({ days })}
               onOpenIssue={setOpenIssueId}
               onOpenReport={() => navigate('report')}
               onError={handlePanelError}
@@ -394,7 +437,7 @@ export default function App() {
             <DailyReport
               date={route.date ?? todayIso()}
               userName={session.userName}
-              onDateChange={(date) => setRoute((r) => ({ ...r, date, issueId: null }))}
+              onDateChange={(date) => patchRoute({ date, issueId: null })}
               onOpenIssue={setOpenIssueId}
               onError={handlePanelError}
             />
@@ -404,13 +447,15 @@ export default function App() {
         <main className="page">
           {!session.checked ? null : !session.loggedIn ? (
             <LoginBanner expired={session.expired} loggingIn={loggingIn} onLogin={login} />
-          ) : route.projectId && !openProject ? (
+          ) : route.projectId && !projectCard ? (
             <div className="drawer-loading page-loading">
               <Loader2 size={22} className="spin" />
             </div>
-          ) : openProject ? (
+          ) : openProject || route.projectId ? (
             <ProjectView
-              project={openProject}
+              project={openProject ?? stubProject({ id: route.projectId, name: 'Project', key: '' })}
+              routeQuery={route}
+              onRouteQueryChange={patchRoute}
               lastChange={lastChange}
               reloadKey={projectReload}
               onBack={() => setOpenProject(null)}
