@@ -14,6 +14,7 @@ const builtFile = path.join(root, 'web', 'dist', '.built-commit');
 // Any failure (offline, diverged history, no git) launches the current version.
 try {
   if (!read('git status --porcelain --untracked-files=no')) {
+    (await import('./git-upstream.mjs')).ensureUpstream(root);
     read('git fetch --quiet');
     if (read('git rev-list --count HEAD..@{u}') !== '0') read('git pull --ff-only --quiet');
   }

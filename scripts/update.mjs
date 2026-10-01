@@ -5,6 +5,7 @@
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { ensureUpstream } from './git-upstream.mjs';
 import { stopServer } from './stop-server.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -17,6 +18,7 @@ if (read('git status --porcelain --untracked-files=no')) {
 }
 
 const before = read('git rev-parse HEAD');
+ensureUpstream(root);
 run('git pull --ff-only');
 const after = read('git rev-parse HEAD');
 if (before === after) console.log('Already on the latest version; rebuilding anyway.');
