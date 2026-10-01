@@ -3,6 +3,7 @@ import { FolderOpen, ListChecks, Loader2, Pin, PinOff, Search, X } from 'lucide-
 import { api, errorMessage } from '../api.js';
 import { projectIconLabel } from '../projectDisplay.js';
 import Select from './Select.jsx';
+import { useStoredState } from '../useStoredState.js';
 
 const SORTS = {
   name: { label: 'Name A–Z', fn: (a, b) => a.name.localeCompare(b.name) },
@@ -23,8 +24,9 @@ export default function ProjectsGrid({
 }) {
   const [projects, setProjects] = useState(null);
   const [error, setError] = useState(null);
-  const [q, setQ] = useState('');
-  const [sort, setSort] = useState('name');
+  const store = mineOnly ? 'pms-dashboard:my-projects' : 'pms-dashboard:projects';
+  const [q, setQ] = useStoredState(`${store}:q`, '', (v) => typeof v === 'string');
+  const [sort, setSort] = useStoredState(`${store}:sort`, 'name', (v) => v in SORTS);
   const [pinning, setPinning] = useState(() => new Set());
 
   // Optimistic; reverts if the PMS refuses.

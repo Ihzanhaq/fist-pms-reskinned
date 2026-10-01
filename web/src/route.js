@@ -213,7 +213,63 @@ export function getRoute() {
   return cachedRoute;
 }
 
+// ---------- remembered filters ----------
+// Each section's filters are saved in localStorage and filled back in when you
+// return to it. Values given explicitly (a link with filters) win.
+const FILTER_STORE = 'pms-dashboard:filters:v1';
+const DATE_FIELDS = ['createdFrom', 'createdTo', 'targetFrom', 'targetTo'];
+const SECTION_FIELDS = {
+  dashboard: ['days'],
+  issues: ['scope', 'q', 'filterProject', 'filterStatus', ...DATE_FIELDS, 'layout'],
+  project: ['q', ...DATE_FIELDS, 'pStatus', 'pPriority', 'pAssignee', 'pOverdue', 'pSort', 'layout'],
+  leaderboard: ['period', 'lbFrom', 'lbTo', 'lbProject'],
+};
+
+function section(route) {
+  if (route.projectId && (route.view === 'projects' || route.view === 'my-projects')) {
+    return { key: `project:${route.projectId}`, fields: SECTION_FIELDS.project };
+  }
+  const fields = SECTION_FIELDS[route.view];
+  return fields ? { key: route.view, fields } : null;
+}
+
+function readStore() {
+  try {
+    return JSON.parse(localStorage.getItem(FILTER_STORE)) ?? {};
+  } catch {
+    return {};
+  }
+}
+
+function saveFilters(route) {
+  const s = section(route);
+  if (!s) return;
+  try {
+    const store = readStore();
+    store[s.key] = Object.fromEntries(s.fields.map((f) => [f, route[f]]));
+    localStorage.setItem(FILTER_STORE, JSON.stringify(store));
+  } catch {
+    // storage full or blocked: filters just aren't remembered
+  }
+}
+
+const hasFilters = (route, s) => s.fields.some((f) => route[f] !== DEFAULT_ROUTE[f]);
+
+/** The route with this section's filters replaced by the saved ones (if any). */
+export function withSavedFilters(route) {
+  const s = section(route);
+  const saved = s && readStore()[s.key];
+  const out = { ...route, pPage: 1 };
+  for (const f of s?.fields ?? []) out[f] = saved && f in saved ? saved[f] : DEFAULT_ROUTE[f];
+  if (!saved) return out;
+  // Re-parse so stored values go through the same checks as a URL would.
+  const url = new URL(routeToPath(out), 'http://x');
+  return { ...parseRoute(url), issueId: route.issueId };
+}
+
 export function commitRoute(next, { replace = false } = {}) {
+  if (section(next)?.key !== section(getRoute())?.key) next = withSavedFilters(next);
+  saveFilters(next);
   const path = routeToPath(next);
   const current = locationKey();
   if (path === current) return;
@@ -233,6 +289,18 @@ export function routeForView(view) {
   };
 }
 
+// Opening a page without filters in its address (bookmark, typed URL, reload
+// of a bare link) brings back that section's saved filters.
+function restoreOnLoad() {
+  if (typeof window === 'undefined') return;
+  const route = parseRoute(window.location);
+  const s = section(route);
+  if (!s || hasFilters(route, s)) return;
+  const path = routeToPath(withSavedFilters(route));
+  if (path !== locationKey()) window.history.replaceState(null, '', path);
+}
+restoreOnLoad();
+
 export function useRoute() {
   const route = useSyncExternalStore(subscribeRoute, getRoute, () => DEFAULT_ROUTE);
 
@@ -241,7 +309,7 @@ export function useRoute() {
   }, []);
 
   const navigate = useCallback((view) => {
-    commitRoute(routeForView(view));
+    commitRoute(withSavedFilters(routeForView(view)));
   }, []);
 
   return { route, patchRoute, navigate, commitRoute };
