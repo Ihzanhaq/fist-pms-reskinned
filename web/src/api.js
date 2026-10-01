@@ -60,6 +60,7 @@ export const api = {
   setPriority: (id, priority) => call(`/api/issues/${id}/priority`, { method: 'POST', body: { priority } }),
   setAssignee: (id, userId) => call(`/api/issues/${id}/assignee`, { method: 'POST', body: { userId } }),
   projects: () => call('/api/projects').then(({ projects }) => ({ projects: projects.map(normalizeProject) })),
+  myProjects: () => call('/api/my-projects').then(({ projects }) => ({ projects: projects.map(normalizeProject) })),
   dashboard: (days = 14) => call(`/api/dashboard?days=${days}`),
   leaderboard: (period, projectId) =>
     call(`/api/leaderboard?period=${period}${projectId ? `&project=${projectId}` : ''}`),

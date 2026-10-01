@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertOctagon, Loader2, Plus } from 'lucide-react';
 import { api, errorMessage } from './api.js';
 import { parseRoute, routeToPath } from './route.js';
-import { THEMES, useAppearance } from './theme.js';
+import { DEFAULT_DISPLAY, THEMES, useAppearance } from './theme.js';
 import BulkBar from './components/BulkBar.jsx';
 import { runBulk } from './bulk.js';
 import ConnectClaude from './components/ConnectClaude.jsx';
@@ -28,6 +28,18 @@ import Toast from './components/Toast.jsx';
 const EMPTY_FILTERS = { q: '', project: 'all', status: 'all' };
 const uniqueSorted = (values) => [...new Set(values)].sort((a, b) => a.localeCompare(b));
 
+const stubProject = (p) => ({
+  id: p.id,
+  name: p.name,
+  key: p.key ?? '',
+  description: p.description ?? '',
+  issueCount: null,
+  icon: p.icon ?? '',
+  color: p.color ?? null,
+  pinned: true,
+  hasCover: false,
+});
+
 export default function App() {
   const [session, setSession] = useState({ checked: false, loggedIn: false, expired: false, userName: '' });
   const [loggingIn, setLoggingIn] = useState(false);
@@ -48,6 +60,7 @@ export default function App() {
   const [createFor, setCreateFor] = useState(null); // null = closed, { parent } = open
 
   const { view, issueId: openIssueId } = route;
+  const projectDisplay = { ...DEFAULT_DISPLAY, ...appearance.settings.display };
   const openProject = route.projectId && projectCard?.id === route.projectId ? projectCard : null;
 
   // Keep the URL in step with the route, and the route with back/forward.
@@ -64,13 +77,23 @@ export default function App() {
   const setOpenIssueId = useCallback((issueId) => setRoute((r) => ({ ...r, issueId: issueId ?? null })), []);
   const navigate = useCallback((next) => setRoute({ view: next, projectId: null, date: null, issueId: null }), []);
   const setOpenProject = useCallback((card) => {
-    if (card) setProjectCard(card);
-    setRoute({ view: 'projects', projectId: card?.id ?? null, date: null, issueId: null });
+    if (card) {
+      setProjectCard(card);
+      setRoute((r) => ({ ...r, projectId: card.id, issueId: null }));
+    } else {
+      setRoute((r) => ({ ...r, projectId: null }));
+    }
+  }, []);
+
+  const openProjectFromIssue = useCallback((project) => {
+    setProjectCard(stubProject(project));
+    setRoute((r) => ({ ...r, view: 'projects', projectId: project.id, issueId: null }));
   }, []);
 
   // After a refresh only the project id is known; look up its card.
   useEffect(() => {
     if (!route.projectId || projectCard?.id === route.projectId || !session.loggedIn) return;
+    if (view !== 'projects' && view !== 'my-projects') return;
     let live = true;
     api
       .projects()
@@ -78,13 +101,13 @@ export default function App() {
         if (!live) return;
         const card = projects.find((p) => p.id === route.projectId);
         if (card) setProjectCard(card);
-        else setRoute({ view: 'projects', projectId: null, date: null, issueId: null });
+        else setRoute((r) => ({ ...r, projectId: null, issueId: null }));
       })
       .catch(() => {});
     return () => {
       live = false;
     };
-  }, [route.projectId, projectCard, session.loggedIn]);
+  }, [route.projectId, projectCard, session.loggedIn, view]);
 
   const showToast = useCallback((kind, text) => setToast({ kind, text }), []);
   const clearToast = useCallback(() => setToast(null), []);
@@ -272,11 +295,24 @@ export default function App() {
       return next;
     });
 
-  const SECTION = { dashboard: 'Dashboard', issues: 'My Issues', projects: 'Projects', report: 'Daily report', claude: 'Connect to Claude', settings: 'Settings', leaderboard: 'Leaderboard' };
+  const SECTION = {
+    dashboard: 'Dashboard',
+    issues: 'My Issues',
+    'my-projects': 'My projects',
+    projects: 'All projects',
+    report: 'Daily report',
+    claude: 'Connect to Claude',
+    settings: 'Settings',
+    leaderboard: 'Leaderboard',
+  };
+  const projectListView = view === 'my-projects' || view === 'projects';
   const crumbs = [
     { label: 'FIST PMS' },
-    { label: SECTION[view], onClick: view === 'projects' && openProject ? () => setOpenProject(null) : undefined },
-    ...(view === 'projects' && openProject ? [{ label: openProject.name }] : []),
+    {
+      label: SECTION[view],
+      onClick: projectListView && openProject ? () => setOpenProject(null) : undefined,
+    },
+    ...(projectListView && openProject ? [{ label: openProject.name }] : []),
     ...(view === 'report' && route.date && route.date !== todayIso() ? [{ label: formatShort(route.date) }] : []),
   ];
 
@@ -313,6 +349,7 @@ export default function App() {
       {session.loggedIn && (
         <Sidebar
           view={view}
+          activeProjectId={route.projectId}
           onNavigate={navigate}
           user={{ id: session.userId, name: session.userName }}
           onLogout={logout}
@@ -363,7 +400,7 @@ export default function App() {
             />
           )}
         </main>
-      ) : view === 'projects' ? (
+      ) : view === 'projects' || view === 'my-projects' ? (
         <main className="page">
           {!session.checked ? null : !session.loggedIn ? (
             <LoginBanner expired={session.expired} loggingIn={loggingIn} onLogin={login} />
@@ -377,13 +414,23 @@ export default function App() {
               lastChange={lastChange}
               reloadKey={projectReload}
               onBack={() => setOpenProject(null)}
+              backLabel={view === 'my-projects' ? 'My projects' : 'All projects'}
               onOpenIssue={setOpenIssueId}
               onNewIssue={(project) => setCreateFor({ parent: null, project })}
               onError={handlePanelError}
               showToast={showToast}
+              showEmojis={projectDisplay.projectEmojis}
             />
           ) : (
-            <ProjectsGrid onOpen={setOpenProject} onError={handlePanelError} showToast={showToast} />
+            <ProjectsGrid
+              title={view === 'my-projects' ? 'My projects' : 'All projects'}
+              mineOnly={view === 'my-projects'}
+              onOpen={setOpenProject}
+              onError={handlePanelError}
+              showToast={showToast}
+              showCovers={projectDisplay.projectCovers}
+              showEmojis={projectDisplay.projectEmojis}
+            />
           )}
         </main>
       ) : (
@@ -479,6 +526,8 @@ export default function App() {
           onClose={closeDrawer}
           onChanged={onDetailChanged}
           onAddSubIssue={(parent) => setCreateFor({ parent })}
+          onGoToIssues={() => navigate('issues')}
+          onOpenProject={openProjectFromIssue}
           onError={handlePanelError}
         />
       )}

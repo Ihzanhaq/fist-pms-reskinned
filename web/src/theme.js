@@ -56,6 +56,11 @@ const KEY = 'pms-dashboard:appearance';
 const APPLIED_KEY = 'pms-dashboard:appearance-applied';
 const LEGACY_KEY = 'pms-dashboard:theme';
 
+export const DEFAULT_DISPLAY = {
+  projectCovers: true,
+  projectEmojis: true,
+};
+
 export const DEFAULT_GLASS = {
   background: { type: 'preset', preset: 'sonoma', from: '#7f8cff', to: '#ff9a8b', angle: 135, image: null },
   tint: 'light',
@@ -69,12 +74,18 @@ const systemMode = () => (window.matchMedia('(prefers-color-scheme: dark)').matc
 function load() {
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null');
-    if (saved) return { theme: saved.theme ?? null, glass: { ...DEFAULT_GLASS, ...saved.glass, background: { ...DEFAULT_GLASS.background, ...saved.glass?.background } } };
+    if (saved) {
+      return {
+        theme: saved.theme ?? null,
+        glass: { ...DEFAULT_GLASS, ...saved.glass, background: { ...DEFAULT_GLASS.background, ...saved.glass?.background } },
+        display: { ...DEFAULT_DISPLAY, ...saved.display },
+      };
+    }
   } catch {
     /* fall through to defaults */
   }
   const legacy = localStorage.getItem(LEGACY_KEY); // the old light/dark toggle
-  return { theme: legacy === 'light' || legacy === 'dark' ? legacy : null, glass: DEFAULT_GLASS };
+  return { theme: legacy === 'light' || legacy === 'dark' ? legacy : null, glass: DEFAULT_GLASS, display: DEFAULT_DISPLAY };
 }
 
 export function glassBackgroundCss(background) {
@@ -185,8 +196,12 @@ export function useAppearance() {
     (patch) => setSettings((s) => ({ ...s, glass: { ...s.glass, ...patch, background: { ...s.glass.background, ...patch.background } } })),
     [],
   );
+  const updateDisplay = useCallback(
+    (patch) => setSettings((s) => ({ ...s, display: { ...DEFAULT_DISPLAY, ...s.display, ...patch } })),
+    [],
+  );
 
-  return { settings, resolved: resolve(settings), update, updateGlass, saveError };
+  return { settings, resolved: resolve(settings), update, updateGlass, updateDisplay, saveError };
 }
 
 // Brightness 0 (black) … 1 (white), used to pick light or dark glass for a background.

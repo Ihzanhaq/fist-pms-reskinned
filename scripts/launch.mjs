@@ -26,7 +26,13 @@ try {
 } catch {}
 const built = fs.existsSync(builtFile) ? fs.readFileSync(builtFile, 'utf8').trim() : null;
 const hasBuild = fs.existsSync(path.join(root, 'web', 'dist', 'index.html'));
-const changed = Boolean(head) && built !== head;
+let dirty = false;
+try {
+  dirty = Boolean(read('git status --porcelain --untracked-files=no'));
+} catch {}
+// Rebuild when the repo moved forward or there are local edits (shortcut users
+// often test uncommitted changes).
+const changed = dirty || (Boolean(head) && built !== head);
 
 // Install and build on first run, and again whenever the code has changed.
 // A server started from older code is stopped first so it restarts on the new

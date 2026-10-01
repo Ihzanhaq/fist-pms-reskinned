@@ -1,4 +1,4 @@
-import { ExternalLink, FileText, FolderKanban, LayoutDashboard, ListChecks, LogOut, Settings, Trophy } from 'lucide-react';
+import { ExternalLink, FileText, FolderKanban, LayoutDashboard, ListChecks, LogOut, Settings, Star, Trophy } from 'lucide-react';
 import Avatar from './Avatar.jsx';
 import BrandMark from './BrandMark.jsx';
 import ClaudeIcon from './ClaudeIcon.jsx';
@@ -16,7 +16,8 @@ const GROUPS = [
     label: 'Work',
     items: [
       { id: 'issues', label: 'My Issues', icon: ListChecks },
-      { id: 'projects', label: 'Projects', icon: FolderKanban },
+      { id: 'my-projects', label: 'My projects', icon: Star },
+      { id: 'projects', label: 'All projects', icon: FolderKanban },
     ],
   },
   {
@@ -29,7 +30,11 @@ const GROUPS = [
   },
 ];
 
-export default function Sidebar({ view, onNavigate, user, onLogout }) {
+function isProjectListActive(view, id, activeProjectId) {
+  return view === id && !activeProjectId;
+}
+
+export default function Sidebar({ view, activeProjectId, onNavigate, user, onLogout }) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -44,17 +49,22 @@ export default function Sidebar({ view, onNavigate, user, onLogout }) {
         {GROUPS.map((group) => (
           <div className="nav-group" key={group.label}>
             <span className="nav-label">{group.label}</span>
-            {group.items.map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                className={view === id ? 'nav-item active' : 'nav-item'}
-                aria-current={view === id ? 'page' : undefined}
-                onClick={() => onNavigate(id)}
-              >
-                <Icon size={17} />
-                <span>{label}</span>
-              </button>
-            ))}
+            {group.items.map(({ id, label, icon: Icon }) => {
+              const active =
+                isProjectListActive(view, id, activeProjectId) ||
+                (Boolean(activeProjectId) && view === id);
+              return (
+                <button
+                  key={id}
+                  className={active ? 'nav-item active' : 'nav-item'}
+                  aria-current={active ? 'page' : undefined}
+                  onClick={() => onNavigate(id)}
+                >
+                  <Icon size={17} />
+                  <span>{label}</span>
+                </button>
+              );
+            })}
             {group.label === 'Integrations' && (
               <a className="nav-item" href="https://pms.fistinnovations.com/" target="_blank" rel="noreferrer">
                 <ExternalLink size={17} />

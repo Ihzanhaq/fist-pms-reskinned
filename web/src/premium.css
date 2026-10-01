@@ -34,6 +34,18 @@
 /* nav */
 .sidebar nav { display: flex; flex-direction: column; gap: 18px; padding: 8px 0 16px; flex: 1; }
 .nav-group { display: flex; flex-direction: column; gap: 2px; }
+.nav-subgroup { display: flex; flex-direction: column; gap: 2px; margin: 6px 0 4px; padding-left: 8px; border-left: 1px solid rgba(255, 255, 255, 0.12); }
+.nav-sublabel {
+  padding: 6px 26px 4px 18px; font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: rgba(255, 255, 255, 0.45);
+}
+.nav-item-sub { padding-left: 18px; font-size: 12.5px; }
+.nav-item-sub-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-dot {
+  width: 6px; height: 6px; border-radius: 999px; flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.35);
+}
+.nav-item-sub.active .nav-dot { background: #fff; }
 .nav-label {
   padding: 0 24px 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
   color: rgba(255, 255, 255, 0.72);

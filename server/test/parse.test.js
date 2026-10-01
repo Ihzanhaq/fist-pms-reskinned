@@ -26,6 +26,8 @@ test('parseMyIssues reads every field of a row', () => {
     title: 'Fix login & signup flow',
     projectId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
     projectName: 'DEMO',
+    projectIcon: '📊',
+    projectColor: '#0d9488',
     status: { name: 'In Progress', color: '#2563EB' },
     priority: 'urgent',
     targetDate: '11 Sep 2026',
@@ -90,6 +92,7 @@ test('parseIssueDetail reads the whole issue page', () => {
   assert.equal(d.assigneeLocked, false);
   assert.deepEqual(d.labels, [{ name: 'Feature', color: '#0084ff' }]);
   assert.deepEqual(d.timeline, { start: '2026-09-10', target: '2026-09-11' });
+  assert.equal(d.parentIssue, null);
   assert.deepEqual(d.subIssues, [
     { id: '44444444-4444-4444-8444-444444444444', key: 'DEMO-13', title: 'Add captcha & rate limit' },
   ]);
@@ -100,6 +103,21 @@ test('parseIssueDetail reads the whole issue page', () => {
   assert.equal(d.comments[0].at, '2026-06-05 07:25');
   assert.match(d.comments[0].html, /Looks good/);
   assert.deepEqual(d.activity, [{ who: 'Sam Reviewer', text: 'created this issue', at: '2026-09-10 11:16' }]);
+});
+
+test('parseIssueDetail reads the parent issue on sub-issues', () => {
+  const parentChip =
+    '<a href="/issues/11111111-1111-4111-8111-111111111111?back=/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" class="inline-flex">' +
+    '<span class="material-symbols-rounded">subdirectory_arrow_right</span> Sub-issue of ' +
+    '<span class="font-semibold">DEMO-12 Fix login &amp; signup flow</span></a>';
+  const html = fixture('issue-detail.html').replace('<span class="iv-key">DEMO-12</span>', parentChip + '<span class="iv-key">DEMO-13</span>');
+  const d = parseIssueDetail(html);
+  assert.deepEqual(d.parentIssue, {
+    id: '11111111-1111-4111-8111-111111111111',
+    key: 'DEMO-12',
+    title: 'Fix login & signup flow',
+  });
+  assert.equal(d.key, 'DEMO-13');
 });
 
 test('parseIssueDetail handles an unassigned issue with no timeline', () => {

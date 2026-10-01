@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FolderOpen, ListChecks, Loader2, Pin, PinOff, Search, X } from 'lucide-react';
 import { api, errorMessage } from '../api.js';
+import { projectIconLabel } from '../projectDisplay.js';
 import Select from './Select.jsx';
 
 const SORTS = {
@@ -11,11 +12,19 @@ const SORTS = {
   pinned: { label: 'Pinned first', fn: (a, b) => b.pinned - a.pinned || a.name.localeCompare(b.name) },
 };
 
-export default function ProjectsGrid({ onOpen, onError, showToast }) {
+export default function ProjectsGrid({
+  title = 'All projects',
+  mineOnly = false,
+  onOpen,
+  onError,
+  showToast,
+  showCovers = true,
+  showEmojis = true,
+}) {
   const [projects, setProjects] = useState(null);
   const [error, setError] = useState(null);
   const [q, setQ] = useState('');
-  const [sort, setSort] = useState('pinned');
+  const [sort, setSort] = useState(mineOnly ? 'name' : 'pinned');
   const [pinning, setPinning] = useState(() => new Set());
 
   // Optimistic; reverts if the PMS refuses.
@@ -41,33 +50,44 @@ export default function ProjectsGrid({ onOpen, onError, showToast }) {
     }
   };
 
-  const load = () => {
+  const load = useCallback(() => {
     setError(null);
-    api
-      .projects()
+    const fetchProjects = mineOnly ? api.myProjects() : api.projects();
+    fetchProjects
       .then(({ projects }) => setProjects(projects))
       .catch((err) => {
         if (err.code === 'session_expired') onError(err);
         setError(err);
       });
-  };
-  useEffect(load, []); // load once on mount
+  }, [mineOnly, onError]);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const pool = projects ?? [];
 
   const visible = useMemo(() => {
     const term = q.trim().toLowerCase();
-    return (projects ?? [])
+    return pool
       .filter((p) => !term || [p.name, p.key, p.description].some((t) => t.toLowerCase().includes(term)))
       .sort(SORTS[sort].fn);
-  }, [projects, q, sort]);
+  }, [pool, q, sort]);
+
+  const sortOptions = useMemo(() => {
+    const keys = mineOnly ? Object.keys(SORTS).filter((k) => k !== 'pinned') : Object.keys(SORTS);
+    return keys.map((id) => ({ value: id, label: SORTS[id].label }));
+  }, [mineOnly]);
 
   return (
     <>
       <div className="page-head">
         <div>
-          <h1>Projects</h1>
+          <h1>{title}</h1>
           {projects && (
             <p className="subtitle">
-              {visible.length === projects.length ? `${projects.length} projects` : `${visible.length} of ${projects.length} projects`}
+              {visible.length === pool.length
+                ? `${pool.length} ${pool.length === 1 ? 'project' : 'projects'}`
+                : `${visible.length} of ${pool.length} projects`}
             </p>
           )}
         </div>
@@ -88,7 +108,7 @@ export default function ProjectsGrid({ onOpen, onError, showToast }) {
           prefix="Sort:"
           value={sort}
           onChange={setSort}
-          options={Object.entries(SORTS).map(([id, s]) => ({ value: id, label: s.label }))}
+          options={sortOptions}
         />
       </div>
 
@@ -117,7 +137,13 @@ export default function ProjectsGrid({ onOpen, onError, showToast }) {
       {projects && visible.length === 0 && (
         <div className="empty">
           <FolderOpen size={28} />
-          <p>No projects match “{q}”</p>
+          <p>
+            {q
+              ? `No projects match “${q}”`
+              : mineOnly
+                ? 'No projects with your active issues. When you’re assigned work, those projects appear here.'
+                : 'No projects found.'}
+          </p>
         </div>
       )}
 
@@ -126,15 +152,23 @@ export default function ProjectsGrid({ onOpen, onError, showToast }) {
           {visible.map((p) => (
             <div
               key={p.id}
-              className={p.pinned ? 'project-card has-cover is-pinned' : 'project-card has-cover'}
+              className={[
+                'project-card',
+                showCovers && 'has-cover',
+                p.pinned && 'is-pinned',
+                !showCovers && 'no-cover',
+              ]
+                .filter(Boolean)
+                .join(' ')}
               role="button"
               tabIndex={0}
               onClick={() => onOpen(p)}
               onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget && (e.preventDefault(), onOpen(p))}
             >
-              <div className="project-cover" style={{ '--c': p.color ?? '#059669' }}>
-                {p.hasCover && <img src={`/api/project-covers/${p.id}`} alt="" loading="lazy" onError={(e) => e.currentTarget.remove()} />}
-                <button
+              {showCovers && (
+                <div className="project-cover" style={{ '--c': p.color ?? '#059669' }}>
+                  {p.hasCover && <img src={`/api/project-covers/${p.id}`} alt="" loading="lazy" onError={(e) => e.currentTarget.remove()} />}
+                  <button
                   className={p.pinned ? 'pin-btn on' : 'pin-btn'}
                   title={p.pinned ? 'Unpin' : 'Pin to your list'}
                   aria-label={p.pinned ? `Unpin ${p.name}` : `Pin ${p.name}`}
@@ -145,12 +179,31 @@ export default function ProjectsGrid({ onOpen, onError, showToast }) {
                     togglePin(p);
                   }}
                 >
-                  {pinning.has(p.id) ? <Loader2 size={14} className="spin" /> : p.pinned ? <PinOff size={14} /> : <Pin size={14} />}
-                </button>
-              </div>
+                    {pinning.has(p.id) ? <Loader2 size={14} className="spin" /> : p.pinned ? <PinOff size={14} /> : <Pin size={14} />}
+                  </button>
+                </div>
+              )}
               <div className="project-card-top">
-                <span className="project-icon" style={{ '--c': p.color ?? '#059669' }}>{p.icon || p.name[0] || '?'}</span>
-                {p.pinned && <Pin size={14} className="pinned" aria-label="Pinned" />}
+                <span className="project-icon" style={{ '--c': p.color ?? '#059669' }}>
+                  {projectIconLabel(p, showEmojis)}
+                </span>
+                {showCovers ? (
+                  p.pinned && <Pin size={14} className="pinned" aria-label="Pinned" />
+                ) : (
+                  <button
+                    className={p.pinned ? 'pin-btn on pin-btn-inline' : 'pin-btn pin-btn-inline'}
+                    title={p.pinned ? 'Unpin' : 'Pin to your list'}
+                    aria-label={p.pinned ? `Unpin ${p.name}` : `Pin ${p.name}`}
+                    aria-pressed={p.pinned}
+                    disabled={pinning.has(p.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      togglePin(p);
+                    }}
+                  >
+                    {pinning.has(p.id) ? <Loader2 size={14} className="spin" /> : p.pinned ? <PinOff size={14} /> : <Pin size={14} />}
+                  </button>
+                )}
               </div>
               <div className="project-name-row">
                 <strong>{p.name}</strong>
@@ -159,7 +212,14 @@ export default function ProjectsGrid({ onOpen, onError, showToast }) {
               <p className="project-desc">{p.description || 'No description'}</p>
               {p.issueCount !== null && (
                 <span className="project-count">
-                  <ListChecks size={14} /> {p.issueCount} {p.issueCount === 1 ? 'issue' : 'issues'}
+                  <ListChecks size={14} /> {p.issueCount}{' '}
+                  {mineOnly
+                    ? p.issueCount === 1
+                      ? 'your issue'
+                      : 'your issues'
+                    : p.issueCount === 1
+                      ? 'issue'
+                      : 'issues'}
                 </span>
               )}
             </div>

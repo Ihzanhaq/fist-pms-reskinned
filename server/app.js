@@ -98,6 +98,7 @@ export function createApp() {
   });
 
   app.get('/api/projects', async (req, res) => res.json({ projects: await service.listProjects() }));
+  app.get('/api/my-projects', async (req, res) => res.json({ projects: await service.listMyProjects() }));
 
   app.post('/api/projects/:id/pin', async (req, res) => res.json(await service.setPinned(req.params.id, req.body?.pinned)));
 

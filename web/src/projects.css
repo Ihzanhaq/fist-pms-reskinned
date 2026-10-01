@@ -9,7 +9,8 @@
   text-align: left; transition: box-shadow 0.18s, transform 0.18s, border-color 0.18s;
 }
 .project-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--accent-border); }
-.project-card-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.project-card.no-cover { padding-top: 16px; }
+.project-card-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .project-icon {
   display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px;
   background: color-mix(in srgb, var(--c) 14%, var(--surface)); color: var(--c);
@@ -189,7 +190,7 @@
   background: linear-gradient(135deg, var(--c), #1e293b);
 }
 .project-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.project-card.has-cover .project-card-top { margin-top: -30px; position: relative; }
+.project-card.has-cover .project-card-top { margin-top: -30px; position: relative; align-items: flex-start; }
 .project-card.has-cover .project-icon {
   width: 46px; height: 46px; font-size: 22px; background: var(--c); color: #fff;
   box-shadow: 0 0 0 3px var(--surface);
@@ -203,6 +204,12 @@
 }
 .project-card:hover .pin-btn, .project-card:focus-within .pin-btn, .pin-btn.on, .pin-btn:disabled { opacity: 1; }
 .pin-btn.on { color: var(--accent); }
+.pin-btn-inline {
+  opacity: 1; position: static; flex-shrink: 0;
+  background: var(--surface); color: var(--text-2);
+  box-shadow: var(--shadow-sm);
+}
+.project-card.no-cover .pin-btn-inline { border: 1px solid var(--border); }
 .project-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Settings: updates */

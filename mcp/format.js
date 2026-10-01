@@ -21,6 +21,9 @@ export function issueLine(i) {
 export function issueDetailText(d) {
   const lines = [
     `# ${d.key}: ${d.title}`,
+    ...(d.parentIssue
+      ? [`Parent: ${d.parentIssue.key} · ${d.parentIssue.title} (id ${d.parentIssue.id})`]
+      : []),
     `Link: ${issueUrl(d.id)}`,
     `Project: ${d.project?.name ?? '—'}`,
     `Status: ${d.status.name}  (available: ${d.states.map((s) => s.name).join(', ')})`,

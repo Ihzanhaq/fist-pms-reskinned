@@ -33,8 +33,8 @@ function ThemePreview({ theme, glassBg }) {
 }
 
 export default function SettingsView({ appearance, onShowTour }) {
-  const { settings, resolved, update, updateGlass, saveError } = appearance;
-  const { glass } = settings;
+  const { settings, resolved, update, updateGlass, updateDisplay, saveError } = appearance;
+  const { glass, display } = settings;
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
@@ -294,6 +294,41 @@ export default function SettingsView({ appearance, onShowTour }) {
           </label>
         </div>
       </section>
+      <section className="settings-card">
+        <header className="settings-head">
+          <div>
+            <h2>Projects</h2>
+            <p className="muted">How project cards and headers look in this dashboard.</p>
+          </div>
+        </header>
+        <div className="settings-toggle-row">
+          <div className="settings-toggle-item">
+            <span className="settings-toggle-label">Cover banners</span>
+            <button
+              type="button"
+              role="switch"
+              className={display.projectCovers ? 'ui-switch on' : 'ui-switch'}
+              aria-checked={display.projectCovers}
+              onClick={() => updateDisplay({ projectCovers: !display.projectCovers })}
+            >
+              <span className="ui-switch-thumb" aria-hidden />
+            </button>
+          </div>
+          <div className="settings-toggle-item">
+            <span className="settings-toggle-label">Project emojis</span>
+            <button
+              type="button"
+              role="switch"
+              className={display.projectEmojis ? 'ui-switch on' : 'ui-switch'}
+              aria-checked={display.projectEmojis}
+              onClick={() => updateDisplay({ projectEmojis: !display.projectEmojis })}
+            >
+              <span className="ui-switch-thumb" aria-hidden />
+            </button>
+          </div>
+        </div>
+      </section>
+
       <section className="settings-card">
         <header className="settings-head">
           <div>

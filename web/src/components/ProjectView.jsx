@@ -11,6 +11,7 @@ import Select from './Select.jsx';
 import Avatar from './Avatar.jsx';
 import StatusSelect from './StatusSelect.jsx';
 import KanbanBoard, { ViewSwitch, savedView } from './KanbanBoard.jsx';
+import { projectIconLabel } from '../projectDisplay.js';
 import { rowClick } from '../rowClick.js';
 
 const PRIORITY_RANK = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
@@ -34,7 +35,18 @@ function keyNum(issue) {
 
 const EMPTY_FILTERS = { q: '', status: 'all', priority: 'all', assignee: 'all', overdue: false };
 
-export default function ProjectView({ project, lastChange, reloadKey, onBack, onOpenIssue, onNewIssue, onError, showToast }) {
+export default function ProjectView({
+  project,
+  lastChange,
+  reloadKey,
+  onBack,
+  backLabel = 'All projects',
+  onOpenIssue,
+  onNewIssue,
+  onError,
+  showToast,
+  showEmojis = true,
+}) {
   const [data, setData] = useState(null); // { issues, states, assignees }
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -199,12 +211,12 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
   return (
     <>
       <button className="back-link" onClick={onBack}>
-        <ArrowLeft size={15} /> All projects
+        <ArrowLeft size={15} /> {backLabel}
       </button>
 
       <div className="project-head">
         <span className="project-icon large" style={{ '--c': project.color ?? '#059669' }}>
-          {project.icon || project.name[0] || '?'}
+          {projectIconLabel(project, showEmojis)}
         </span>
         <div className="project-head-text">
           <h1>

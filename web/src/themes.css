@@ -261,6 +261,31 @@
 .settings-row { display: grid; grid-template-columns: 140px minmax(0, 1fr); align-items: center; gap: 16px; padding: 14px 0; border-top: 1px solid var(--border); }
 .settings-label { font-size: 13px; font-weight: 500; color: var(--text-2); }
 
+.settings-toggle-row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 20px 28px;
+  padding-top: 4px;
+}
+.settings-toggle-item {
+  display: inline-flex; align-items: center; gap: 12px;
+}
+.settings-toggle-label { font-size: 13px; font-weight: 500; color: var(--text-2); white-space: nowrap; }
+
+.ui-switch {
+  position: relative; flex-shrink: 0;
+  width: 44px; height: 26px; padding: 0; border: 0; border-radius: 999px;
+  background: var(--border-strong); cursor: pointer;
+  transition: background 0.2s;
+}
+.ui-switch.on { background: var(--accent); }
+.ui-switch:focus-visible { outline: 2px solid var(--accent-border); outline-offset: 2px; }
+.ui-switch-thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+  transition: transform 0.2s;
+}
+.ui-switch.on .ui-switch-thumb { transform: translateX(18px); }
+
 .bg-options { display: flex; flex-wrap: wrap; gap: 12px; }
 .bg-swatch { display: flex; flex-direction: column; align-items: center; gap: 6px; border: 0; background: none; padding: 0; font-size: 12px; color: var(--text-2); }
 .bg-thumb {

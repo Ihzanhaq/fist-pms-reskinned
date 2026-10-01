@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ArrowRight,
   ChevronRight,
+  CornerDownRight,
   Download,
   ExternalLink,
   FileText,
@@ -50,7 +51,17 @@ function Property({ label, children }) {
   );
 }
 
-export default function IssueDrawer({ issueId, colorFor, onOpenIssue, onClose, onChanged, onAddSubIssue, onError }) {
+export default function IssueDrawer({
+  issueId,
+  colorFor,
+  onOpenIssue,
+  onClose,
+  onChanged,
+  onAddSubIssue,
+  onGoToIssues,
+  onOpenProject,
+  onError,
+}) {
   const [detail, setDetail] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [busy, setBusy] = useState(null); // which field is saving
@@ -149,6 +160,40 @@ export default function IssueDrawer({ issueId, colorFor, onOpenIssue, onClose, o
 
         {detail && (
           <div className="drawer-body">
+            {(onGoToIssues || detail.project) && (
+              <div className="drawer-context">
+                {onGoToIssues && (
+                  <button type="button" className="drawer-context-link" onClick={() => (onClose(), onGoToIssues())}>
+                    My Issues
+                  </button>
+                )}
+                {onGoToIssues && detail.project && <span className="muted">·</span>}
+                {detail.project && onOpenProject && (
+                  <button
+                    type="button"
+                    className="drawer-context-link"
+                    onClick={() => (onClose(), onOpenProject(detail.project))}
+                  >
+                    {detail.project.name}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {detail.parentIssue && (
+              <button
+                type="button"
+                className="parent-issue-link"
+                onClick={() => onOpenIssue(detail.parentIssue.id)}
+              >
+                <CornerDownRight size={15} />
+                <span>
+                  Sub-issue of <span className="key">{detail.parentIssue.key}</span>
+                  {detail.parentIssue.title ? ` · ${detail.parentIssue.title}` : ''}
+                </span>
+              </button>
+            )}
+
             <h2 className="drawer-title">{detail.title}</h2>
 
             <div className="properties">

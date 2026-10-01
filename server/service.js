@@ -102,6 +102,59 @@ export async function listProjects() {
   return parseProjectCards(await pms.get('/')).map(({ pinCsrf, ...card }) => card);
 }
 
+const hasEmoji = (text) => /\p{Extended_Pictographic}/u.test(text ?? '');
+
+// Prefer the coloured emoji badge from /my-issues over plain initials on the home grid.
+const pickProjectIcon = (fromIssue, fromCard) => {
+  if (fromIssue && hasEmoji(fromIssue)) return fromIssue;
+  if (fromCard) return fromCard;
+  return fromIssue ?? '';
+};
+
+// Project cards where you have active assigned issues on /my-issues (same as the default My Issues list).
+export async function listMyProjects() {
+  const issues = await listMyIssues('active');
+  const counts = new Map();
+  const order = [];
+  const fromIssue = new Map();
+  for (const issue of issues) {
+    if (!counts.has(issue.projectId)) order.push(issue.projectId);
+    counts.set(issue.projectId, (counts.get(issue.projectId) ?? 0) + 1);
+    if (!fromIssue.has(issue.projectId)) {
+      fromIssue.set(issue.projectId, {
+        name: issue.projectName,
+        icon: issue.projectIcon,
+        color: issue.projectColor,
+      });
+    }
+  }
+  const byId = new Map((await listProjects()).map((card) => [card.id, card]));
+  return order.map((id) => {
+    const hint = fromIssue.get(id);
+    const card = byId.get(id);
+    const issueCount = counts.get(id) ?? 0;
+    if (!card) {
+      return {
+        id,
+        name: hint?.name ?? 'Unknown project',
+        key: '',
+        description: '',
+        issueCount,
+        icon: hint?.icon ?? '',
+        color: hint?.color ?? null,
+        pinned: false,
+        hasCover: false,
+      };
+    }
+    return {
+      ...card,
+      issueCount,
+      icon: pickProjectIcon(hint?.icon, card.icon),
+      color: card.color ?? hint?.color ?? null,
+    };
+  });
+}
+
 // The PMS pin form toggles, so only post when the state needs to change.
 export async function setPinned(projectId, pinned) {
   requireUuid(projectId, 'project id');

@@ -34,6 +34,7 @@ function parseIssueRow(item) {
 
   const dotStyle = statusEl.querySelector('.dot')?.getAttribute('style') ?? '';
   const targetDate = lastSpanText(dateEl);
+  const projectIconEl = projectLink?.querySelector('.ic');
 
   return {
     id,
@@ -41,6 +42,8 @@ function parseIssueRow(item) {
     title: titleLink.getAttribute('title')?.trim() || clean(titleLink),
     projectId,
     projectName: clean(projectLink.querySelector('.nm')),
+    projectIcon: clean(projectIconEl),
+    projectColor: projectIconEl?.getAttribute('style')?.match(HEX_COLOR)?.[0] ?? null,
     status: { name: clean(statusEl), color: dotStyle.match(HEX_COLOR)?.[0] ?? null },
     priority: lastSpanText(item.querySelector('.pill')) || 'none',
     targetDate: targetDate && targetDate !== '—' ? targetDate : null,
@@ -114,6 +117,17 @@ function parseTimeline(propEl) {
 }
 
 // Open issues have an assignee picker form; closed issues only show the name.
+// Sub-issues show a breadcrumb link: "Sub-issue of KEY Title".
+function parseParentIssue(root) {
+  const link = root.querySelectorAll('a[href^="/issues/"]').find((a) => /Sub-issue of/i.test(a.text));
+  if (!link) return null;
+  const id = uuidIn(link);
+  if (!id) return null;
+  const label = clean(link.querySelector('.font-semibold') ?? link).replace(/^Sub-issue of\s*/i, '');
+  const match = label.match(/^(\S+)\s+(.+)$/);
+  return match ? { id, key: match[1], title: match[2] } : { id, key: label, title: '' };
+}
+
 function parseAssignees(root) {
   const buttons = root.querySelectorAll('form[action$="/assignee"] button[name="userId"]');
   if (!buttons.length) {
@@ -180,6 +194,8 @@ export function parseIssueDetail(html) {
     title: clean(a.querySelectorAll('span').find((s) => !hasClass(s, 'iv-key') && !isIcon(s))),
   }));
 
+  const parentIssue = parseParentIssue(root);
+
   return {
     key,
     title,
@@ -194,6 +210,7 @@ export function parseIssueDetail(html) {
     ...parseAssignees(root),
     labels,
     timeline: parseTimeline(prop(root, 'Timeline')),
+    parentIssue,
     subIssues,
     attachments,
     comments,
@@ -252,7 +269,7 @@ export function parseProjects(html) {
     if (id && href === `/projects/${id}` && !seen.has(id)) seen.set(id, clean(link.querySelector('.nav-text')));
   }
   if (!seen.size) throw new LayoutChangedError('Could not find the project list');
-  return [...seen].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  return [...seen.entries()].map(([id, name]) => ({ id, name }));
 }
 
 // ---------- project list & project issues ----------
