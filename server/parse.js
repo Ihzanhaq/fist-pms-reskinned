@@ -275,6 +275,9 @@ export function parseProjectCards(html) {
       icon: clean(iconEl),
       color: iconEl?.getAttribute('style')?.match(HEX_COLOR)?.[0] ?? null,
       pinned: card.getAttribute('data-pinned') === 'true',
+      // An uploaded cover image; otherwise the PMS paints a gradient from the project colour.
+      hasCover: Boolean(card.querySelector('img[src^="/project-cover/"]')),
+      pinCsrf: card.querySelector('form[action$="/pin"] input[name="_csrf"]')?.getAttribute('value') ?? null,
     };
   });
 }

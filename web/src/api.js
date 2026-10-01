@@ -26,6 +26,7 @@ function normalizeProject(p) {
     icon: p.icon ?? '',
     color: p.color ?? null,
     pinned: Boolean(p.pinned),
+    hasCover: Boolean(p.hasCover),
   };
 }
 
@@ -63,6 +64,7 @@ export const api = {
   leaderboard: (period, projectId) =>
     call(`/api/leaderboard?period=${period}${projectId ? `&project=${projectId}` : ''}`),
   report: (date) => call(`/api/report?date=${date}`),
+  setPinned: (projectId, pinned) => call(`/api/projects/${projectId}/pin`, { method: 'POST', body: { pinned } }),
   projectIssues: (projectId) => call(`/api/projects/${projectId}/issues`),
   issueForm: (projectId, parentId) =>
     call(`/api/projects/${projectId}/issue-form${parentId ? `?parentId=${parentId}` : ''}`),

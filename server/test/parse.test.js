@@ -165,6 +165,8 @@ test('parseProjectCards reads the project grid on the home page', () => {
       icon: '💻',
       color: '#0891b2',
       pinned: true,
+      hasCover: false,
+      pinCsrf: 'tok-1',
     },
     {
       id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
@@ -175,6 +177,8 @@ test('parseProjectCards reads the project grid on the home page', () => {
       icon: '🛒',
       color: '#7c3aed',
       pinned: false,
+      hasCover: true,
+      pinCsrf: null,
     },
   ]);
 });

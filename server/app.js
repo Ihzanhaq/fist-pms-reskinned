@@ -96,6 +96,21 @@ export function createApp() {
 
   app.get('/api/projects', async (req, res) => res.json({ projects: await service.listProjects() }));
 
+  app.post('/api/projects/:id/pin', async (req, res) => res.json(await service.setPinned(req.params.id, req.body?.pinned)));
+
+  // Project cover images, fetched with the PMS login and kept by the browser for 10 minutes.
+  app.get('/api/project-covers/:id', async (req, res) => {
+    const image = await service.projectCover(req.params.id);
+    if (!image) {
+      res.setHeader('Cache-Control', 'no-store');
+      return res.status(404).end();
+    }
+    res.setHeader('Cache-Control', 'private, max-age=600');
+    res.setHeader('Content-Type', image.type);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.send(image.body);
+  });
+
   app.get('/api/projects/:id/issues', async (req, res) => res.json(await service.projectIssues(req.params.id)));
 
   app.get('/api/projects/:id/issue-form', async (req, res) =>

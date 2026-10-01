@@ -21,6 +21,7 @@ import TopBar from './components/TopBar.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import Filters from './components/Filters.jsx';
 import IssueTable from './components/IssueTable.jsx';
+import KanbanBoard, { ViewSwitch, savedView } from './components/KanbanBoard.jsx';
 import LoginBanner from './components/LoginBanner.jsx';
 import Toast from './components/Toast.jsx';
 
@@ -31,6 +32,7 @@ export default function App() {
   const [session, setSession] = useState({ checked: false, loggedIn: false, expired: false, userName: '' });
   const [loggingIn, setLoggingIn] = useState(false);
   const [scope, setScope] = useState('active');
+  const [issueView, setIssueView] = useState(savedView);
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -381,7 +383,7 @@ export default function App() {
               showToast={showToast}
             />
           ) : (
-            <ProjectsGrid onOpen={setOpenProject} onError={handlePanelError} />
+            <ProjectsGrid onOpen={setOpenProject} onError={handlePanelError} showToast={showToast} />
           )}
         </main>
       ) : (
@@ -397,6 +399,7 @@ export default function App() {
               </p>
             )}
           </div>
+          {session.loggedIn && <ViewSwitch view={issueView} onChange={setIssueView} />}
           {session.loggedIn && (
             <button className="primary-btn new-issue-btn" onClick={() => setCreateFor({ parent: null })}>
               <Plus size={16} /> New issue
@@ -428,6 +431,17 @@ export default function App() {
                 </div>
                 <button className="secondary-btn" onClick={loadIssues}>Try again</button>
               </div>
+            ) : issueView === 'board' ? (
+              <KanbanBoard
+                issues={visible}
+                loading={loading && issues.length === 0}
+                savingIds={savingIds}
+                colorFor={colorFor}
+                showProject
+                onStatusChange={changeStatus}
+                onOpen={setOpenIssueId}
+                onMoveError={(msg) => showToast('error', msg)}
+              />
             ) : (
               <IssueTable
                 issues={visible}

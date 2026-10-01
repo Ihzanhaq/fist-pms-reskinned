@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FolderOpen, ListChecks, Pin, Search, X } from 'lucide-react';
+import { FolderOpen, ListChecks, Loader2, Pin, PinOff, Search, X } from 'lucide-react';
 import { api, errorMessage } from '../api.js';
 import Select from './Select.jsx';
 
@@ -11,11 +11,35 @@ const SORTS = {
   pinned: { label: 'Pinned first', fn: (a, b) => b.pinned - a.pinned || a.name.localeCompare(b.name) },
 };
 
-export default function ProjectsGrid({ onOpen, onError }) {
+export default function ProjectsGrid({ onOpen, onError, showToast }) {
   const [projects, setProjects] = useState(null);
   const [error, setError] = useState(null);
   const [q, setQ] = useState('');
-  const [sort, setSort] = useState('name');
+  const [sort, setSort] = useState('pinned');
+  const [pinning, setPinning] = useState(() => new Set());
+
+  // Optimistic; reverts if the PMS refuses.
+  const togglePin = async (p) => {
+    const want = !p.pinned;
+    const patch = (pinned) => setProjects((list) => list.map((x) => (x.id === p.id ? { ...x, pinned } : x)));
+    patch(want);
+    setPinning((s) => new Set(s).add(p.id));
+    try {
+      const { pinned } = await api.setPinned(p.id, want);
+      patch(pinned);
+      showToast?.('success', `${p.name} ${pinned ? 'pinned' : 'unpinned'}`);
+    } catch (err) {
+      patch(p.pinned);
+      if (err.code === 'session_expired') onError(err);
+      showToast?.('error', `Could not ${want ? 'pin' : 'unpin'} ${p.name}: ${errorMessage(err)}`);
+    } finally {
+      setPinning((s) => {
+        const next = new Set(s);
+        next.delete(p.id);
+        return next;
+      });
+    }
+  };
 
   const load = () => {
     setError(null);
@@ -100,7 +124,30 @@ export default function ProjectsGrid({ onOpen, onError }) {
       {projects && visible.length > 0 && (
         <div className="project-grid">
           {visible.map((p) => (
-            <button key={p.id} className="project-card" onClick={() => onOpen(p)}>
+            <div
+              key={p.id}
+              className={p.pinned ? 'project-card has-cover is-pinned' : 'project-card has-cover'}
+              role="button"
+              tabIndex={0}
+              onClick={() => onOpen(p)}
+              onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget && (e.preventDefault(), onOpen(p))}
+            >
+              <div className="project-cover" style={{ '--c': p.color ?? '#059669' }}>
+                {p.hasCover && <img src={`/api/project-covers/${p.id}`} alt="" loading="lazy" onError={(e) => e.currentTarget.remove()} />}
+                <button
+                  className={p.pinned ? 'pin-btn on' : 'pin-btn'}
+                  title={p.pinned ? 'Unpin' : 'Pin to your list'}
+                  aria-label={p.pinned ? `Unpin ${p.name}` : `Pin ${p.name}`}
+                  aria-pressed={p.pinned}
+                  disabled={pinning.has(p.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    togglePin(p);
+                  }}
+                >
+                  {pinning.has(p.id) ? <Loader2 size={14} className="spin" /> : p.pinned ? <PinOff size={14} /> : <Pin size={14} />}
+                </button>
+              </div>
               <div className="project-card-top">
                 <span className="project-icon" style={{ '--c': p.color ?? '#059669' }}>{p.icon || p.name[0] || '?'}</span>
                 {p.pinned && <Pin size={14} className="pinned" aria-label="Pinned" />}
@@ -115,7 +162,7 @@ export default function ProjectsGrid({ onOpen, onError }) {
                   <ListChecks size={14} /> {p.issueCount} {p.issueCount === 1 ? 'issue' : 'issues'}
                 </span>
               )}
-            </button>
+            </div>
           ))}
         </div>
       )}

@@ -10,6 +10,7 @@ import AssigneeSelect from './AssigneeSelect.jsx';
 import Select from './Select.jsx';
 import Avatar from './Avatar.jsx';
 import StatusSelect from './StatusSelect.jsx';
+import KanbanBoard, { ViewSwitch, savedView } from './KanbanBoard.jsx';
 import { rowClick } from '../rowClick.js';
 
 const PRIORITY_RANK = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
@@ -44,6 +45,7 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
   const [savingIds, setSavingIds] = useState(() => new Set());
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [bulkRunning, setBulkRunning] = useState(false);
+  const [view, setView] = useState(savedView);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -200,6 +202,10 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
         <ArrowLeft size={15} /> All projects
       </button>
 
+      <div className="project-banner" style={{ '--c': project.color ?? '#059669' }}>
+        {project.hasCover && <img src={`/api/project-covers/${project.id}`} alt="" onError={(e) => e.currentTarget.remove()} />}
+      </div>
+
       <div className="project-head">
         <span className="project-icon large" style={{ '--c': project.color ?? '#059669' }}>
           {project.icon || project.name[0] || '?'}
@@ -307,6 +313,7 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
               Clear filters
             </button>
           )}
+          <ViewSwitch view={view} onChange={setView} />
         </div>
       </div>
 
@@ -320,7 +327,21 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
         </div>
       )}
 
-      {!error && (
+      {!error && view === 'board' && (
+        <KanbanBoard
+          issues={filtered}
+          states={data?.states}
+          loading={!data}
+          savingIds={savingIds}
+          colorFor={colorFor}
+          showAssignee
+          onStatusChange={changeStatus}
+          onOpen={onOpenIssue}
+          onMoveError={(msg) => showToast('error', msg)}
+        />
+      )}
+
+      {!error && view === 'list' && (
         <div className="table project-table">
           <div className="table-head">
             <Checkbox
@@ -388,7 +409,7 @@ export default function ProjectView({ project, lastChange, reloadKey, onBack, on
         </div>
       )}
 
-      {data && filtered.length > 0 && (
+      {view === 'list' && data && filtered.length > 0 && (
         <Pagination page={page} pageSize={pageSize} total={filtered.length} onPage={setPage} onPageSize={setPageSize} />
       )}
       {selectedVisible.length > 0 && (

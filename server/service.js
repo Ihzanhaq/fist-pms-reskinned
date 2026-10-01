@@ -1,6 +1,7 @@
 // Everything the dashboard and the Claude extension can do in the PMS.
 // Inputs are validated here so both front ends get the same rules.
 import {
+  LayoutChangedError,
   parseIssueDetail,
   parseIssueForm,
   parseIssuePage,
@@ -96,9 +97,35 @@ export async function statesFor(issueId, projectId) {
   return list;
 }
 
-// Project cards: id, name, key, description, issueCount, icon, color, pinned.
+// Project cards: id, name, key, description, issueCount, icon, color, pinned, hasCover.
 export async function listProjects() {
-  return parseProjectCards(await pms.get('/'));
+  return parseProjectCards(await pms.get('/')).map(({ pinCsrf, ...card }) => card);
+}
+
+// The PMS pin form toggles, so only post when the state needs to change.
+export async function setPinned(projectId, pinned) {
+  requireUuid(projectId, 'project id');
+  const find = async () => parseProjectCards(await pms.get('/')).find((c) => c.id === projectId);
+  const card = await find();
+  if (!card) throw new BadRequestError('not_found', 'Project not found');
+  if (card.pinned === Boolean(pinned)) return { pinned: card.pinned };
+  if (!card.pinCsrf) throw new LayoutChangedError('Could not find the pin button');
+  await pms.postForm(`/projects/${projectId}/pin`, { _csrf: card.pinCsrf });
+  return { pinned: (await find())?.pinned ?? Boolean(pinned) };
+}
+
+const COVER_TTL_MS = 10 * 60_000;
+const coverCache = new Map(); // projectId -> { at, image }
+
+// A project's uploaded cover image, or null.
+export async function projectCover(projectId) {
+  requireUuid(projectId, 'project id');
+  const hit = coverCache.get(projectId);
+  if (hit && Date.now() - hit.at < COVER_TTL_MS) return hit.image;
+  const image = await pms.getImage(`/project-cover/${projectId}`);
+  if (coverCache.size >= AVATAR_CACHE_MAX) coverCache.delete(coverCache.keys().next().value);
+  coverCache.set(projectId, { at: Date.now(), image });
+  return image;
 }
 
 // Every issue in a project (the PMS list view has no paging), plus its statuses and people.
