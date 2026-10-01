@@ -10,7 +10,11 @@ export function stopServer() {
         { stdio: 'ignore', windowsHide: true },
       );
     } else {
-      execSync(`fuser -k ${PORT}/tcp || lsof -ti tcp:${PORT} | xargs -r kill`, { stdio: 'ignore', shell: '/bin/sh' });
+      // lsof works on macOS and most Linux; fuser is the Linux fallback.
+      execSync(`pids=$(lsof -ti tcp:${PORT} -sTCP:LISTEN 2>/dev/null); if [ -n "$pids" ]; then kill $pids; else fuser -k ${PORT}/tcp; fi`, {
+        stdio: 'ignore',
+        shell: '/bin/sh',
+      });
     }
   } catch {
     // Nothing was running.

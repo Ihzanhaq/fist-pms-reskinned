@@ -29,13 +29,13 @@ npm start
 
 Open http://localhost:3000. For development with hot reload: `npm run dev` (http://localhost:5173).
 
-### Desktop shortcut (Windows and Linux)
+### Desktop shortcut (Windows, macOS and Linux)
 
 ```bash
 npm run shortcut
 ```
 
-Adds a **FIST PMS** icon to your desktop (and the app menu on Linux). Double-click it to start the dashboard in the background and open it in its own window; it installs and builds on first use. Run the command again if you move the project folder. On some Linux desktops you may need to right-click the icon once and choose **Allow Launching**.
+Adds a **FIST PMS** icon to your desktop (and the app menu on Linux). Double-click it to start the dashboard in the background and open it in its own window; it installs and builds on first use. Run the command again if you move the project folder. On some Linux desktops you may need to right-click the icon once and choose **Allow Launching**. On macOS the app goes in `~/Applications` (so Spotlight and Launchpad find it) with a link on the desktop; it needs Node.js and git installed (for example with Homebrew).
 
 ### Updating
 
