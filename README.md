@@ -39,7 +39,7 @@ Adds a **FIST PMS** icon to your desktop (and the app menu on Linux). Double-cli
 
 ### Updating
 
-The shortcut updates itself: each launch pulls new commits (when online and the copy has no local edits), then reinstalls, rebuilds and restarts the dashboard if anything changed. To update by hand instead:
+Open **Settings → Updates** to see your version, check for updates and install them with one click. The shortcut also updates itself: each launch pulls new commits (when online and the copy has no local edits), then reinstalls, rebuilds and restarts the dashboard if anything changed. To update by hand instead:
 
 ```bash
 npm run update
