@@ -11,18 +11,23 @@ const out = path.join(root, 'dist', 'fist-pms.mcpb');
 const rootPkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'extension', 'manifest.json'), 'utf8'));
 
-const FILES = [
-  'mcp/server.js',
-  'mcp/tools.js',
-  'mcp/format.js',
-  'server/config.js',
-  'server/match.js',
-  'server/parse.js',
-  'server/pms-client.js',
-  'server/service.js',
-  'server/session.js',
-  'server/text-to-html.js',
-];
+// Every local file the MCP server loads, found by following relative imports
+// from its entry point, so new modules are packed without editing a list.
+function localImports(entry) {
+  const found = new Set();
+  const visit = (file) => {
+    const rel = path.relative(root, file).split(path.sep).join('/');
+    if (found.has(rel)) return;
+    found.add(rel);
+    const src = fs.readFileSync(file, 'utf8');
+    for (const [, spec] of src.matchAll(/(?:from|import)\s*\(?\s*['"](\.{1,2}\/[^'"]+)['"]/g)) {
+      visit(path.resolve(path.dirname(file), spec));
+    }
+  };
+  visit(path.join(root, entry));
+  return [...found];
+}
+const FILES = localImports('mcp/server.js');
 const DEPS = ['@modelcontextprotocol/sdk', 'node-html-parser', 'playwright-core', 'zod'];
 
 const run = (cmd, cwd = root) => execSync(cmd, { cwd, stdio: 'inherit' });
