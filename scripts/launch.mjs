@@ -42,6 +42,7 @@ if (changed && hasBuild) (await import('./stop-server.mjs')).stopServer();
 if (!fs.existsSync(path.join(root, 'node_modules')) || changed) run('npm ci');
 if (!hasBuild || changed) {
   run('npm run build');
+  fs.rmSync(path.join(root, 'dist'), { recursive: true, force: true }); // stale extension; rebuilt on next download
   if (head) fs.writeFileSync(builtFile, head);
 }
 

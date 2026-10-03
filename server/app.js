@@ -1,4 +1,5 @@
 // HTTP API for the React dashboard. All PMS logic lives in service.js.
+import { execFile } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Readable } from 'node:stream';
@@ -22,6 +23,22 @@ const upload = multer({
   limits: { files: MAX_FILES, fileSize: MAX_FILE_MB * 1024 * 1024 },
   defParamCharset: 'utf8', // keep non-ASCII file names intact
 });
+
+// One build at a time, shared by concurrent downloads.
+let extensionBuild = null;
+function buildExtension() {
+  extensionBuild ??= new Promise((resolve, reject) => {
+    execFile(
+      process.execPath,
+      [path.join(ROOT_DIR, 'scripts', 'build-extension.mjs')],
+      { cwd: ROOT_DIR, windowsHide: true, timeout: 5 * 60_000 },
+      (err) => (err ? reject(err) : resolve()),
+    );
+  }).finally(() => {
+    extensionBuild = null;
+  });
+  return extensionBuild;
+}
 
 export function createApp() {
   const app = express();
@@ -147,11 +164,17 @@ export function createApp() {
     res.status(201).json(await service.createIssue(req.params.id, input, req.files ?? []));
   });
 
-  // The Claude Desktop extension, built by npm run build:extension.
-  app.get('/api/extension', (req, res) => {
+  // The Claude Desktop extension. dist/ is not in git, so the first download
+  // on each install builds it (npm run build:extension); updates delete it.
+  app.get('/api/extension', async (req, res) => {
     const file = path.join(ROOT_DIR, 'dist', 'fist-pms.mcpb');
     if (!fs.existsSync(file)) {
-      return res.status(404).json({ error: 'not_found', message: 'Run npm run build:extension first' });
+      try {
+        await buildExtension();
+      } catch (err) {
+        console.error('Extension build failed:', err.message);
+        return res.status(500).json({ error: 'build_failed', message: 'Could not build the extension' });
+      }
     }
     res.download(file, 'fist-pms.mcpb');
   });

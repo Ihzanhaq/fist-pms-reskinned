@@ -29,6 +29,7 @@ stopServer();
 // `npm ci` installs exactly what package-lock.json says and never rewrites it.
 run('npm ci');
 run('npm run build');
+fs.rmSync(path.join(root, 'dist'), { recursive: true, force: true }); // stale extension; rebuilt on next download
 fs.writeFileSync(path.join(root, 'web', 'dist', '.built-commit'), after);
 
 console.log('\nUpdated. Open the FIST PMS shortcut to start the new version.');

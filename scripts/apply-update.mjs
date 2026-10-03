@@ -20,6 +20,7 @@ try {
   run('git pull --ff-only');
   run('npm ci');
   run('npm run build');
+  fs.rmSync(path.join(root, 'dist'), { recursive: true, force: true }); // stale extension; rebuilt on next download
   const head = execSync('git rev-parse HEAD', { cwd: root, encoding: 'utf8' }).trim();
   fs.writeFileSync(path.join(root, 'web', 'dist', '.built-commit'), head);
   console.log('UPDATE OK');
