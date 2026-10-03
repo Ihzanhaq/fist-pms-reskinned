@@ -81,7 +81,65 @@ function CopyPrompt({ text }) {
   );
 }
 
+// Both download buttons share one download. The first download on an install
+// builds the file on the server, so the bar is indeterminate until the
+// response starts, then shows real progress.
+function useExtensionDownload() {
+  const [state, setState] = useState({ busy: false, progress: null, error: null });
+  const start = async () => {
+    setState({ busy: true, progress: null, error: null });
+    try {
+      const res = await fetch('/api/extension');
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || 'Download failed');
+      const total = Number(res.headers.get('content-length')) || 0;
+      const reader = res.body.getReader();
+      const chunks = [];
+      let received = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        received += value.length;
+        if (total) setState((s) => ({ ...s, progress: received / total }));
+      }
+      const url = URL.createObjectURL(new Blob(chunks));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'fist-pms.mcpb';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setState({ busy: false, progress: null, error: null });
+    } catch (err) {
+      setState({ busy: false, progress: null, error: err.message || 'Download failed' });
+    }
+  };
+  return { ...state, start };
+}
+
+function DownloadButton({ download, className, iconSize, label }) {
+  const { busy, progress, error, start } = download;
+  return (
+    <div className="download-wrap">
+      <button className={className} onClick={start} disabled={busy}>
+        <Download size={iconSize} /> {busy ? 'Preparing…' : label}
+      </button>
+      {busy && (
+        <div
+          className={`download-progress${progress == null ? ' indeterminate' : ''}`}
+          role="progressbar"
+          aria-label="Downloading extension"
+          aria-valuenow={progress == null ? undefined : Math.round(progress * 100)}
+        >
+          <span style={progress == null ? undefined : { width: `${progress * 100}%` }} />
+        </div>
+      )}
+      {error && <p className="download-error">{error}</p>}
+    </div>
+  );
+}
+
 export default function ConnectClaude() {
+  const download = useExtensionDownload();
   return (
     <div className="connect">
       <section className="connect-hero">
@@ -92,9 +150,7 @@ export default function ConnectClaude() {
             own PMS login and works on any Claude plan.
           </p>
         </div>
-        <a className="primary-btn hero-btn" href="/api/extension" download="fist-pms.mcpb">
-          <Download size={16} /> Download extension
-        </a>
+        <DownloadButton download={download} className="primary-btn hero-btn" iconSize={16} label="Download extension" />
       </section>
 
       <section className="connect-section">
@@ -122,9 +178,7 @@ export default function ConnectClaude() {
                 <strong>{step.title}</strong>
                 <p>{step.text}</p>
                 {step.download && (
-                  <a className="secondary-btn step-btn" href="/api/extension" download="fist-pms.mcpb">
-                    <Download size={15} /> Download
-                  </a>
+                  <DownloadButton download={download} className="secondary-btn step-btn" iconSize={15} label="Download" />
                 )}
               </div>
             </li>
