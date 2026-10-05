@@ -176,15 +176,27 @@
   background: rgba(255, 255, 255, var(--glass-dim, 0));
 }
 
-/* Page headers sit on the wallpaper, so they get their own glass strip. */
+/* Page headers sit on the wallpaper, so they get their own glass strip.
+   The blur lives on ::before: a backdrop-filter on the header itself would trap its
+   dropdowns (stacking context under the cards below, and their blur would only see the header). */
 :root[data-theme="glass"] :is(.page-head, .project-head) {
+  position: relative;
+  z-index: 5;
   padding: 16px 20px;
   border-bottom: 0;
   border-radius: 14px;
+}
+:root[data-theme="glass"] :is(.page-head, .project-head)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
   background: var(--surface);
   box-shadow: var(--shadow-sm);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(170%);
   backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+  pointer-events: none;
 }
 :root[data-theme="glass"] .back-link {
   padding: 6px 12px;

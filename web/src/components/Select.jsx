@@ -47,7 +47,7 @@ export default function Select({
     setQ('');
     setActive(Math.max(0, options.findIndex((o) => o.value === value)));
     const rect = menuRef.current?.getBoundingClientRect();
-    setAlignRight(Boolean(rect && rect.right > window.innerWidth - 8));
+    setAlignRight(Boolean(rect && rect.right > rightLimit(rootRef.current) - 8));
     (withSearch ? menuRef.current?.querySelector('input') : listRef.current)?.focus();
   }, [open]); // only when the menu opens or closes
 
@@ -172,4 +172,18 @@ export default function Select({
       )}
     </div>
   );
+}
+
+// Right edge the menu must stay inside: the window, or a narrower scrolling ancestor
+// (overflowing that one adds a horizontal scrollbar to the page).
+function rightLimit(el) {
+  let limit = document.documentElement.clientWidth;
+  for (let node = el?.parentElement; node && node !== document.body; node = node.parentElement) {
+    const { overflowX } = getComputedStyle(node);
+    if (overflowX !== 'visible') {
+      const rect = node.getBoundingClientRect();
+      limit = Math.min(limit, rect.left + node.clientWidth);
+    }
+  }
+  return limit;
 }
