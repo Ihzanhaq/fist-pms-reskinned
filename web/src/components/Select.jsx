@@ -51,6 +51,13 @@ export default function Select({
     (withSearch ? menuRef.current?.querySelector('input') : listRef.current)?.focus();
   }, [open]); // only when the menu opens or closes
 
+  // Filtering can widen the menu (longer labels), so re-check the right edge.
+  useLayoutEffect(() => {
+    if (!open || alignRight) return;
+    const rect = menuRef.current?.getBoundingClientRect();
+    if (rect && rect.right > rightLimit(rootRef.current) - 8) setAlignRight(true);
+  }, [shown]); // only when the visible options change
+
   useEffect(() => {
     if (!open) return;
     const onPointer = (e) => !rootRef.current?.contains(e.target) && setOpen(false);
