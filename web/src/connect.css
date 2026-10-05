@@ -84,3 +84,13 @@ button.nav-item { width: 100%; border: 0; border-left: 3px solid transparent; ba
 .download-progress.indeterminate span { width: 35%; animation: download-slide 1.1s ease-in-out infinite; }
 @keyframes download-slide { from { left: -35%; } to { left: 100%; } }
 .download-error { margin: 0; font-size: 12px; color: var(--danger, #d14343); }
+
+/* one-click install / update */
+.install-action { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.install-state { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; font-weight: 500; color: var(--text-2); }
+.install-state.ok { color: var(--accent); }
+.install-note { margin: 0; font-size: 12px; color: var(--muted); }
+.install-fallback { font-size: 13px; color: var(--text-2); max-width: 360px; }
+.install-fallback summary { cursor: pointer; color: var(--muted); }
+.install-fallback summary:hover { color: var(--text); }
+.install-fallback p { margin: 8px 0; line-height: 1.5; }

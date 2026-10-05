@@ -1,11 +1,13 @@
 import { createApp } from './app.js';
 import { HOST, PORT } from './config.js';
+import { publishLatest } from './extension.js';
 import { startSessionKeepalive } from './keepalive.js';
 
 const app = createApp();
 const server = app.listen(PORT, HOST, () => {
   console.log(`PMS dashboard API on http://localhost:${PORT}`);
   startSessionKeepalive();
+  publishLatest();
 });
 
 server.on('error', (err) => {

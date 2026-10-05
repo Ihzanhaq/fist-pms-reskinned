@@ -1,5 +1,6 @@
 import { Fragment } from 'react';
 import { ChevronRight, Palette, RefreshCw } from 'lucide-react';
+import Notifications from './Notifications.jsx';
 import Select from './Select.jsx';
 
 const GLASS_DOT = 'linear-gradient(135deg, #7cc4ff, #ff9ab8)';
@@ -33,6 +34,7 @@ export default function TopBar({ crumbs, themes, theme, onThemeChange, refreshin
             <RefreshCw size={17} className={refreshing ? 'spin' : undefined} />
           </button>
         )}
+        <Notifications />
         <Select
           variant="compact"
           iconOnly

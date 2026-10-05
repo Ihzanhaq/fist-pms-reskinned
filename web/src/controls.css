@@ -133,3 +133,56 @@
 /* Pop-up menus set their own text colour so they stay readable inside dark
    containers (the bulk bar uses white text on every theme). */
 .sel-menu, .status-menu, .assignee-menu { color: var(--text); }
+
+/* notifications: bell, panel, brief toast */
+.notif-bell { position: relative; }
+.notif-bell.open { background: var(--bg); color: var(--text); }
+.notif-dot {
+  position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 2px var(--surface);
+}
+.notif-panel, .notif-toast {
+  position: fixed; z-index: 70;
+  background: var(--surface); color: var(--text);
+  border-radius: 14px; box-shadow: 0 16px 40px rgba(20, 22, 40, 0.22), 0 0 0 1px var(--border);
+}
+.notif-panel { width: 340px; max-width: calc(100vw - 24px); padding: 6px; animation: pop 0.14s ease-out; }
+.notif-panel header { padding: 10px 12px 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; color: var(--muted); }
+.notif-panel ul { list-style: none; margin: 0; padding: 0; }
+.notif-panel li {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: 12px;
+  padding: 12px; border-radius: 10px;
+}
+.notif-panel li:hover { background: var(--bg); }
+.notif-panel strong { display: block; font-size: 13px; font-weight: 600; }
+.notif-panel p { margin: 3px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--text-2); }
+.notif-panel .notif-error { color: var(--danger-text); }
+.notif-icon {
+  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px;
+  background: var(--accent-wash); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent-border);
+}
+.notif-action {
+  display: inline-flex; align-items: center; gap: 6px; align-self: center;
+  height: 28px; padding: 0 12px; border: 0; border-radius: 999px;
+  background: var(--accent); color: #fff; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.notif-action:hover:not(:disabled) { filter: brightness(1.08); }
+.notif-action:disabled { cursor: default; opacity: 0.7; }
+.notif-empty { display: flex; align-items: center; gap: 8px; margin: 0; padding: 14px 12px 16px; font-size: 13px; color: var(--muted); }
+
+.notif-toast {
+  display: flex; align-items: center; gap: 10px; padding: 8px 14px 8px 8px;
+  border: 0; font: inherit; text-align: left; cursor: pointer;
+  animation: notif-in 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.2), notif-out 0.35s ease-in 5.6s forwards;
+}
+.notif-toast strong { display: block; font-size: 12.5px; font-weight: 600; }
+.notif-toast small { font-size: 11.5px; color: var(--muted); }
+.notif-toast .notif-icon { width: 26px; height: 26px; border-radius: 8px; }
+@keyframes notif-in { from { opacity: 0; transform: translateY(-6px) scale(0.97); } }
+@keyframes notif-out { to { opacity: 0; transform: translateY(-4px); } }
+
+:root[data-theme='glass'] :is(.notif-panel, .notif-toast) {
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 12px)) saturate(180%);
+  backdrop-filter: blur(calc(var(--glass-blur) + 12px)) saturate(180%);
+}
