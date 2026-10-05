@@ -1,6 +1,9 @@
 // MCP tools for FIST PMS. Claude works with keys and names; this file maps
 // them to PMS ids and calls the shared service.
+import fs from 'node:fs';
+import path from 'node:path';
 import { z } from 'zod';
+import { LATEST_FILE, compareVersions } from '../server/extension.js';
 import { LayoutChangedError } from '../server/parse.js';
 import { PmsError, SessionExpiredError } from '../server/pms-client.js';
 import * as service from '../server/service.js';
@@ -27,25 +30,58 @@ function startLogin() {
   });
 }
 
-// Turns errors into messages Claude can act on.
+const readVersion = (file) => {
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8')).version ?? null;
+  } catch {
+    return null;
+  }
+};
+
+// The packed extension has manifest.json beside mcp/; a repo checkout has it in extension/.
+const OWN_VERSION =
+  readVersion(path.resolve(import.meta.dirname, '..', 'manifest.json')) ??
+  readVersion(path.resolve(import.meta.dirname, '..', 'extension', 'manifest.json'));
+
+// The dashboard records the newest extension version it has. Told once per Claude session.
+let updateNoticeShown = false;
+function updateNotice() {
+  if (updateNoticeShown || !OWN_VERSION) return null;
+  const latest = readVersion(LATEST_FILE);
+  if (!latest || compareVersions(OWN_VERSION, latest) >= 0) return null;
+  updateNoticeShown = true;
+  return (
+    `Note for the user: a newer FIST PMS extension (v${latest}, installed v${OWN_VERSION}) is available. ` +
+    'To update, open the PMS dashboard and click "Update" on the Claude extension banner.'
+  );
+}
+
+// Turns errors into messages Claude can act on, and adds the update notice once.
 function wrap(handler) {
   return async (args) => {
-    try {
-      return await handler(args);
-    } catch (err) {
-      if (err instanceof SessionExpiredError) {
-        startLogin();
-        return fail(
-          'Not signed in to FIST PMS. A sign-in window has been opened on this computer. ' +
-            'Ask the user to sign in there, then try again.',
-        );
-      }
-      if (err instanceof NoMatchError || err instanceof BadRequestError) return fail(err.message);
-      if (err instanceof LayoutChangedError) return fail(`The PMS page layout changed, so it could not be read: ${err.message}`);
-      if (err instanceof PmsError) return fail(err.message);
-      return fail(`Unexpected error: ${err.message}`);
-    }
+    const result = await run(handler, args);
+    const notice = updateNotice();
+    if (notice) result.content.push({ type: 'text', text: notice });
+    return result;
   };
+}
+
+async function run(handler, args) {
+  try {
+    return await handler(args);
+  } catch (err) {
+    if (err instanceof SessionExpiredError) {
+      startLogin();
+      return fail(
+        'Not signed in to FIST PMS. A sign-in window has been opened on this computer. ' +
+          'Ask the user to sign in there, then try again.',
+      );
+    }
+    if (err instanceof NoMatchError || err instanceof BadRequestError) return fail(err.message);
+    if (err instanceof LayoutChangedError) return fail(`The PMS page layout changed, so it could not be read: ${err.message}`);
+    if (err instanceof PmsError) return fail(err.message);
+    return fail(`Unexpected error: ${err.message}`);
+  }
 }
 
 // ---------- lookups ----------
@@ -331,6 +367,72 @@ export function registerTools(server) {
       if (!id) return text(`Created "${a.title}", but the PMS did not return its link.`);
       const created = await service.getIssue(id);
       return text(`Created ${created.key}: ${created.title}\n${issueUrl(id)}`);
+    }),
+  );
+
+  const dateOrNone = z
+    .union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal('none')])
+    .optional()
+    .describe('YYYY-MM-DD, or "none" to clear');
+
+  server.registerTool(
+    'edit_issue',
+    {
+      title: 'Edit issue',
+      description:
+        'Edits the title, description, start/target dates or labels of an issue. Only the fields given are changed. ' +
+        'A new description replaces the old one completely, so read the issue first (get_issue) when adding to it. ' +
+        'Use update_status, update_priority and assign_issue for those fields. Attachments are not supported.',
+      inputSchema: {
+        issue: z.string().describe('Issue key like "BMS-1", or its PMS link or id'),
+        title: z.string().min(1).max(500).optional(),
+        description: z.string().max(50_000).optional().describe('Plain text; new lines become paragraphs'),
+        description_html: z
+          .string()
+          .max(100_000)
+          .optional()
+          .describe(
+            'Formatted description instead of plain text. Allowed: <p>, <h1>-<h3>, <strong>, <em>, <u>, <s>, <a href>, <ol>/<ul>/<li>, <blockquote>, <pre>. Other markup is removed.',
+          ),
+        start_date: dateOrNone,
+        target_date: dateOrNone,
+        add_labels: z.array(z.string()).optional().describe('Label names to add'),
+        remove_labels: z.array(z.string()).optional().describe('Label names to remove'),
+      },
+      annotations: WRITE,
+    },
+    wrap(async (a) => {
+      if (a.description !== undefined && a.description_html !== undefined) {
+        return fail('Give either description or description_html, not both.');
+      }
+      const id = await resolveIssueId(a.issue);
+      const current = await service.issueEditOptions(id);
+      const patch = {};
+      if (a.title !== undefined) patch.name = a.title;
+      if (a.description !== undefined || a.description_html !== undefined) {
+        if (/<(image-component|img)\b/i.test(current.descriptionHtml)) {
+          return fail('This description contains images, which would be lost. Edit it in the PMS instead.');
+        }
+        if (a.description_html !== undefined) patch.descriptionHtml = a.description_html;
+        else patch.description = a.description;
+      }
+      if (a.start_date !== undefined) patch.startDate = a.start_date === 'none' ? '' : a.start_date;
+      if (a.target_date !== undefined) patch.targetDate = a.target_date === 'none' ? '' : a.target_date;
+      if (a.add_labels?.length || a.remove_labels?.length) {
+        const pick = (name) => findByName(current.labels, name, 'label').id;
+        const remove = new Set((a.remove_labels ?? []).map(pick));
+        patch.labelIds = [...new Set([...current.labelIds, ...(a.add_labels ?? []).map(pick)])].filter(
+          (l) => !remove.has(l),
+        );
+      }
+      if (!Object.keys(patch).length) return fail('Nothing to change: give at least one field to edit.');
+
+      const d = await service.updateIssue(id, patch);
+      listCache.at = 0;
+      const changed = Object.keys(patch)
+        .map((k) => ({ name: 'title', description: 'description', descriptionHtml: 'description', startDate: 'start date', targetDate: 'target date', labelIds: 'labels' })[k])
+        .join(', ');
+      return text(`Updated ${d.key} (${changed}).\n\n${issueDetailText(d)}`);
     }),
   );
 }
