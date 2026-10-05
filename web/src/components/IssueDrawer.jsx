@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
   ChevronRight,
@@ -10,6 +10,7 @@ import {
   Loader2,
   MessageSquare,
   Paperclip,
+  Pencil,
   Plus,
   Send,
   X,
@@ -18,6 +19,8 @@ import { api, attachmentUrl, errorMessage } from '../api.js';
 import { openInPms } from '../openInPms.js';
 import { isBlank, sanitizeRichText } from '../richText.js';
 import Avatar from './Avatar.jsx';
+import { MAX_FILE_MB, MAX_FILES } from './FilePicker.jsx';
+import IssueEditForm from './IssueEditForm.jsx';
 import Select from './Select.jsx';
 
 const PRIORITIES = ['urgent', 'high', 'medium', 'low', 'none'];
@@ -68,6 +71,8 @@ export default function IssueDrawer({
   const [busy, setBusy] = useState(null); // which field is saving
   const [comment, setComment] = useState('');
   const [showActivity, setShowActivity] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const fileRef = useRef(null);
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -83,14 +88,16 @@ export default function IssueDrawer({
     setDetail(null);
     setComment('');
     setShowActivity(false);
+    setEditing(false);
     load();
   }, [load]);
 
   useEffect(() => {
-    const onKey = (e) => e.key === 'Escape' && onClose();
+    // Esc leaves edit mode first, then closes the drawer.
+    const onKey = (e) => e.key === 'Escape' && (editing ? setEditing(false) : onClose());
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, editing]);
 
   // Runs a change, replaces the detail with the fresh copy, and tells the list.
   const save = async (field, action, successText) => {
@@ -124,6 +131,21 @@ export default function IssueDrawer({
     if (await save('comment', () => api.comment(issueId, comment.trim()), 'Comment added')) setComment('');
   };
 
+  const saveEdit = async (patch) => {
+    const ok = await save('edit', () => api.editIssue(issueId, patch), 'Issue updated');
+    if (ok) setEditing(false);
+    return ok;
+  };
+  const uploadFiles = async (list) => {
+    const files = [...list];
+    if (fileRef.current) fileRef.current.value = '';
+    if (!files.length) return;
+    if (files.length > MAX_FILES) return onError({}, `Attach up to ${MAX_FILES} files at a time`);
+    const big = files.find((f) => f.size > MAX_FILE_MB * 1024 * 1024);
+    if (big) return onError({}, `${big.name} is over ${MAX_FILE_MB} MB`);
+    await save('attach', () => api.addAttachments(issueId, files), files.length > 1 ? 'Files attached' : 'File attached');
+  };
+
   const selectedStateId = detail?.states.find((s) => s.name.toLowerCase() === detail.status.name.toLowerCase())?.id;
 
   return (
@@ -132,6 +154,11 @@ export default function IssueDrawer({
         <div className="drawer-top">
           <span className="key">{detail?.key ?? '…'}</span>
           <div className="drawer-top-actions">
+            {detail && !editing && (
+              <button type="button" className="icon-btn" title="Edit title, description, dates and labels" onClick={() => setEditing(true)}>
+                <Pencil size={16} />
+              </button>
+            )}
             <button
               type="button"
               className="icon-btn"
@@ -200,7 +227,11 @@ export default function IssueDrawer({
               </button>
             )}
 
-            <h2 className="drawer-title">{detail.title}</h2>
+            {editing ? (
+              <IssueEditForm issueId={issueId} onSave={saveEdit} onCancel={() => setEditing(false)} onError={onError} />
+            ) : (
+              <h2 className="drawer-title">{detail.title}</h2>
+            )}
 
             <div className="properties">
               <Property label="Status">
@@ -282,9 +313,11 @@ export default function IssueDrawer({
               </Property>
             </div>
 
-            <Section icon={FileText} title="Description">
-              <RichText html={detail.descriptionHtml} empty="No description." />
-            </Section>
+            {!editing && (
+              <Section icon={FileText} title="Description">
+                <RichText html={detail.descriptionHtml} empty="No description." />
+              </Section>
+            )}
 
             <Section
               icon={ChevronRight}
@@ -315,7 +348,19 @@ export default function IssueDrawer({
               )}
             </Section>
 
-            <Section icon={Paperclip} title="Attachments" count={detail.attachments.length}>
+            <Section
+              icon={Paperclip}
+              title="Attachments"
+              count={detail.attachments.length}
+              action={
+                <>
+                  <input ref={fileRef} type="file" multiple hidden onChange={(e) => uploadFiles(e.target.files)} />
+                  <button className="link-btn" disabled={busy === 'attach'} onClick={() => fileRef.current?.click()}>
+                    {busy === 'attach' ? <Loader2 size={14} className="spin" /> : <Plus size={14} />} Add
+                  </button>
+                </>
+              }
+            >
               {detail.attachments.length ? (
                 <ul className="attachment-list">
                   {detail.attachments.map((a) => (

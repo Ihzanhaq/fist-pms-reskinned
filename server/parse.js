@@ -311,6 +311,49 @@ export function parseIssueForm(html) {
   };
 }
 
+// The PMS edit page (/issues/{id}/edit) posts every field at once, so saving one change
+// means re-sending the current value of all the others. Reads those current values.
+export function parseIssueEditForm(html) {
+  const root = parse(html);
+  const form = root.querySelector('form#issueForm');
+  const csrf = form?.querySelector('input[name="_csrf"]')?.getAttribute('value');
+  const nameInput = form?.querySelector('input[name="name"]');
+  if (!form || !csrf || !nameInput || !form.querySelector('input[name="descriptionHtml"]')) {
+    throw new LayoutChangedError('The edit-issue form has an unexpected layout');
+  }
+  const options = (name) =>
+    form.querySelectorAll(`select[name="${name}"] option`).filter((o) => o.getAttribute('value'));
+  const selected = (name) => options(name).find((o) => o.hasAttribute('selected'))?.getAttribute('value') ?? '';
+  const value = (name) => form.querySelector(`input[name="${name}"]`)?.getAttribute('value') ?? '';
+
+  const labelBlock = html.match(/const\s+SEL_LABELS\s*=\s*\[([\s\S]*?)\]/)?.[1] ?? '';
+  const priority = html.match(/const\s+SEL_PRIO\s*=\s*(['"])(\w*)\1/)?.[2] || 'none';
+
+  return {
+    action: form.getAttribute('action'),
+    csrf,
+    name: nameInput.getAttribute('value') ?? '',
+    descriptionHtml: root.querySelector('#descInit')?.innerHTML.trim() ?? '',
+    stateId: selected('stateId'),
+    assigneeId: selected('assigneeId'),
+    priority: PRIORITIES.includes(priority) ? priority : 'none',
+    startDate: value('startDate'),
+    targetDate: value('targetDate'),
+    labelIds: [...labelBlock.matchAll(new RegExp(UUID, 'gi'))].map((m) => m[0]),
+    states: options('stateId').map((o) => ({ id: o.getAttribute('value'), name: clean(o) })),
+    assignees: options('assigneeId').map((o) => ({ id: o.getAttribute('value'), name: clean(o) })),
+    labels: parseLabelScript(html),
+  };
+}
+
+// The upload form on the issue page.
+export function parseAttachmentForm(html) {
+  const form = parse(html).querySelector('form[action$="/attachments"]');
+  const csrf = form?.querySelector('input[name="_csrf"]')?.getAttribute('value');
+  if (!form || !csrf) throw new LayoutChangedError('The attachment form has an unexpected layout');
+  return { action: form.getAttribute('action'), csrf };
+}
+
 // ---------- projects ----------
 
 export function parseProjects(html) {

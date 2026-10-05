@@ -1,13 +1,13 @@
 // HTTP API for the React dashboard. All PMS logic lives in service.js.
-import { execFile } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Readable } from 'node:stream';
 import express from 'express';
 import multer from 'multer';
-import { ROOT_DIR, WEB_DIST_DIR } from './config.js';
+import { WEB_DIST_DIR } from './config.js';
 import { LayoutChangedError } from './parse.js';
 import { SessionExpiredError } from './pms-client.js';
+import * as extension from './extension.js';
 import * as insights from './insights.js';
 import { leaderboard } from './leaderboard.js';
 import * as updates from './updates.js';
@@ -23,22 +23,6 @@ const upload = multer({
   limits: { files: MAX_FILES, fileSize: MAX_FILE_MB * 1024 * 1024 },
   defParamCharset: 'utf8', // keep non-ASCII file names intact
 });
-
-// One build at a time, shared by concurrent downloads.
-let extensionBuild = null;
-function buildExtension() {
-  extensionBuild ??= new Promise((resolve, reject) => {
-    execFile(
-      process.execPath,
-      [path.join(ROOT_DIR, 'scripts', 'build-extension.mjs')],
-      { cwd: ROOT_DIR, windowsHide: true, timeout: 5 * 60_000 },
-      (err) => (err ? reject(err) : resolve()),
-    );
-  }).finally(() => {
-    extensionBuild = null;
-  });
-  return extensionBuild;
-}
 
 export function createApp() {
   const app = express();
@@ -97,6 +81,15 @@ export function createApp() {
 
   app.post('/api/issues/:id/assignee', async (req, res) =>
     res.json(await service.setAssignee(req.params.id, req.body?.userId)),
+  );
+
+  app.get('/api/issues/:id/edit', async (req, res) => res.json(await service.issueEditOptions(req.params.id)));
+
+  // Body: any of { name, descriptionHtml, labelIds, startDate, targetDate }.
+  app.post('/api/issues/:id/edit', async (req, res) => res.json(await service.updateIssue(req.params.id, req.body ?? {})));
+
+  app.post('/api/issues/:id/attachments', upload.array('files', MAX_FILES), async (req, res) =>
+    res.json(await service.addAttachments(req.params.id, req.files ?? [])),
   );
 
   // Streams an attachment through the server so the user's browser needs no PMS login.
@@ -164,19 +157,30 @@ export function createApp() {
     res.status(201).json(await service.createIssue(req.params.id, input, req.files ?? []));
   });
 
-  // The Claude Desktop extension. dist/ is not in git, so the first download
-  // on each install builds it (npm run build:extension); updates delete it.
+  // The Claude Desktop extension. Built on demand (dist/ is not in git) and rebuilt
+  // whenever extension/manifest.json has a new version.
+  const buildFailed = (res, err) => {
+    console.error('Extension build failed:', err.message);
+    res.status(500).json({ error: 'build_failed', message: 'Could not build the extension' });
+  };
   app.get('/api/extension', async (req, res) => {
-    const file = path.join(ROOT_DIR, 'dist', 'fist-pms.mcpb');
-    if (!fs.existsSync(file)) {
-      try {
-        await buildExtension();
-      } catch (err) {
-        console.error('Extension build failed:', err.message);
-        return res.status(500).json({ error: 'build_failed', message: 'Could not build the extension' });
-      }
+    let file;
+    try {
+      file = await extension.ensureBuilt();
+    } catch (err) {
+      return buildFailed(res, err);
     }
     res.download(file, 'fist-pms.mcpb');
+  });
+  app.get('/api/extension/status', (req, res) => res.json(extension.status()));
+  // Opens Claude Desktop's install dialog for a fresh build: one click to install or update.
+  app.post('/api/extension/install', async (req, res) => {
+    try {
+      await extension.openInstaller();
+    } catch (err) {
+      return buildFailed(res, err);
+    }
+    res.json({ ok: true });
   });
 
   app.use('/api', (req, res) => res.status(404).json({ error: 'not_found' }));

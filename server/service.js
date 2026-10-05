@@ -3,6 +3,8 @@
 import {
   LayoutChangedError,
   parseIssueDetail,
+  parseAttachmentForm,
+  parseIssueEditForm,
   parseIssueForm,
   parseIssuePage,
   parseMyIssues,
@@ -15,6 +17,7 @@ import * as pms from './pms-client.js';
 import { PmsError, SessionExpiredError } from './pms-client.js';
 import * as session from './session.js';
 import { chosenBrowser, installedBrowsers } from './browsers.js';
+import { cleanRichHtml } from './rich-html.js';
 import { textToHtml } from './text-to-html.js';
 
 export const PRIORITIES = ['urgent', 'high', 'medium', 'low', 'none'];
@@ -274,7 +277,14 @@ export async function setAssignee(id, userId) {
   return getIssue(id);
 }
 
-// input: { name, description, stateId, priority, assigneeId, labelIds, startDate, targetDate, parentId }
+// Rich HTML from the dashboard editor (cleaned), or plain text from MCP/older clients.
+function descriptionFrom({ descriptionHtml, description }) {
+  const raw = descriptionHtml !== undefined ? String(descriptionHtml ?? '') : String(description ?? '');
+  if (raw.length > 100_000) throw new BadRequestError('bad_request', 'Description is too long');
+  return descriptionHtml !== undefined ? cleanRichHtml(raw) : textToHtml(raw);
+}
+
+// input: { name, description | descriptionHtml, stateId, priority, assigneeId, labelIds, startDate, targetDate, parentId }
 // files: [{ buffer, mimetype, originalname }]
 export async function createIssue(projectId, input, files = []) {
   requireUuid(projectId, 'project id');
@@ -306,7 +316,7 @@ export async function createIssue(projectId, input, files = []) {
   data.append('_csrf', form.csrf);
   if (form.parentId) data.append('parentId', form.parentId);
   data.append('name', name);
-  data.append('descriptionHtml', textToHtml(input.description));
+  data.append('descriptionHtml', descriptionFrom(input));
   data.append('stateId', oneOf(input.stateId, form.states, 'status'));
   data.append('priority', priority);
   data.append('startDate', startDate);
@@ -329,6 +339,86 @@ export async function createIssue(projectId, input, files = []) {
   const id = location.match(/\/issues\/([0-9a-f-]{36})/i)?.[1] ?? null;
   if (!id && location.includes('/issues/new')) throw new PmsError('The PMS did not accept the new issue');
   return { id };
+}
+
+// Current editable values plus the label choices, for the drawer's edit mode.
+export async function issueEditOptions(id) {
+  requireUuid(id, 'issue id');
+  const { name, descriptionHtml, labelIds, startDate, targetDate, labels } = parseIssueEditForm(
+    await pms.get(`/issues/${id}/edit`),
+  );
+  return { name, descriptionHtml, labelIds, startDate, targetDate, labels };
+}
+
+// patch: any of { name, descriptionHtml, description (plain text), labelIds, startDate, targetDate }.
+// The PMS edit form posts every field, so unchanged fields are re-sent as they are.
+export async function updateIssue(id, patch = {}) {
+  requireUuid(id, 'issue id');
+  const form = parseIssueEditForm(await pms.get(`/issues/${id}/edit`));
+  const next = { ...form };
+
+  if (patch.name !== undefined) {
+    const name = String(patch.name ?? '').trim();
+    if (!name) throw new BadRequestError('bad_request', 'Title is required');
+    if (name.length > 500) throw new BadRequestError('bad_request', 'Title is too long');
+    next.name = name;
+  }
+  if (patch.descriptionHtml !== undefined) {
+    next.descriptionHtml = descriptionFrom({ descriptionHtml: patch.descriptionHtml });
+  } else if (patch.description !== undefined) {
+    next.descriptionHtml = descriptionFrom({ description: patch.description });
+  }
+  if (patch.labelIds !== undefined) {
+    if (!Array.isArray(patch.labelIds)) throw new BadRequestError('bad_request', 'Invalid labels');
+    for (const labelId of patch.labelIds) {
+      if (!form.labels.some((l) => l.id === labelId)) throw new BadRequestError('bad_request', 'Invalid label');
+    }
+    next.labelIds = [...new Set(patch.labelIds)];
+  }
+  for (const key of ['startDate', 'targetDate']) {
+    if (patch[key] === undefined) continue;
+    const value = patch[key] || '';
+    if (value && !DATE.test(value)) throw new BadRequestError('bad_request', 'Invalid date');
+    next[key] = value;
+  }
+  if (next.startDate && next.targetDate && next.targetDate < next.startDate) {
+    throw new BadRequestError('bad_request', 'Target date is before the start date');
+  }
+
+  const data = new FormData();
+  data.append('_csrf', form.csrf);
+  data.append('name', next.name);
+  data.append('descriptionHtml', next.descriptionHtml);
+  data.append('stateId', next.stateId);
+  data.append('priority', next.priority);
+  data.append('startDate', next.startDate);
+  data.append('targetDate', next.targetDate);
+  data.append('assigneeId', next.assigneeId);
+  for (const labelId of next.labelIds) data.append('labelIds', labelId);
+  await pms.postMultipart(form.action, data);
+
+  const after = parseIssueEditForm(await pms.get(`/issues/${id}/edit`));
+  if (after.name !== next.name) throw new PmsError('The PMS did not apply the change');
+  return getIssue(id);
+}
+
+// files: [{ buffer, mimetype, originalname }]
+export async function addAttachments(id, files = []) {
+  requireUuid(id, 'issue id');
+  if (!files.length) throw new BadRequestError('bad_request', 'Choose a file to attach');
+  const form = parseAttachmentForm(await pms.get(`/issues/${id}`));
+  const data = new FormData();
+  data.append('_csrf', form.csrf);
+  for (const file of files) {
+    data.append('files', new Blob([file.buffer], { type: file.mimetype }), file.originalname);
+  }
+  try {
+    await pms.postMultipart(form.action, data);
+  } catch (err) {
+    if (err instanceof PmsError) throw new PmsError(`${err.message}. The PMS may not accept files this large.`);
+    throw err;
+  }
+  return getIssue(id);
 }
 
 // Raw PMS response for an attachment; caller streams the body.

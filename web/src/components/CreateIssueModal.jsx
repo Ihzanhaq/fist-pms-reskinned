@@ -3,6 +3,7 @@ import { Loader2, X } from 'lucide-react';
 import { api, errorMessage } from '../api.js';
 import DatePicker from './DatePicker.jsx';
 import FilePicker from './FilePicker.jsx';
+import RichEditor from './RichEditor.jsx';
 import Select from './Select.jsx';
 
 const PRIORITIES = ['urgent', 'high', 'medium', 'low', 'none'];
@@ -10,7 +11,7 @@ const LAST_PROJECT_KEY = 'pms-dashboard:last-project';
 
 const EMPTY = {
   name: '',
-  description: '',
+  descriptionHtml: '',
   stateId: '',
   priority: 'none',
   assigneeId: '',
@@ -145,16 +146,14 @@ export default function CreateIssueModal({ parent, project, userName, colorFor, 
             />
           </label>
 
-          <label className="field">
+          <div className="field">
             <span>Description</span>
-            <textarea
-              className="input"
-              rows={5}
+            <RichEditor
               placeholder="Add details (optional)"
-              value={values.description}
-              onChange={(e) => set('description')(e.target.value)}
+              disabled={submitting}
+              onChange={set('descriptionHtml')}
             />
-          </label>
+          </div>
 
           {projectId && !form && !formError && (
             <p className="muted loading-line">

@@ -68,6 +68,15 @@ export const api = {
   comment: (id, body) => call(`/api/issues/${id}/comment`, { method: 'POST', body: { body } }),
   setPriority: (id, priority) => call(`/api/issues/${id}/priority`, { method: 'POST', body: { priority } }),
   setAssignee: (id, userId) => call(`/api/issues/${id}/assignee`, { method: 'POST', body: { userId } }),
+  issueEditForm: (id) => call(`/api/issues/${id}/edit`),
+  editIssue: (id, patch) => call(`/api/issues/${id}/edit`, { method: 'POST', body: patch }),
+  addAttachments: (id, files) => {
+    const body = new FormData();
+    for (const file of files) body.append('files', file);
+    return call(`/api/issues/${id}/attachments`, { method: 'POST', body });
+  },
+  extensionStatus: () => call('/api/extension/status'),
+  installExtension: () => call('/api/extension/install', { method: 'POST' }),
   projects: () => call('/api/projects').then(({ projects }) => ({ projects: projects.map(normalizeProject) })),
   myProjects: () => call('/api/my-projects').then(({ projects }) => ({ projects: projects.map(normalizeProject) })),
   dashboard: (days = 14) => call(`/api/dashboard?days=${days}`),

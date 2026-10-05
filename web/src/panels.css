@@ -247,3 +247,28 @@ textarea.input { resize: vertical; line-height: 1.55; }
 
 /* whole issue row opens the issue */
 .row.clickable { cursor: pointer; }
+
+/* drawer edit mode */
+.issue-edit { display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; }
+.issue-edit .field > small { font-size: 12px; }
+.issue-edit-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+/* Quill editor, restyled to the app theme (Quill's snow theme assumes white). */
+.rich-editor { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); overflow: hidden; }
+.rich-editor:focus-within { border-color: var(--accent); }
+.rich-editor.loading { min-height: 168px; }
+.rich-editor .ql-toolbar.ql-snow { border: 0; border-bottom: 1px solid var(--border); padding: 6px 8px; font-family: inherit; }
+.rich-editor .ql-container.ql-snow { border: 0; font: inherit; font-size: 14px; }
+.rich-editor .ql-editor { min-height: 128px; max-height: 360px; overflow-y: auto; line-height: 1.55; }
+.rich-editor .ql-editor.ql-blank::before { color: var(--muted); font-style: normal; }
+.rich-editor .ql-snow .ql-stroke { stroke: var(--text-2); }
+.rich-editor .ql-snow .ql-fill { fill: var(--text-2); }
+.rich-editor .ql-snow .ql-picker { color: var(--text-2); }
+.rich-editor .ql-snow :is(button:hover, button.ql-active, .ql-picker-label:hover, .ql-picker-label.ql-active) .ql-stroke { stroke: var(--accent); }
+.rich-editor .ql-snow :is(button:hover, button.ql-active) .ql-fill { fill: var(--accent); }
+.rich-editor .ql-snow :is(.ql-picker-label:hover, .ql-picker-label.ql-active, .ql-picker-item:hover, .ql-picker-item.ql-selected) { color: var(--accent); }
+.rich-editor .ql-snow .ql-picker-options { background: var(--surface); border-color: var(--border); border-radius: 8px; box-shadow: var(--shadow-sm); }
+.rich-editor .ql-snow .ql-tooltip { z-index: 5; background: var(--surface); color: var(--text); border-color: var(--border); box-shadow: var(--shadow-sm); border-radius: 8px; }
+.rich-editor .ql-snow .ql-tooltip input[type='text'] { background: var(--bg); color: var(--text); border-color: var(--border); }
+.rich-editor .ql-snow .ql-editor pre.ql-syntax { background: var(--bg); color: var(--text); }
+.rich-editor .ql-disabled .ql-editor { opacity: 0.6; }
