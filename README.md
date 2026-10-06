@@ -56,15 +56,15 @@ It pulls the latest code, installs dependencies, rebuilds the web app and stops 
 
 ## Project layout
 
-| Path | What |
-|---|---|
-| `server/service.js` | All PMS operations with validation (shared by dashboard and extension) |
-| `server/parse.js` | PMS HTML → data |
-| `server/pms-client.js`, `server/session.js` | HTTP with the session cookie; browser login |
-| `server/app.js` | Dashboard HTTP API |
-| `mcp/` | Claude MCP server and tools |
-| `web/` | React dashboard |
-| `extension/manifest.json`, `scripts/build-extension.mjs` | Claude Desktop extension packaging |
+| Path                                                     | What                                                                   |
+| -------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `server/service.js`                                      | All PMS operations with validation (shared by dashboard and extension) |
+| `server/parse.js`                                        | PMS HTML → data                                                        |
+| `server/pms-client.js`, `server/session.js`              | HTTP with the session cookie; browser login                            |
+| `server/app.js`                                          | Dashboard HTTP API                                                     |
+| `mcp/`                                                   | Claude MCP server and tools                                            |
+| `web/`                                                   | React dashboard                                                        |
+| `extension/manifest.json`, `scripts/build-extension.mjs` | Claude Desktop extension packaging                                     |
 
 Tests: `npm test`.
 

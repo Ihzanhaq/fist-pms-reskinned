@@ -70,7 +70,7 @@ export function logout() {
   return { loggedIn: false };
 }
 
-function safePmsPath(path) {
+function safeAppPath(path) {
   const p = (path ?? '/').trim();
   if (!p.startsWith('/') || p.startsWith('//') || p.includes('..') || /[\0\r\n]/.test(p)) {
     throw new BadRequestError('bad_request', 'Invalid path');
@@ -79,18 +79,26 @@ function safePmsPath(path) {
   return p;
 }
 
-export async function openPms(path) {
+async function openExternalApp(open, path, label) {
   if (!session.getCookie()) throw new SessionExpiredError();
-  const safePath = safePmsPath(path);
+  const safePath = safeAppPath(path);
   try {
-    await session.openBrowser(safePath);
+    await open(safePath);
   } catch (err) {
     if (err instanceof SessionExpiredError) throw err;
-    const msg = err.message ?? 'Could not open PMS';
+    const msg = err.message ?? `Could not open ${label}`;
     if (/not signed in|session expired/i.test(msg)) throw new SessionExpiredError();
     throw new BadRequestError('open_failed', msg);
   }
   return { ok: true };
+}
+
+export async function openPms(path) {
+  return openExternalApp(session.openBrowser, path, 'PMS');
+}
+
+export async function openHrms(path) {
+  return openExternalApp(session.openHrmsBrowser, path, 'HRMS');
 }
 
 // ---------- reading ----------

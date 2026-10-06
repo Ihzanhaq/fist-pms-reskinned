@@ -1,5 +1,5 @@
 import { ExternalLink, FileText, FolderKanban, LayoutDashboard, ListChecks, LogOut, Settings, Star, Trophy } from 'lucide-react';
-import { openInPms } from '../openInPms.js';
+import { openInHrms, openInPms } from '../openInPms.js';
 import Avatar from './Avatar.jsx';
 import BrandMark from './BrandMark.jsx';
 import ClaudeIcon from './ClaudeIcon.jsx';
@@ -67,10 +67,16 @@ export default function Sidebar({ view, activeProjectId, onNavigate, user, onLog
               );
             })}
             {group.label === 'Integrations' && (
-              <button type="button" className="nav-item" onClick={() => openInPms('/', onOpenPmsError)}>
-                <ExternalLink size={17} />
-                <span>Open PMS</span>
-              </button>
+              <>
+                <button type="button" className="nav-item" onClick={() => openInPms('/', onOpenPmsError)}>
+                  <ExternalLink size={17} />
+                  <span>Open PMS</span>
+                </button>
+                <button type="button" className="nav-item" onClick={() => openInHrms('/', onOpenPmsError)}>
+                  <ExternalLink size={17} />
+                  <span>Open HRMS</span>
+                </button>
+              </>
             )}
           </div>
         ))}

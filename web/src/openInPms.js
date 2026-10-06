@@ -6,3 +6,10 @@ export function openInPms(path = '/', onError) {
     onError?.(err);
   });
 }
+
+/** Open HRMS in Chromium using the saved FISSO browser profile. */
+export function openInHrms(path = '/', onError) {
+  return api.openHrms(path).catch((err) => {
+    onError?.(err);
+  });
+}

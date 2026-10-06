@@ -2,7 +2,7 @@
 // (Playwright) so the app never sees the user's password.
 import fs from 'node:fs';
 import { chromium } from 'playwright-core';
-import { COOKIE_FILE, DATA_DIR, PMS_BASE } from './config.js';
+import { COOKIE_FILE, DATA_DIR, HRMS_BASE, PMS_BASE, SSO_COOKIE_FILE } from './config.js';
 import { BROWSER_NAMES, chosenBrowser, findExecutable, profileDir, saveChoice } from './browsers.js';
 import { CHROMIUM_WINDOW_ARGS, focusBrowserWindow, keepBrowserOnTop } from './browser-window.js';
 
@@ -44,6 +44,27 @@ export function renewCookieFromResponse(res) {
 
 export function clearCookie() {
   fs.rmSync(COOKIE_FILE, { force: true });
+  fs.rmSync(SSO_COOKIE_FILE, { force: true });
+}
+
+// Keycloak keeps its login in browser-session cookies, which Chromium drops
+// when the login window closes. Keep a copy so HRMS can reuse the SSO login.
+const isSsoCookie = (c) => {
+  const domain = c.domain.replace(/^\./, '');
+  return /(^|\.)fistinnovations\.com$/.test(domain) && domain !== 'pms.fistinnovations.com';
+};
+
+function saveSsoCookies(cookies) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(SSO_COOKIE_FILE, JSON.stringify(cookies.filter(isSsoCookie)), { mode: 0o600 });
+}
+
+function getSsoCookies() {
+  try {
+    return JSON.parse(fs.readFileSync(SSO_COOKIE_FILE, 'utf8'));
+  } catch {
+    return [];
+  }
 }
 
 // A browser profile can only be opened by one browser at a time, so logins are
@@ -144,6 +165,39 @@ export async function openBrowser(path = '/') {
   }
 }
 
+// HRMS shares FISSO with PMS. Open it in a one-off window seeded with the SSO
+// cookies saved at login, so Keycloak signs the user in without a password.
+export async function openHrmsBrowser(path = '/') {
+  if (!getCookie()) throw new Error('Not signed in to PMS');
+
+  if (loginInFlight?.kind === 'window') {
+    throw new Error('Finish signing in in the login window first.');
+  }
+
+  const id = chosenBrowser();
+  const executablePath = id && findExecutable(id);
+  if (!executablePath) throw new Error('No Chromium browser found on this computer.');
+
+  const browser = await chromium.launch({
+    executablePath,
+    headless: false,
+    args: CHROMIUM_WINDOW_ARGS,
+  });
+  try {
+    const context = await browser.newContext({ viewport: null });
+    const sso = getSsoCookies();
+    if (sso.length) await context.addCookies(sso);
+    const page = await context.newPage();
+    const url = HRMS_BASE + (path.startsWith('/') ? path : `/${path}`);
+    await page.goto(url, { timeout: 45_000, waitUntil: 'domcontentloaded' });
+    await focusBrowserWindow(browser, page);
+    // Leave the window open until the user closes it.
+  } catch (err) {
+    await browser.close().catch(() => {});
+    throw err;
+  }
+}
+
 async function signIn({ visible, browser: id }) {
   const browserLabel = BROWSER_NAMES[id] ?? 'a browser';
   const executablePath = id && findExecutable(id);
@@ -183,6 +237,7 @@ async function signIn({ visible, browser: id }) {
     const session = (await context.cookies(PMS_BASE)).find((c) => c.name === 'JSESSIONID');
     if (!session) throw new Error('Signed in, but the PMS did not set a session cookie');
     saveCookie(session.value);
+    saveSsoCookies(await context.cookies());
   } catch (err) {
     if (/closed/i.test(err.message)) throw new Error('The login window was closed before signing in');
     if (err.name === 'TimeoutError') throw new Error('Timed out waiting for sign-in');
