@@ -10,6 +10,7 @@ const PERIODS = [
   { value: 'today', label: 'Today' },
   { value: 'week', label: 'This week' },
   { value: 'month', label: 'This month' },
+  { value: '30d', label: 'Last 30 days' },
   { value: 'custom', label: 'Custom' },
   { value: 'alltime', label: 'All time' },
 ];
@@ -40,7 +41,7 @@ function PodiumCard({ person, place, isMe, lifetime }) {
       <span className="podium-meta">
         {lifetime
           ? `${person.closed} signed off · ${person.open} open`
-          : `${person.closed} closed · ${plural(person.updates, 'update')}`}
+          : `${plural(person.comments, 'comment')} · ${plural(person.updates, 'update')}`}
       </span>
     </div>
   );
@@ -221,8 +222,8 @@ export default function LeaderboardView({
               <span>issues completed</span>
             </div>
             <div>
-              <strong>{data.totals.closed}</strong>
-              <span>{lifetime ? 'signed off (Closed)' : 'closed after review'}</span>
+              <strong>{lifetime ? data.totals.closed : data.totals.updates}</strong>
+              <span>{lifetime ? 'signed off (Closed)' : 'updates logged'}</span>
             </div>
             <div>
               <strong>{data.totals.people}</strong>
@@ -240,12 +241,12 @@ export default function LeaderboardView({
                       : ''}
                 </span>
               </div>
-            ) : (
+            ) : lifetime ? (
               <div>
-                <strong>{lifetime ? data.totals.open : data.totals.updates}</strong>
-                <span>{lifetime ? 'still open' : 'updates logged'}</span>
+                <strong>{data.totals.open}</strong>
+                <span>still open</span>
               </div>
-            )}
+            ) : null}
           </div>
 
           {podium.length > 0 && (
@@ -276,9 +277,9 @@ export default function LeaderboardView({
                   </>
                 ) : (
                   <>
-                    <span>Closed</span>
-                    <span>Started</span>
                     <span>Created</span>
+                    <span>Comments</span>
+                    <span>Status changes</span>
                     <span>Updates</span>
                     <span>Active days</span>
                   </>
@@ -308,9 +309,9 @@ export default function LeaderboardView({
                     </>
                   ) : (
                     <>
-                      <span className="lb-num">{p.closed}</span>
-                      <span className="lb-num">{p.started}</span>
                       <span className="lb-num">{p.created}</span>
+                      <span className="lb-num">{p.comments}</span>
+                      <span className="lb-num">{p.statusChanges}</span>
                       <span className="lb-num">{p.updates}</span>
                       <span className="lb-num">{p.activeDays}</span>
                     </>
@@ -323,7 +324,7 @@ export default function LeaderboardView({
           <p className="muted lb-note">
             {lifetime
               ? 'Every issue counted by its assignee, as on the PMS project dashboard. Done, Resolved, Completed, Feedback and Closed count as completed; “Signed off” is how many of those are Closed. Rejected and Cancelled are left out.'
-              : `Issues moved to Done, Resolved, Completed or Feedback, credited to the issue’s assignee; issues reopened since are not counted. “Closed” counts sign-offs by whoever closed them. From the PMS activity log${
+              : `Completed counts issues moved from an unfinished to a finished status (Done, Resolved, Completed, Feedback or Closed) in this period, credited to the issue’s assignee. A reviewer closing work that was finished earlier does not count again, and issues reopened since are left out. Updates, comments and status changes are credited to whoever made them. From the PMS activity log${
                   data.truncated ? '; this period is very busy, so only the most recent activity was counted' : ''
                 }.`}
           </p>

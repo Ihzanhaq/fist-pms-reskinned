@@ -28,45 +28,46 @@ test('periodRange covers this week, this month and the last 30 days', () => {
   assert.deepEqual(periodRange('week', '2026-10-04'), { from: '2026-09-28', to: '2026-10-04' }); // Sunday
   assert.deepEqual(periodRange('today', '2026-09-30'), { from: '2026-09-30', to: '2026-09-30' });
   assert.deepEqual(periodRange('month', '2026-09-30'), { from: '2026-09-01', to: '2026-09-30' });
+  assert.deepEqual(periodRange('30d', '2026-10-12'), { from: '2026-09-13', to: '2026-10-12' }); // as the PMS shows it
   assert.throws(() => periodRange('year', '2026-09-30'));
 });
 
-test('rankPeople counts each issue once per person and keeps closing separate', () => {
+test('rankPeople counts like the PMS leaderboard: each finished issue once, Closed included', () => {
   const entries = [
     status('Asha', 'A-1', 'Resolved'),
     status('Asha', 'A-1', 'Done'), // same issue again: still one
     status('Asha', 'A-2', 'Completed', '2026-09-28', 'Shop'),
     status('Asha', 'A-3', 'In Progress'),
     { who: 'Asha', date: '2026-09-28', kind: 'created', issue: { key: 'A-9' }, project: { name: 'Demo' } },
-    status('Ravi', 'A-1', 'Closed'), // reviewer closing Asha's work
-    status('Ravi', 'A-2', 'Closed'),
-    status('Ravi', 'B-1', 'Resolved'),
-    { who: 'Mia', date: '2026-09-29', kind: 'other', issue: { key: 'A-5' }, project: null },
+    { who: 'Asha', date: '2026-09-28', kind: 'comment', type: 'comment', issue: { key: 'A-3' }, project: { name: 'Demo' } },
+    status('Ravi', 'A-1', 'Closed'), // reviewer closing Asha's work: already counted
+    status('Ravi', 'B-1', 'Closed'),
+    { who: 'Mia', date: '2026-09-29', kind: 'other', type: 'project', issue: null, project: { name: 'Demo' } },
   ];
   const rows = rankPeople(entries, [{ id: 'id-asha', name: 'Asha' }]);
-  assert.deepEqual(rows.map((r) => [r.rank, r.name, r.completed, r.closed]), [
-    [1, 'Asha', 2, 0],
-    [2, 'Ravi', 1, 2],
-    [3, 'Mia', 0, 0],
+  assert.deepEqual(rows.map((r) => [r.rank, r.name, r.completed]), [
+    [1, 'Asha', 2],
+    [2, 'Ravi', 1],
+    [3, 'Mia', 0],
   ]);
-  const asha = rows[0];
-  assert.equal(asha.id, 'id-asha');
-  assert.equal(asha.started, 1);
-  assert.equal(asha.created, 1);
-  assert.equal(asha.updates, 5);
-  assert.equal(asha.projects, 2);
-  assert.equal(asha.activeDays, 2);
+  assert.deepEqual(rows[0], {
+    rank: 1, id: 'id-asha', name: 'Asha',
+    completed: 2, created: 1, comments: 1, statusChanges: 4, updates: 6, projects: 2, activeDays: 2,
+  });
   assert.equal(rows[1].id, null);
+  assert.equal(rows[2].updates, 1); // project activity counts as an update, like on the PMS
 });
 
-test('rankPeople gives ties the same rank', () => {
+test('rankPeople ranks by completed, then updates; full ties share a rank', () => {
   const rows = rankPeople([
     status('A', 'X-1', 'Done'),
     status('B', 'X-2', 'Done'),
     status('C', 'X-3', 'Done'),
     status('C', 'X-4', 'Done'),
+    status('D', 'X-5', 'Done'),
+    status('D', 'X-6', 'Todo'),
   ]);
-  assert.deepEqual(rows.map((r) => [r.name, r.rank]), [['C', 1], ['A', 2], ['B', 2]]);
+  assert.deepEqual(rows.map((r) => [r.name, r.rank]), [['C', 1], ['D', 2], ['A', 3], ['B', 3]]);
 });
 
 test('rankPeople counts Feedback as completed', () => {
@@ -74,7 +75,7 @@ test('rankPeople counts Feedback as completed', () => {
   assert.equal(rows[0].completed, 1);
 });
 
-test('rankPeople credits completed work to the assignee and skips reopened issues', () => {
+test('rankPeople credits finished work to the assignee and skips reopened issues', () => {
   const issues = new Map([
     ['A-1', { status: 'Resolved', assignee: { id: 'id-asha', name: 'Asha' } }],
     ['A-2', { status: 'In Progress', assignee: { id: 'id-asha', name: 'Asha' } }], // reopened
@@ -90,8 +91,8 @@ test('rankPeople credits completed work to the assignee and skips reopened issue
     [],
     issues,
   );
-  const by = Object.fromEntries(rows.map((r) => [r.name, [r.completed, r.closed]]));
-  assert.deepEqual(by, { Asha: [1, 0], Ravi: [1, 1] });
+  const by = Object.fromEntries(rows.map((r) => [r.name, r.completed]));
+  assert.deepEqual(by, { Asha: 2, Ravi: 1 });
   assert.equal(rows.find((r) => r.name === 'Asha').id, 'id-asha');
 });
 
@@ -116,4 +117,18 @@ test('rankLifetime counts by assignee like the PMS project dashboard', () => {
     [2, 'Athul', 1, 0, 1, 2],
   ]);
   assert.equal(rows[0].id, 'id-v');
+});
+
+test('rankPeople credits work in the period it was finished, not when a reviewer signs it off later', () => {
+  const move = (who, key, from, to, date = '2026-09-29') => ({ ...status(who, key, to, date), fromStatus: from });
+  const rows = rankPeople([
+    move('Ravi', 'A-1', 'Done', 'Closed'), // finished before the period, only closed now: not counted
+    move('Ravi', 'A-2', 'Resolved', 'Closed'), // same
+    move('Ravi', 'A-3', 'Resolved', 'Closed'), // closed now …
+    move('Asha', 'A-3', 'In Progress', 'Resolved', '2026-09-28'), // … but also finished in the period: counted once
+    move('Asha', 'A-4', 'New', 'Done'),
+    move('Asha', 'A-5', 'Done', 'Cancelled'), // cancelled is not finished
+  ]);
+  const by = Object.fromEntries(rows.map((r) => [r.name, r.completed]));
+  assert.deepEqual(by, { Asha: 2, Ravi: 0 });
 });

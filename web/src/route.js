@@ -95,7 +95,7 @@ export function parseRoute(location = typeof window !== 'undefined' ? window.loc
     layout:
       view === 'issues' || projectId ? (layoutRaw === 'board' ? 'board' : 'list') : DEFAULT_ROUTE.layout,
     days: [7, 14, 30].includes(daysRaw) ? daysRaw : DEFAULT_ROUTE.days,
-    period: ['today', 'week', 'month', 'custom', 'alltime'].includes(periodRaw ?? '')
+    period: ['today', 'week', 'month', '30d', 'custom', 'alltime'].includes(periodRaw ?? '')
       ? periodRaw
       : DEFAULT_ROUTE.period,
     lbFrom:

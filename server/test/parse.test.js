@@ -331,3 +331,16 @@ test('parseFlashError reads the PMS error banner', () => {
   assert.equal(parseFlashError(html), 'You do not have permission to create issues in this project.');
   assert.equal(parseFlashError('<main><div class="page">x</div></main>'), null);
 });
+
+test('parseActivity pages by the Next button, not by how many rows a page has', () => {
+  const page = (next) => `<form action="/activity"></form>${next}`;
+  assert.equal(parseActivity(page(''), '2026-09-29').hasNextPage, false);
+  assert.equal(
+    parseActivity(page('<a href="/activity?page=1" class="pg-btn">Next <span>chevron_right</span></a>'), '2026-09-29').hasNextPage,
+    true,
+  );
+  assert.equal(
+    parseActivity(page('<a href="/activity?page=9" class="pg-btn  disabled">Next <span>chevron_right</span></a>'), '2026-09-29').hasNextPage,
+    false,
+  );
+});

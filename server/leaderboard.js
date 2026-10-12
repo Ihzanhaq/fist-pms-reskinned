@@ -1,28 +1,28 @@
 // Team leaderboard.
-// Periods (today/week/month/custom) come from the PMS activity log, which only
-// goes back a few weeks. "All time" is counted from every project's issue list
-// instead, the same way the PMS project dashboard does (by assignee).
+// Date ranges are counted from the PMS activity log. The PMS has its own
+// /leaderboard page, but its "completed" count depends on each project's status
+// setup: it credits some reviewer sign-offs (Resolved -> Closed) to the period they
+// were closed in, long after the work was done, and misses others. So it is not used.
+// "All time" is counted from every project's issue list, by assignee, like the
+// PMS project dashboard.
 import { parseActivity, parseProjectIssues } from './parse.js';
 import * as pms from './pms-client.js';
 import { shiftIso, todayIso } from './insights.js';
 import { BadRequestError, listProjects, requireUuid } from './service.js';
 
-// "Completed" is the work being finished; "Closed" is usually a reviewer
-// signing it off, so the two are counted separately.
+// Finished statuses. All time also shows how many of those are Closed (signed off).
 const COMPLETED = /^(done|resolved|completed|feedback)$/i;
 const CLOSED = /^closed$/i;
-const STARTED = /progress/i;
 // Rejected and cancelled issues are neither finished work nor open work.
 const DROPPED = /^(rejected|cancell?ed)$/i;
 const isFinished = (status) => COMPLETED.test(status ?? '') || CLOSED.test(status ?? '');
 
-const PAGE_SIZE = 40;
 const MAX_PAGES = 150;
 const CACHE_MS = 5 * 60_000;
 const LIFETIME_CACHE_MS = 10 * 60_000;
 const PROJECT_CONCURRENCY = 4;
 
-export const PERIODS = ['today', 'week', 'month', 'custom', 'alltime'];
+export const PERIODS = ['today', 'week', 'month', '30d', 'custom', 'alltime'];
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export function periodRange(period, today = todayIso()) {
@@ -33,6 +33,7 @@ export function periodRange(period, today = todayIso()) {
   }
   if (period === 'today') return { from: today, to: today };
   if (period === 'month') return { from: `${today.slice(0, 7)}-01`, to: today };
+  if (period === '30d') return { from: shiftIso(today, -29), to: today };
   throw new BadRequestError('bad_request', 'Invalid period');
 }
 
@@ -50,19 +51,21 @@ export function resolveLeaderboardRange({ period = 'week', from, to, today = tod
   return { period, ...range };
 }
 
-const rank = (rows) => {
-  // Equal completed + closed share a rank (1, 2, 2, 4 …).
+// Equal scores share a rank (1, 2, 2, 4 …). same(a, b) says whether two rows tie.
+const rank = (rows, same) => {
   rows.forEach((row, i) => {
     const prev = rows[i - 1];
-    row.rank = prev && prev.completed === row.completed && prev.closed === row.closed ? prev.rank : i + 1;
+    row.rank = prev && same(prev, row) ? prev.rank : i + 1;
   });
   return rows;
 };
 
-// entries: parsed activity entries; actors: [{ id, name }] from the activity filter.
+// entries: activity entries of every type; actors: [{ id, name }] from the activity filter.
 // issues: Map issue id -> { status, assignee } with each issue's current state.
-// With it, completed work is credited to the issue's assignee, and issues that
-// were reopened since are not counted.
+// An issue counts once, for its assignee, in the period it moved from an unfinished
+// to a finished status (Closed included); issues reopened since are not counted.
+// Updates, comments and status changes are credited to whoever made them, and
+// cover every activity type, as on the PMS leaderboard.
 export function rankPeople(entries, actors = [], issues = new Map()) {
   const idByName = new Map(actors.map((a) => [a.name, a.id]));
   const people = new Map();
@@ -71,58 +74,56 @@ export function rankPeople(entries, actors = [], issues = new Map()) {
       people.set(name, {
         name,
         id: idByName.get(name) ?? id,
-        completed: new Set(),
-        closed: new Set(),
-        started: new Set(),
+        completed: 0,
         created: new Set(),
+        comments: 0,
+        statusChanges: 0,
+        updates: 0,
         projects: new Set(),
         days: new Set(),
-        updates: 0,
       });
     }
     return people.get(name);
   };
 
+  const counted = new Set();
   for (const e of entries) {
     if (!e.who) continue;
     const p = person(e.who);
     p.updates += 1;
     p.days.add(e.date);
     if (e.project?.name) p.projects.add(e.project.name);
+    if (e.kind === 'comment') p.comments += 1;
     const key = e.issue?.key;
     if (!key) continue;
     if (e.kind === 'created') p.created.add(key);
     if (e.kind !== 'status') continue;
+    p.statusChanges += 1;
+    const id = e.issue.id ?? key;
+    // Finished -> finished (say Resolved -> Closed) is a sign-off of work finished earlier.
+    if (!isFinished(e.toStatus) || isFinished(e.fromStatus) || counted.has(id)) continue;
     const now = issues.get(e.issue.id);
-    if (STARTED.test(e.toStatus ?? '')) p.started.add(key);
-    if (!isFinished(e.toStatus)) continue;
     if (now && !isFinished(now.status)) continue; // reopened since
-    if (COMPLETED.test(e.toStatus)) {
-      const owner = now?.assignee ? person(now.assignee.name, now.assignee.id) : p;
-      owner.completed.add(key);
-      if (e.project?.name) owner.projects.add(e.project.name);
-    } else {
-      p.closed.add(key);
-    }
+    counted.add(id);
+    const owner = now?.assignee ? person(now.assignee.name, now.assignee.id) : p;
+    owner.completed += 1;
+    if (e.project?.name) owner.projects.add(e.project.name);
   }
 
   const rows = [...people.values()].map((p) => ({
     id: p.id,
     name: p.name,
-    completed: p.completed.size,
-    closed: p.closed.size,
-    started: p.started.size,
+    completed: p.completed,
     created: p.created.size,
+    comments: p.comments,
+    statusChanges: p.statusChanges,
     updates: p.updates,
     projects: p.projects.size,
     activeDays: p.days.size,
   }));
 
-  rows.sort(
-    (a, b) =>
-      b.completed - a.completed || b.closed - a.closed || b.updates - a.updates || a.name.localeCompare(b.name),
-  );
-  return rank(rows);
+  rows.sort((a, b) => b.completed - a.completed || b.updates - a.updates || a.name.localeCompare(b.name));
+  return rank(rows, (x, y) => x.completed === y.completed && x.updates === y.updates);
 }
 
 // Lifetime totals per assignee from project issue lists (like the PMS project dashboard).
@@ -151,7 +152,7 @@ export function rankLifetime(projects) {
     .map((p) => ({ ...p, projects: p.projects.size }))
     .filter((p) => p.completed + p.open > 0);
   rows.sort((a, b) => b.completed - a.completed || b.closed - a.closed || a.open - b.open || a.name.localeCompare(b.name));
-  return rank(rows);
+  return rank(rows, (x, y) => x.completed === y.completed && x.closed === y.closed);
 }
 
 // ---------- fetching ----------
@@ -193,12 +194,12 @@ async function periodLeaderboard({ period, projectId, from, to, refresh }) {
   for (let page = 0; page < MAX_PAGES; page++) {
     const project = projectId ? `&project=${projectId}` : '';
     const parsed = parseActivity(
-      await pms.get(`/activity?type=issue&from=${rangeFrom}&to=${rangeTo}${project}&page=${page}`),
+      await pms.get(`/activity?type=all&from=${rangeFrom}&to=${rangeTo}${project}&page=${page}`),
       today,
     );
     if (page === 0) actors = parsed.actors;
     entries.push(...parsed.entries);
-    if (parsed.entries.length < PAGE_SIZE) break;
+    if (!parsed.hasNextPage) break;
     if (page === MAX_PAGES - 1) truncated = true;
   }
 
@@ -223,7 +224,6 @@ async function periodLeaderboard({ period, projectId, from, to, refresh }) {
     truncated,
     totals: {
       completed: people.reduce((s, p) => s + p.completed, 0),
-      closed: people.reduce((s, p) => s + p.closed, 0),
       people: people.filter((p) => p.updates > 0 || p.completed > 0).length,
       updates: entries.length,
     },

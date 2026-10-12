@@ -531,5 +531,10 @@ export function parseActivity(html, todayIso) {
     .filter((o) => o.getAttribute('value'))
     .map((o) => ({ id: o.getAttribute('value'), name: clean(o) }));
 
-  return { entries, actors };
+  // Pages hold up to 40 rows but often fewer, so only the Next button says whether more follow.
+  const hasNextPage = root
+    .querySelectorAll('a.pg-btn')
+    .some((a) => /\bNext\b/.test(a.text) && !hasClass(a, 'disabled'));
+
+  return { entries, actors, hasNextPage };
 }

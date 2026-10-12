@@ -7,7 +7,6 @@ import { BadRequestError, listMyIssues, sessionInfo } from './service.js';
 
 const DONE_STATUS = /^(done|resolved|closed|completed)$/i;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-const ACTIVITY_PAGE_SIZE = 40;
 const MAX_ACTIVITY_PAGES = 30;
 const MONTHS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
 
@@ -54,9 +53,9 @@ export async function myActivity(from, to) {
   const entries = [];
   for (let page = 0; page < MAX_ACTIVITY_PAGES; page++) {
     const html = await pms.get(`/activity?actor=${actor}&type=all&from=${from}&to=${to}&page=${page}`);
-    const batch = parseActivity(html, today).entries;
+    const { entries: batch, hasNextPage } = parseActivity(html, today);
     entries.push(...batch);
-    if (batch.length < ACTIVITY_PAGE_SIZE) break;
+    if (!hasNextPage) break;
   }
   return entries;
 }

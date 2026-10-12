@@ -12,7 +12,7 @@
 
 /* summary */
 .lb-summary {
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
   border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-sm);
 }
 .lb-summary > div { display: flex; flex-direction: column; gap: 2px; padding: 16px 20px; }
@@ -100,7 +100,7 @@
 @media (max-width: 760px) {
   .podium { grid-template-columns: 1fr; }
   .podium .place-1, .podium .place-2, .podium .place-3 { order: 0; }
-  .lb-summary { grid-template-columns: repeat(2, 1fr); }
+  .lb-summary { grid-auto-flow: row; grid-template-columns: repeat(2, 1fr); }
   .lb-summary > div:nth-child(3) { border-left: 0; }
 }
 
