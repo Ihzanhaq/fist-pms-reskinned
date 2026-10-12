@@ -74,6 +74,7 @@ export default function ProjectView({
   onError,
   showToast,
   showEmojis = true,
+  showCover = true,
 }) {
   const [data, setData] = useState(null); // { issues, states, assignees }
   const [error, setError] = useState(null);
@@ -328,8 +329,15 @@ export default function ProjectView({
         <ArrowLeft size={15} /> {backLabel}
       </button>
 
-      <div className="project-head">
-        <span className="project-icon large" style={{ '--c': project.color ?? '#059669' }}>
+      <div className={`project-head${showCover ? ' with-cover' : ''}`} style={{ '--c': project.color ?? '#059669' }}>
+        {showCover && (
+          <div className="project-hero-cover">
+            {project.hasCover && (
+              <img src={`/api/project-covers/${project.id}`} alt="" onError={(e) => e.currentTarget.remove()} />
+            )}
+          </div>
+        )}
+        <span className="project-icon large">
           {projectIconLabel(project, showEmojis)}
         </span>
         <div className="project-head-text">

@@ -398,7 +398,7 @@ export default function SettingsView({ appearance, tab = 'appearance', onTabChan
               <div className="pref-row first">
                 <div>
                   <strong>Cover banners</strong>
-                  <p className="muted">Show cover images on project cards when the PMS has one.</p>
+                  <p className="muted">Show cover banners on project cards and project pages.</p>
                 </div>
                 <Switch
                   on={display.projectCovers}

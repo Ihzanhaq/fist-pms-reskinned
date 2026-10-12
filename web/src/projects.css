@@ -51,6 +51,25 @@
 .project-head-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .project-head-actions .secondary-btn { height: 38px; text-decoration: none; color: var(--text); }
 
+/* With cover banners on: a profile-style header, the icon overlapping the cover's lower edge. */
+.project-head.with-cover {
+  flex-wrap: wrap; align-items: flex-end; column-gap: 20px; row-gap: 0;
+  padding: 0 24px 22px; border: 1px solid var(--border); border-radius: 14px;
+  background: var(--surface); box-shadow: var(--shadow-sm); overflow: hidden;
+}
+.project-hero-cover {
+  position: relative; flex: 0 0 calc(100% + 48px); height: 180px; margin: 0 -24px;
+  background: linear-gradient(135deg, var(--c), #1e293b);
+}
+.project-hero-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.project-head.with-cover .project-icon.large {
+  width: 108px; height: 108px; margin-top: -54px; position: relative;
+  border-radius: 22px; font-size: 46px; background: var(--c); color: #fff;
+  box-shadow: 0 0 0 4px var(--surface), var(--shadow-md);
+}
+.project-head.with-cover .project-head-text { padding-top: 14px; }
+.project-head.with-cover .project-head-actions { padding-top: 14px; }
+
 .team { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 20px; }
 .team-label { display: inline-flex; align-items: center; gap: 6px; margin-right: 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
 .team-chip {

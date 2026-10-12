@@ -520,6 +520,7 @@ export default function App() {
               onError={handlePanelError}
               showToast={showToast}
               showEmojis={projectDisplay.projectEmojis}
+              showCover={projectDisplay.projectCovers}
             />
           ) : (
             <ProjectsGrid
