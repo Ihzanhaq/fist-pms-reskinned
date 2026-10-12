@@ -67,7 +67,8 @@ function parseIssueRow(item) {
     projectName: clean(projectLink.querySelector('.nm')),
     projectIcon: clean(projectIconEl),
     projectColor: projectIconEl?.getAttribute('style')?.match(HEX_COLOR)?.[0] ?? null,
-    status: { name: clean(statusEl), color: dotStyle.match(HEX_COLOR)?.[0] ?? null },
+    // The pill also holds a hidden <select> of every status; the name is its last span.
+    status: { name: lastSpanText(statusEl), color: dotStyle.match(HEX_COLOR)?.[0] ?? null },
     priority: lastSpanText(item.querySelector('.pill')) || 'none',
     startDate,
     targetDate,
@@ -112,7 +113,7 @@ export function parseProfile(html) {
   if (!form) throw new LayoutChangedError('The profile page has an unexpected layout');
 
   const csrf = form.querySelector('input[name="_csrf"]')?.getAttribute('value') ?? '';
-  const avatarEl = root.querySelector('img.pf-avatar-lg');
+  const avatarEl = root.querySelector('img.pf-avatar-lg, .pf-avatar-lg img');
   const avatarPath = avatarEl?.getAttribute('src') ?? '';
   const userId = avatarPath.match(UUID)?.[0] ?? null;
 
@@ -132,6 +133,13 @@ export function parseProfile(html) {
     email,
     hasPhoto: Boolean(userId && avatarPath.includes('/avatar/')),
   };
+}
+
+// The red banner a PMS page shows after refusing an action, e.g. "You do not have
+// permission to edit issues in this project." Null when there is none.
+export function parseFlashError(html) {
+  const banner = parse(html).querySelector('main > div.bg-rose-50');
+  return lastSpanText(banner) || null;
 }
 
 // ---------- issue detail ----------

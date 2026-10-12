@@ -6,7 +6,7 @@ import express from 'express';
 import multer from 'multer';
 import { WEB_DIST_DIR } from './config.js';
 import { LayoutChangedError } from './parse.js';
-import { SessionExpiredError } from './pms-client.js';
+import { SessionExpiredError, PmsForbiddenError } from './pms-client.js';
 import * as extension from './extension.js';
 import * as insights from './insights.js';
 import { leaderboard } from './leaderboard.js';
@@ -204,6 +204,7 @@ export function createApp() {
       return res.status(400).json({ error: 'bad_request', message: message ?? err.message });
     }
     if (err instanceof BadRequestError) return res.status(400).json({ error: err.code, message: err.message });
+    if (err instanceof PmsForbiddenError) return res.status(403).json({ error: 'forbidden', message: err.message });
     if (err instanceof LayoutChangedError) {
       return res.status(502).json({ error: 'layout_changed', message: err.message });
     }

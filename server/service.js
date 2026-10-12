@@ -134,7 +134,7 @@ export async function statesFor(issueId, projectId) {
 
 // Project cards: id, name, key, description, issueCount, icon, color, pinned, hasCover.
 export async function listProjects() {
-  return parseProjectCards(await pms.get('/')).map(({ pinCsrf, ...card }) => card);
+  return parseProjectCards(await pms.get('/projects')).map(({ pinCsrf, ...card }) => card);
 }
 
 const hasEmoji = (text) => /\p{Extended_Pictographic}/u.test(text ?? '');
@@ -193,7 +193,7 @@ export async function listMyProjects() {
 // The PMS pin form toggles, so only post when the state needs to change.
 export async function setPinned(projectId, pinned) {
   requireUuid(projectId, 'project id');
-  const find = async () => parseProjectCards(await pms.get('/')).find((c) => c.id === projectId);
+  const find = async () => parseProjectCards(await pms.get('/projects')).find((c) => c.id === projectId);
   const card = await find();
   if (!card) throw new BadRequestError('not_found', 'Project not found');
   if (card.pinned === Boolean(pinned)) return { pinned: card.pinned };

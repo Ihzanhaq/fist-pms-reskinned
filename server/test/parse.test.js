@@ -12,6 +12,7 @@ import {
   parseProjectIssues,
   parseProfile,
   parseActivity,
+  parseFlashError,
   LayoutChangedError,
 } from '../parse.js';
 
@@ -287,4 +288,46 @@ test('parseActivity handles a page with no activity', () => {
 
 test('parseActivity throws LayoutChangedError on unrecognised pages', () => {
   assert.throws(() => parseActivity('<html><body><p>nope</p></body></html>', '2026-09-29'), LayoutChangedError);
+});
+
+// October 2026 PMS layout: status, priority and deadline are inline pickers with a
+// hidden <select> inside the pill, and the profile photo sits inside a <label>.
+const INLINE_ROW = `<form action="/my-issues"></form>
+<div class="mi-item">
+  <span class="mi-key">DEMO-1</span>
+  <a href="/issues/11111111-1111-4111-8111-111111111111?back=/my-issues" class="mi-title" title="Inline row">Inline row</a>
+  <a href="/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" class="mi-proj"><span class="ic" style="background:#2563eb">DE</span><span class="nm">DEMO</span></a>
+  <span class="mi-status inline-pick"><span class="dot" style="background:#6366f1"></span><span>Closed</span>
+    <form action="/issues/11111111-1111-4111-8111-111111111111/state" method="post"><select name="stateId">
+      <option value="1">New</option><option value="2">In progress</option><option value="3" selected>Closed</option>
+    </select></form></span>
+  <span class="pill inline-pick"><span class="material-symbols-rounded">error</span><span>urgent</span>
+    <form><select name="priority"><option value="urgent" selected>urgent</option><option value="high">high</option></select></form></span>
+  <span class="mi-target mi-date inline-pick is-over"><span class="material-symbols-rounded">warning</span><span>11 Sep 2026</span>
+    <form><input type="date" name="targetDate" value="2026-09-11"></form></span>
+</div>`;
+
+test('parseMyIssues reads the status name, not the options of the inline status picker', () => {
+  const [issue] = parseMyIssues(INLINE_ROW).issues;
+  assert.deepEqual(issue.status, { name: 'Closed', color: '#6366f1' });
+  assert.equal(issue.priority, 'urgent');
+  assert.equal(issue.targetDate, '11 Sep 2026');
+  assert.equal(issue.overdue, true);
+});
+
+test('parseProfile reads the photo inside the label', () => {
+  const html = `<div class="topbar-account-name">Jane Tester</div>
+    <label class="pf-avatar-lg"><img src="/avatar/88888888-8888-4888-8888-888888888888" alt="Profile photo"></label>
+    <form action="/profile/photo" method="post"><input type="hidden" name="_csrf" value="t"></form>`;
+  const p = parseProfile(html);
+  assert.equal(p.userId, '88888888-8888-4888-8888-888888888888');
+  assert.equal(p.hasPhoto, true);
+});
+
+test('parseFlashError reads the PMS error banner', () => {
+  const html = `<main><div class="mb-4 flex rounded-lg border border-rose-200 bg-rose-50 text-rose-700">
+    <span class="material-symbols-rounded">error</span><span>You do not have permission to create issues in this project.</span></div>
+    <div class="page">x</div></main>`;
+  assert.equal(parseFlashError(html), 'You do not have permission to create issues in this project.');
+  assert.equal(parseFlashError('<main><div class="page">x</div></main>'), null);
 });

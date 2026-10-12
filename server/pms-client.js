@@ -1,6 +1,7 @@
 // Talks to the PMS like a browser would: session cookie in, HTML out.
 import { PMS_BASE } from './config.js';
 import { getCookie, renewCookieFromResponse, silentLogin } from './session.js';
+import { parseFlashError } from './parse.js';
 
 export class SessionExpiredError extends Error {
   constructor() {
@@ -45,8 +46,25 @@ async function request(path, init = {}, canRetry = true) {
   return res;
 }
 
+// The PMS refuses pages you lack permission for (such as /issues/{id}/edit) by
+// redirecting elsewhere and showing the reason in a banner there.
+export class PmsForbiddenError extends PmsError {
+  constructor(message) {
+    super(message);
+    this.name = 'PmsForbiddenError';
+  }
+}
+
 export async function get(path) {
   const res = await request(path);
+  const location = res.headers.get('location');
+  if (res.status >= 300 && res.status < 400 && location) {
+    const target = new URL(location, PMS_BASE);
+    if (target.origin === PMS_BASE) {
+      const reason = parseFlashError(await (await request(target.pathname + target.search)).text());
+      if (reason) throw new PmsForbiddenError(reason);
+    }
+  }
   if (res.status !== 200) throw new PmsError(`PMS returned ${res.status} for ${path}`);
   return res.text();
 }
