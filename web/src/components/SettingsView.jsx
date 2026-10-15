@@ -11,6 +11,8 @@ import {
   UserRound,
 } from 'lucide-react';
 import AccountSettings from './AccountSettings.jsx';
+import AutoSignInSettings from './AutoSignInSettings.jsx';
+import Switch from './Switch.jsx';
 import UpdatesCard from './UpdatesCard.jsx';
 import { clearSavedFilters, hasSavedFilters, rememberFilters, setRememberFilters } from '../filterMemory.js';
 import { GLASS_PRESETS, THEMES, glassBackgroundCss, hexLuminance, prepareImage, tintFor } from '../theme.js';
@@ -23,21 +25,6 @@ const TABS = [
   { id: 'account', label: 'Account', icon: UserRound },
   { id: 'updates', label: 'Updates', icon: Download },
 ];
-
-function Switch({ on, onChange, label }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      className={on ? 'ui-switch on' : 'ui-switch'}
-      aria-checked={on}
-      aria-label={label}
-      onClick={() => onChange(!on)}
-    >
-      <span className="ui-switch-thumb" aria-hidden />
-    </button>
-  );
-}
 
 // A small drawing of the app in a theme's colours.
 function ThemePreview({ theme, glassBg }) {
@@ -466,7 +453,12 @@ export default function SettingsView({ appearance, tab = 'appearance', onTabChan
           </>
         )}
 
-        {tab === 'account' && <AccountSettings user={user} onLogout={onLogout} onProfileUpdate={onProfileUpdate} />}
+        {tab === 'account' && (
+          <div className="account-row">
+            <AccountSettings user={user} onLogout={onLogout} onProfileUpdate={onProfileUpdate} />
+            <AutoSignInSettings />
+          </div>
+        )}
 
         {tab === 'updates' && <UpdatesCard />}
       </div>

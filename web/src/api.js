@@ -60,6 +60,12 @@ export const api = {
   browsers: () => call('/api/browsers'),
   login: (browser) => call('/api/login', { method: 'POST', body: browser ? { browser } : undefined }),
   logout: () => call('/api/logout', { method: 'POST' }),
+  autoLogin: () => call('/api/auto-login'),
+  setupAutoLogin: (username, password) =>
+    call('/api/auto-login/setup', { method: 'POST', body: { username, password } }),
+  updateAutoLoginPassword: (password) => call('/api/auto-login/password', { method: 'POST', body: { password } }),
+  setAutoLoginHello: (on) => call('/api/auto-login/hello', { method: 'POST', body: { on } }),
+  removeAutoLogin: () => call('/api/auto-login/remove', { method: 'POST' }),
   openPms: (path = '/') => call('/api/open-pms', { method: 'POST', body: { path } }),
   openHrms: (path = '/') => call('/api/open-hrms', { method: 'POST', body: { path } }),
   issues: (scope) => call(`/api/issues?scope=${scope}`),

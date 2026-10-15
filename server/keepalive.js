@@ -7,7 +7,8 @@ const DEFAULT_MS = 8 * 60_000;
 export function startSessionKeepalive(ms = Number(process.env.PMS_KEEPALIVE_MS) || DEFAULT_MS) {
   const timer = setInterval(() => {
     if (!session.getCookie()) return;
-    sessionInfo().catch(() => {});
+    // Nobody asked for this request, so it must not pop up Windows Hello.
+    session.runInBackground(() => sessionInfo()).catch(() => {});
   }, ms);
   if (typeof timer.unref === 'function') timer.unref();
   return timer;

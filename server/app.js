@@ -43,6 +43,13 @@ export function createApp() {
     res.json(info);
   });
   app.post('/api/logout', (req, res) => res.json(service.logout()));
+  app.get('/api/auto-login', (req, res) => res.json(service.autoLoginStatus()));
+  app.post('/api/auto-login/setup', async (req, res) => res.json(await service.setupAutoLogin(req.body ?? {})));
+  app.post('/api/auto-login/password', async (req, res) =>
+    res.json(await service.updateAutoLoginPassword(req.body ?? {})),
+  );
+  app.post('/api/auto-login/hello', (req, res) => res.json(service.setAutoLoginHello(req.body ?? {})));
+  app.post('/api/auto-login/remove', (req, res) => res.json(service.removeAutoLogin()));
   app.post('/api/open-pms', async (req, res) => res.json(await service.openPms(req.body?.path)));
   app.post('/api/open-hrms', async (req, res) => res.json(await service.openHrms(req.body?.path)));
 

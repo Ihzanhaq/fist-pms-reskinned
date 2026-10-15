@@ -1,15 +1,27 @@
 // Holds the PMS session cookie. Login happens in a real browser window
-// (Playwright) so the app never sees the user's password.
+// (Playwright); the app only sees the password when the user sets up
+// automatic sign-in (auto-login.js).
+import { AsyncLocalStorage } from 'node:async_hooks';
 import fs from 'node:fs';
+import os from 'node:os';
 import { chromium } from 'playwright-core';
+import * as autoLogin from './auto-login.js';
+import { AutoLoginError, classify, completeTotpSetup, driveLogin, fillPassword, snapshot } from './keycloak.js';
+import { verifyUser } from './windows-hello.js';
 import { COOKIE_FILE, DATA_DIR, HRMS_BASE, PMS_BASE, SSO_COOKIE_FILE } from './config.js';
 import { BROWSER_NAMES, chosenBrowser, findExecutable, profileDir, saveChoice } from './browsers.js';
 import { CHROMIUM_WINDOW_ARGS, focusBrowserWindow, keepBrowserOnTop } from './browser-window.js';
 
 const LOGIN_TIMEOUT_MS = 5 * 60_000;
 const SILENT_TIMEOUT_MS = 20_000;
+// Where PMS sends signed-out visitors before handing them to Keycloak.
+const PMS_SIGN_IN_PATH = '/oauth2/authorization/keycloak';
 
 let loginInFlight = null;
+
+// Work the user did not ask for (keepalive pings) must not pop up Windows Hello.
+const background = new AsyncLocalStorage();
+export const runInBackground = (fn) => background.run(true, fn);
 
 // Read from disk every time: the dashboard and the Claude extension are
 // separate processes and either one may renew the session.
@@ -84,6 +96,9 @@ function exclusive(kind, run) {
 // browsers.js; without one the last-used browser opens.
 export async function login(browser) {
   if (loginInFlight?.kind === 'silent') await loginInFlight.promise.catch(() => {});
+  // With automatic sign-in set up, try it first; the window only if that fails.
+  const sameBrowser = browser === undefined || browser === chosenBrowser();
+  if (sameBrowser && autoLogin.isActive() && (await silentLogin())) return;
   return exclusive('window', async () => {
     const id = browser ?? chosenBrowser();
     await signIn({ visible: true, browser: id });
@@ -91,11 +106,13 @@ export async function login(browser) {
   });
 }
 
-// Hidden browser that reuses the Keycloak session saved in the profile.
-// Resolves to false when Keycloak wants a password (or a window login is running).
+// Hidden browser that reuses the Keycloak session saved in the profile, then the
+// saved automatic sign-in (Windows Hello first, never for background work).
+// Resolves to false when Keycloak wants the user (or a window login is running).
 export async function silentLogin() {
   if (loginInFlight?.kind === 'window') return false;
-  return exclusive('silent', () => signIn({ visible: false, browser: chosenBrowser() })).then(
+  const interactive = !background.getStore();
+  return exclusive('silent', () => signIn({ visible: false, browser: chosenBrowser(), interactive })).then(
     () => true,
     () => false,
   );
@@ -191,6 +208,12 @@ export async function openHrmsBrowser(path = '/') {
     const url = HRMS_BASE + (path.startsWith('/') ? path : `/${path}`);
     await page.goto(url, { timeout: 45_000, waitUntil: 'domcontentloaded' });
     await focusBrowserWindow(browser, page);
+    // The saved FISSO login idles out long before the PMS one. Sign in right
+    // here when automatic sign-in is set up; otherwise the user signs in.
+    const onHrms = (u) => u.origin === HRMS_BASE;
+    if (!onHrms(new URL(page.url())) && autoLogin.isActive()) {
+      await signInInWindow(page, onHrms).catch(() => {});
+    }
     // Leave the window open until the user closes it.
   } catch (err) {
     await browser.close().catch(() => {});
@@ -198,15 +221,62 @@ export async function openHrmsBrowser(path = '/') {
   }
 }
 
-async function signIn({ visible, browser: id }) {
+// The saved automatic sign-in, after Windows Hello when the user asked for it.
+async function unlockSavedLogin(interactive) {
+  if (!autoLogin.isActive()) return null;
+  if (autoLogin.status().askHello) {
+    if (!interactive) return null;
+    if (!(await verifyUser('Sign in to FIST PMS'))) return null;
+  }
+  return autoLogin.load();
+}
+
+// Automatic sign-in inside a visible window, which then stays usable for passkeys.
+async function signInInWindow(page, isDone) {
+  const saved = await unlockSavedLogin(true);
+  if (!saved) return;
+  const allowPasskeys = await blockPasskeyDialogs(page);
+  try {
+    await autoSignIn(page, saved, isDone);
+    saveSsoCookies(await page.context().cookies());
+  } finally {
+    await allowPasskeys();
+  }
+}
+
+async function autoSignIn(page, saved, isDone = isBackOnPms) {
+  try {
+    await driveLogin(page, saved, isDone);
+  } catch (err) {
+    // A wrong password or a removed authenticator fails every time: stop trying until the user fixes it.
+    if (err instanceof AutoLoginError && err.code !== 'unknown_page') autoLogin.pause(err.message);
+    throw err;
+  }
+}
+
+// Passkey pages start a passkey request on load. In the hidden browser that would
+// open a Windows passkey dialog, so requests go to an empty virtual authenticator list.
+async function blockPasskeyDialogs(page) {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('WebAuthn.enable', { enableUI: false }).catch(() => {});
+  return () => cdp.send('WebAuthn.disable').catch(() => {});
+}
+
+async function savePmsSession(context) {
+  const session = (await context.cookies(PMS_BASE)).find((c) => c.name === 'JSESSIONID');
+  if (!session) throw new Error('Signed in, but the PMS did not set a session cookie');
+  saveCookie(session.value);
+  saveSsoCookies(await context.cookies());
+}
+
+async function openProfile(id, visible) {
   const browserLabel = BROWSER_NAMES[id] ?? 'a browser';
   const executablePath = id && findExecutable(id);
   if (!executablePath) throw new Error(`Could not find ${browserLabel} on this computer.`);
   const profile = profileDir(id);
   fs.mkdirSync(profile, { recursive: true });
-  let context;
   try {
-    context = await chromium.launchPersistentContext(profile, {
+    return await chromium.launchPersistentContext(profile, {
       executablePath,
       headless: !visible,
       viewport: null,
@@ -218,9 +288,87 @@ async function signIn({ visible, browser: id }) {
     }
     throw new Error(`Could not open ${browserLabel} for the PMS login. Is it installed? (${err.message.split('\n')[0]})`);
   }
+}
+
+function loginErrorMessage(err) {
+  if (/closed/i.test(err.message)) return new Error('The login window was closed before signing in');
+  if (err.name === 'TimeoutError') return new Error('Timed out waiting for sign-in');
+  return err;
+}
+
+export const autoLoginLabel = () => `PMS Dashboard (${os.hostname()})`;
+
+/**
+ * Sets up automatic sign-in: the login window signs in with the given password
+ * (the user confirms the passkey), then registers this computer as an
+ * authenticator app in FISSO and saves both, encrypted.
+ */
+export async function setupAutoLogin({ username, password }) {
+  if (!autoLogin.supported) throw new Error('Automatic sign-in works on Windows only.');
+  if (loginInFlight?.kind === 'silent') await loginInFlight.promise.catch(() => {});
+  return exclusive('window', async () => {
+    const id = chosenBrowser();
+    const context = await openProfile(id, true);
+    const label = autoLoginLabel();
+    try {
+      const page = context.pages()[0] ?? (await context.newPage());
+      // Ask Keycloak to show "set up authenticator application" as part of this
+      // sign-in. Playwright cannot touch requests that follow a redirect, so the
+      // window starts at PMS's own sign-in URL and its redirect is rewritten.
+      await context.route(`${PMS_BASE}${PMS_SIGN_IN_PATH}`, async (route) => {
+        const response = await route.fetch({ maxRedirects: 0 });
+        const location = response.headers().location;
+        if (!location?.includes('/protocol/openid-connect/auth')) return route.fulfill({ response });
+        const url = new URL(location);
+        url.searchParams.set('kc_action', 'CONFIGURE_TOTP');
+        return route.fulfill({ response, headers: { ...response.headers(), location: url.href } });
+      });
+      // Without this, a still-valid PMS session would skip Keycloak entirely.
+      await context.clearCookies({ domain: 'pms.fistinnovations.com' });
+      await page.goto(PMS_BASE + PMS_SIGN_IN_PATH, { timeout: SILENT_TIMEOUT_MS });
+
+      const stopFocus = keepBrowserOnTop(context.browser(), page);
+      const deadline = Date.now() + LOGIN_TIMEOUT_MS;
+      let passwordSent = false;
+      let otp = null;
+      try {
+        while (!otp || !isBackOnPms(new URL(page.url()))) {
+          if (Date.now() > deadline) throw Object.assign(new Error('timeout'), { name: 'TimeoutError' });
+          if (page.isClosed()) throw new Error('closed');
+          const snap = await snapshot(page).catch(() => null); // null while a page is loading
+          const step = snap && classify(snap);
+          if (step === 'password') {
+            if (passwordSent) throw new AutoLoginError('bad_password', snap.error || 'FISSO did not accept that password.');
+            await fillPassword(page, { username, password }, snap);
+            passwordSent = true;
+          } else if (step === 'totp-setup' && !otp) {
+            otp = await completeTotpSetup(page, label);
+          } else if (snap && !otp && isBackOnPms(new URL(snap.url))) {
+            throw new Error('FISSO signed in without showing the authenticator setup. Try again.');
+          } else {
+            await page.waitForTimeout(400);
+          }
+        }
+      } finally {
+        clearInterval(stopFocus);
+      }
+      await savePmsSession(context);
+      await autoLogin.save({ username, password, otp, label });
+      saveChoice(id);
+    } catch (err) {
+      throw loginErrorMessage(err);
+    } finally {
+      await context.close().catch(() => {});
+    }
+  });
+}
+
+async function signIn({ visible, browser: id, interactive = false }) {
+  const context = await openProfile(id, visible);
   try {
     const page = context.pages()[0] ?? (await context.newPage());
     const chromiumBrowser = context.browser();
+    if (!visible) await blockPasskeyDialogs(page);
     await page.goto(PMS_BASE, { timeout: SILENT_TIMEOUT_MS });
     if (visible) {
       const stopFocus = keepBrowserOnTop(chromiumBrowser, page);
@@ -231,17 +379,13 @@ async function signIn({ visible, browser: id }) {
         clearInterval(stopFocus);
       }
     } else if (!isBackOnPms(new URL(page.url()))) {
-      throw new Error('Keycloak needs the user to sign in');
+      const saved = await unlockSavedLogin(interactive);
+      if (!saved) throw new Error('Keycloak needs the user to sign in');
+      await autoSignIn(page, saved);
     }
-
-    const session = (await context.cookies(PMS_BASE)).find((c) => c.name === 'JSESSIONID');
-    if (!session) throw new Error('Signed in, but the PMS did not set a session cookie');
-    saveCookie(session.value);
-    saveSsoCookies(await context.cookies());
+    await savePmsSession(context);
   } catch (err) {
-    if (/closed/i.test(err.message)) throw new Error('The login window was closed before signing in');
-    if (err.name === 'TimeoutError') throw new Error('Timed out waiting for sign-in');
-    throw err;
+    throw loginErrorMessage(err);
   } finally {
     await context.close().catch(() => {});
   }

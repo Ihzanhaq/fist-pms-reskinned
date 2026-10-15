@@ -16,6 +16,8 @@ export const COOKIE_FILE = path.join(DATA_DIR, 'cookie.json');
 // Keycloak (SSO) cookies from the last login, used to sign in to HRMS.
 export const SSO_COOKIE_FILE = path.join(DATA_DIR, 'sso-cookies.json');
 export const PROFILE_DIR = path.join(DATA_DIR, 'browser-profile');
+// Encrypted FISSO password + authenticator secret for automatic sign-in (Windows).
+export const AUTO_LOGIN_FILE = path.join(DATA_DIR, 'auto-login.json');
 
 // Default login browser (already installed, never downloaded). The user can
 // pick another on the sign-in screen; see browsers.js.

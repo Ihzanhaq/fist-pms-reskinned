@@ -16,6 +16,7 @@ import {
 import * as pms from './pms-client.js';
 import { PmsError, SessionExpiredError } from './pms-client.js';
 import * as session from './session.js';
+import * as autoLogin from './auto-login.js';
 import { chosenBrowser, installedBrowsers } from './browsers.js';
 import { cleanRichHtml } from './rich-html.js';
 import { textToHtml } from './text-to-html.js';
@@ -63,6 +64,54 @@ export async function login(browser) {
     throw new BadRequestError('login_failed', err.message);
   }
   return sessionInfo();
+}
+
+// ---------- automatic sign-in ----------
+
+function requireText(value, what, max) {
+  if (typeof value !== 'string' || !value.trim() || value.length > max) {
+    throw new BadRequestError('bad_request', `Enter your ${what}`);
+  }
+  return value;
+}
+
+export function autoLoginStatus() {
+  return autoLogin.status();
+}
+
+export async function setupAutoLogin({ username, password } = {}) {
+  const user = requireText(username, 'FISSO username', 200).trim();
+  const pass = requireText(password, 'FISSO password', 500);
+  try {
+    await session.setupAutoLogin({ username: user, password: pass });
+  } catch (err) {
+    throw new BadRequestError('setup_failed', err.message);
+  }
+  return autoLogin.status();
+}
+
+export async function updateAutoLoginPassword({ password } = {}) {
+  const pass = requireText(password, 'new FISSO password', 500);
+  try {
+    await autoLogin.updatePassword(pass);
+  } catch (err) {
+    throw new BadRequestError('bad_request', err.message);
+  }
+  return autoLogin.status();
+}
+
+export function setAutoLoginHello({ on } = {}) {
+  try {
+    autoLogin.setAskHello(on !== false);
+  } catch (err) {
+    throw new BadRequestError('bad_request', err.message);
+  }
+  return autoLogin.status();
+}
+
+export function removeAutoLogin() {
+  autoLogin.remove();
+  return autoLogin.status();
 }
 
 export function logout() {

@@ -1029,3 +1029,65 @@
   animation-duration: 0.45s;
   animation-timing-function: ease;
 }
+
+/* settings: automatic sign-in */
+.auto-signin {
+  max-width: 640px;
+}
+.auto-signin h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.auto-signin .settings-head p {
+  margin-top: 2px;
+  line-height: 1.45;
+}
+.auto-signin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 14px 0 4px;
+}
+.auto-signin-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.auto-signin-on {
+  margin: 14px 0 4px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.auto-signin-paused {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--danger-soft);
+  color: var(--danger-text);
+  font-size: 13px;
+}
+.auto-signin .pref-row a {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--accent);
+}
+.settings-body {
+  container: settings / inline-size;
+}
+.account-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+.account-row > .settings-card {
+  max-width: none;
+}
+@container settings (max-width: 760px) {
+  .account-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
