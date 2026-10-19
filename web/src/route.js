@@ -45,8 +45,6 @@ export const DEFAULT_ROUTE = {
   layout: 'list',
   days: 14,
   period: 'week',
-  lbFrom: null,
-  lbTo: null,
   lbProject: '',
   pStatus: 'all',
   pPriority: 'all',
@@ -95,12 +93,9 @@ export function parseRoute(location = typeof window !== 'undefined' ? window.loc
     layout:
       view === 'issues' || projectId ? (layoutRaw === 'board' ? 'board' : 'list') : DEFAULT_ROUTE.layout,
     days: [7, 14, 30].includes(daysRaw) ? daysRaw : DEFAULT_ROUTE.days,
-    period: ['today', 'week', 'month', '30d', 'custom', 'alltime'].includes(periodRaw ?? '')
+    period: ['week', 'month', '30d', 'alltime'].includes(periodRaw ?? '')
       ? periodRaw
       : DEFAULT_ROUTE.period,
-    lbFrom:
-      view === 'leaderboard' && ISO_DATE.test(params.get('from') ?? '') ? params.get('from') : DEFAULT_ROUTE.lbFrom,
-    lbTo: view === 'leaderboard' && ISO_DATE.test(params.get('to') ?? '') ? params.get('to') : DEFAULT_ROUTE.lbTo,
     lbProject: view === 'leaderboard' ? idOrNull(params.get('project')) ?? '' : DEFAULT_ROUTE.lbProject,
     pStatus: projectId ? str(params, 'st', 'all') || 'all' : DEFAULT_ROUTE.pStatus,
     pPriority: projectId ? str(params, 'pri', 'all') || 'all' : DEFAULT_ROUTE.pPriority,
@@ -171,10 +166,6 @@ export function routeToPath(route) {
     params = issuesQuery(route);
   } else if (route.view === 'leaderboard') {
     if (route.period !== DEFAULT_ROUTE.period) params.set('period', route.period);
-    if (route.period === 'custom' && route.lbFrom && route.lbTo) {
-      params.set('from', route.lbFrom);
-      params.set('to', route.lbTo);
-    }
     if (route.lbProject) params.set('project', route.lbProject);
   } else if (route.projectId && (route.view === 'projects' || route.view === 'my-projects')) {
     params = projectQuery(route);
@@ -229,7 +220,7 @@ const SECTION_FIELDS = {
   dashboard: ['days'],
   issues: ['scope', 'q', 'filterProject', 'filterStatus', ...DATE_FIELDS, 'layout'],
   project: ['q', ...DATE_FIELDS, 'pStatus', 'pPriority', 'pAssignee', 'pOverdue', 'pSort', 'layout'],
-  leaderboard: ['period', 'lbFrom', 'lbTo', 'lbProject'],
+  leaderboard: ['period', 'lbProject'],
 };
 
 function section(route) {

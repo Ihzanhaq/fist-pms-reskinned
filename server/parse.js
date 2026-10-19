@@ -463,6 +463,36 @@ export function parseProjectIssues(html) {
   return { issues, states, assignees };
 }
 
+// The bulk bar under the project list view. Its selects start on a disabled
+// placeholder, so a field left alone is not posted. Null when the user cannot bulk-edit.
+export function parseBulkForm(html) {
+  const form = parse(html).querySelector('form#bulkForm');
+  if (!form) return null;
+  const csrf = form.querySelector('input[name="_csrf"]')?.getAttribute('value');
+  if (!csrf) throw new LayoutChangedError('The bulk edit form has an unexpected layout');
+  const options = (name) =>
+    form
+      .querySelectorAll(`select[name="${name}"] option`)
+      .filter((o) => o.getAttribute('value') && !o.hasAttribute('disabled'));
+  const trackers = new Map();
+  for (const o of options('tracker')) {
+    const id = o.getAttribute('value').match(/^(?:add|remove):(.+)$/)?.[1];
+    if (id && !trackers.has(id)) trackers.set(id, clean(o));
+  }
+  return {
+    action: form.getAttribute('action'),
+    csrf,
+    back: form.querySelector('input[name="back"]')?.getAttribute('value') ?? '',
+    // "__none__" is the PMS value for Unassigned.
+    assignees: options('assigneeId')
+      .filter((o) => o.getAttribute('value') !== '__none__')
+      .map((o) => ({ id: o.getAttribute('value'), name: clean(o) })),
+    states: options('stateId').map((o) => ({ id: o.getAttribute('value'), name: clean(o) })),
+    priorities: options('priority').map((o) => o.getAttribute('value')),
+    trackers: [...trackers].map(([id, name]) => ({ id, name })),
+  };
+}
+
 // ---------- activity feed ----------
 
 const MONTHS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
@@ -531,10 +561,106 @@ export function parseActivity(html, todayIso) {
     .filter((o) => o.getAttribute('value'))
     .map((o) => ({ id: o.getAttribute('value'), name: clean(o) }));
 
+  const projects = root
+    .querySelectorAll('select[name="project"] option')
+    .filter((o) => o.getAttribute('value'))
+    .map((o) => ({ id: o.getAttribute('value'), name: clean(o) }));
+
   // Pages hold up to 40 rows but often fewer, so only the Next button says whether more follow.
   const hasNextPage = root
     .querySelectorAll('a.pg-btn')
     .some((a) => /\bNext\b/.test(a.text) && !hasClass(a, 'disabled'));
 
-  return { entries, actors, hasNextPage };
+  return { entries, actors, projects, hasNextPage };
+}
+
+// ---------- project wiki ----------
+
+// /projects/{id}/wiki: one row per page, or an empty-state box.
+export function parseWikiList(html) {
+  const root = parse(html);
+  const rows = root.querySelectorAll('a.wiki-row');
+  if (!rows.length && !root.querySelector('.pj-hero .pv-switch')) {
+    throw new LayoutChangedError('The wiki page list has an unexpected layout');
+  }
+  return rows.map((row) => ({
+    id: uuidIn(row),
+    title: clean(row.querySelector('.wiki-title')),
+    edited: clean(row.querySelector('.wiki-meta')).replace(/^Edited\s+/i, ''),
+  }));
+}
+
+// /wiki/{id}: title, edit stamp and the page body (PMS rich text).
+export function parseWikiPage(html) {
+  const root = parse(html);
+  const body = root.querySelector('.fipms-doc');
+  const title = root.querySelector('h1.page-title');
+  if (!body || !title) throw new LayoutChangedError('The wiki page has an unexpected layout');
+  const back = root.querySelector('a[href$="/wiki"]');
+  return {
+    title: clean(title),
+    edited: lastSpanText(root.querySelector('.edit-stamp')).replace(/^Last edited\s+/i, ''),
+    projectId: back ? uuidIn(back) : null,
+    html: body.innerHTML.trim(),
+  };
+}
+
+// ---------- leaderboard ----------
+
+const num = (el) => Number(clean(el).replace(/[^\d-]/g, '')) || 0;
+
+// /leaderboard: summary stats, top-three podium cards and a table for everyone else.
+export function parseLeaderboard(html) {
+  const root = parse(html);
+  const head = root.querySelector('.lb-head');
+  if (!head || !root.querySelector('.lb-periods')) {
+    throw new LayoutChangedError('The leaderboard page has an unexpected layout');
+  }
+
+  const stats = root.querySelectorAll('.lb-stat').map((s) => ({
+    value: clean(s.querySelector('.n')),
+    label: clean(s.querySelector('.l')),
+    isRank: Boolean(s.querySelector('.n.is-rank')),
+  }));
+
+  const podium = root.querySelectorAll('.lb-card').map((card, i) => {
+    const img = card.querySelector('img');
+    const meta = clean(card.querySelector('.lb-meta'));
+    return {
+      rank: Number(card.getAttribute('class')?.match(/\bplace-(\d+)/)?.[1]) || i + 1,
+      id: uuidIn(img, 'src'),
+      name: clean(card.querySelector('.lb-name')) || img?.getAttribute('alt') || '',
+      completed: num(card.querySelector('.lb-num')),
+      comments: Number(meta.match(/(\d+)\s+comments?/i)?.[1] ?? 0),
+      updates: Number(meta.match(/(\d+)\s+updates?/i)?.[1] ?? 0),
+      meta,
+    };
+  });
+
+  const rows = root.querySelectorAll('.lb-table tbody tr').map((tr) => {
+    const cells = tr.querySelectorAll('td');
+    const person = tr.querySelector('.lb-person');
+    const img = person?.querySelector('img');
+    const n = tr.querySelectorAll('td.n');
+    return {
+      rank: num(tr.querySelector('td.rk')),
+      id: uuidIn(img, 'src'),
+      name: img?.getAttribute('alt') || clean(person?.querySelectorAll('span').at(-1)) || clean(cells[1]),
+      completed: num(tr.querySelector('.bar-col b')),
+      created: num(n[0]),
+      comments: num(n[1]),
+      statusChanges: num(n[2]),
+      updates: num(n[3]),
+      activeDays: num(n[4]),
+    };
+  });
+
+  const notes = root.querySelectorAll('.section-subtitle');
+  return {
+    subtitle: clean(head.querySelector('.section-subtitle')),
+    stats,
+    podium,
+    rows,
+    note: notes.length > 1 ? clean(notes.at(-1)) : '',
+  };
 }

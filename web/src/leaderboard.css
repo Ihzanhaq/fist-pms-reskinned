@@ -113,10 +113,3 @@
 :root[data-theme='glass'] .podium-avatar span.avatar { background: color-mix(in srgb, var(--medal) 30%, #1a1c26); }
 :root[data-theme='glass'][data-mode='light'] .podium-avatar span.avatar { background: color-mix(in srgb, var(--medal) 25%, #ffffff); }
 
-/* all time: lifetime table has fewer columns */
-.lb-table.lifetime :is(.lb-head, .lb-row) {
-  grid-template-columns: 34px minmax(180px, 1.4fr) minmax(150px, 1.2fr) repeat(3, minmax(64px, 0.5fr));
-}
-@media (max-width: 1100px) {
-  .lb-table.lifetime :is(.lb-head, .lb-row) { grid-template-columns: 30px minmax(150px, 1fr) minmax(120px, 1fr) repeat(2, 56px); }
-}

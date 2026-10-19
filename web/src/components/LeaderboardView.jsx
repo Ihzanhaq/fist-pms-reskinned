@@ -1,27 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Crown, Medal, RefreshCw, Trophy } from 'lucide-react';
 import { api, errorMessage } from '../api.js';
-import { todayIso } from '../dates.js';
 import Avatar from './Avatar.jsx';
-import DateRangePicker from './DateRangePicker.jsx';
 import Select from './Select.jsx';
 
+// Same periods as the PMS leaderboard, which this view mirrors.
 const PERIODS = [
-  { value: 'today', label: 'Today' },
   { value: 'week', label: 'This week' },
   { value: 'month', label: 'This month' },
   { value: '30d', label: 'Last 30 days' },
-  { value: 'custom', label: 'Custom' },
   { value: 'alltime', label: 'All time' },
 ];
 
 const MEDALS = ['gold', 'silver', 'bronze'];
 
-const shortDate = (iso) =>
-  new Date(`${iso}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
-
-function PodiumCard({ person, place, isMe, lifetime }) {
+function PodiumCard({ person, isMe }) {
+  const place = person.rank;
   const medal = MEDALS[place - 1];
   const Icon = place === 1 ? Crown : Medal;
   return (
@@ -38,35 +32,18 @@ function PodiumCard({ person, place, isMe, lifetime }) {
       </strong>
       <span className="podium-score">{person.completed}</span>
       <span className="podium-label">completed</span>
-      <span className="podium-meta">
-        {lifetime
-          ? `${person.closed} signed off · ${person.open} open`
-          : `${plural(person.comments, 'comment')} · ${plural(person.updates, 'update')}`}
-      </span>
+      <span className="podium-meta">{person.meta}</span>
     </div>
   );
 }
 
-export default function LeaderboardView({
-  period = 'week',
-  rangeFrom,
-  rangeTo,
-  projectId = '',
-  onPeriodChange,
-  onRangeChange,
-  onProjectChange,
-  userName,
-  onError,
-}) {
+export default function LeaderboardView({ period = 'week', projectId = '', onPeriodChange, onProjectChange, userName, onError }) {
   const [projects, setProjects] = useState([]);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [rangeOpen, setRangeOpen] = useState(false);
-
-  const today = todayIso();
-  const customFrom = rangeFrom ?? `${today.slice(0, 7)}-01`;
-  const customTo = rangeTo ?? today;
+  // Older saved links may hold periods the PMS no longer offers.
+  const activePeriod = PERIODS.some((p) => p.value === period) ? period : 'week';
 
   useEffect(() => {
     api
@@ -75,35 +52,16 @@ export default function LeaderboardView({
       .catch(() => {});
   }, []);
 
-  // All time is counted on the server in the background; poll until
-  // it is ready. A newer load cancels an older one's polling.
+  // A newer load wins over an older one still in flight.
   const loadId = useRef(0);
   const load = useCallback(
     async (refresh = false) => {
-      if (period === 'custom' && (!rangeFrom || !rangeTo)) return;
       const id = ++loadId.current;
       setLoading(true);
       setError(null);
-      if (period === 'alltime') setData(null);
       try {
-        let first = true;
-        for (;;) {
-          const result = await api.leaderboard(
-            period,
-            projectId || null,
-            period === 'custom' ? rangeFrom : undefined,
-            period === 'custom' ? rangeTo : undefined,
-            refresh && first,
-          );
-          first = false;
-          if (id !== loadId.current) return;
-          if (result.status !== 'running') {
-            setData(result);
-            break;
-          }
-          await new Promise((r) => setTimeout(r, 1200));
-          if (id !== loadId.current) return;
-        }
+        const result = await api.leaderboard(activePeriod, projectId || null, refresh);
+        if (id === loadId.current) setData(result);
       } catch (err) {
         if (id !== loadId.current) return;
         if (err.code === 'session_expired') onError(err);
@@ -112,73 +70,40 @@ export default function LeaderboardView({
         if (id === loadId.current) setLoading(false);
       }
     },
-    [period, rangeFrom, rangeTo, projectId, onError],
+    [activePeriod, projectId, onError],
   );
 
   useEffect(() => {
     load();
     return () => {
-      loadId.current += 1; // stop polling when leaving or switching
+      loadId.current += 1;
     };
   }, [load]);
 
-  useEffect(() => {
-    if (period === 'custom') setRangeOpen(true);
-  }, [period]);
-
-  const selectPeriod = (value) => {
-    if (value === 'custom') setRangeOpen(true);
-    onPeriodChange(value);
-  };
-
-  const periodLabel = useMemo(() => {
-    if (!data) return 'Top performers';
-    if (data.period === 'alltime') return 'All time';
-    return `${shortDate(data.from)} – ${shortDate(data.to)}`;
-  }, [data]);
-
-  const lifetime = data?.period === 'alltime';
-  // Only people who did something; the podium needs completed work.
-  const people = useMemo(
-    () => (data?.people ?? []).filter((p) => p.updates > 0 || p.completed > 0 || p.closed > 0 || p.open > 0),
-    [data],
-  );
-  const podium = people.filter((p) => p.completed > 0).slice(0, 3);
-  const rest = people.slice(podium.length);
-  const topScore = Math.max(1, ...people.map((p) => p.completed));
-  const me = people.find((p) => p.name === userName);
-  const above = me ? people.filter((p) => p.completed > me.completed).at(-1) : null;
+  const people = data?.people ?? [];
+  const podium = data?.podium ?? [];
+  const rest = data?.rows ?? [];
+  const topScore = useMemo(() => Math.max(1, ...people.map((p) => p.completed)), [people]);
 
   return (
     <div className="leaderboard">
       <div className="page-head">
         <div>
           <h1>Leaderboard</h1>
-          <p className="subtitle">{data ? `Top performers · ${periodLabel}` : 'Top performers'}</p>
+          <p className="subtitle">{data?.subtitle || 'Top performers'}</p>
         </div>
         <div className="lb-controls">
           <div className="segmented">
             {PERIODS.map((p) => (
               <button
                 key={p.value}
-                className={period === p.value ? 'active' : undefined}
-                onClick={() => selectPeriod(p.value)}
+                className={activePeriod === p.value ? 'active' : undefined}
+                onClick={() => onPeriodChange(p.value)}
               >
                 {p.label}
               </button>
             ))}
           </div>
-          {period === 'custom' && (
-            <DateRangePicker
-              from={customFrom}
-              to={customTo}
-              max={today}
-              open={rangeOpen}
-              onOpenChange={setRangeOpen}
-              onChange={onRangeChange}
-              ariaLabel="Leaderboard date range"
-            />
-          )}
           <Select
             variant="compact"
             ariaLabel="Project"
@@ -205,85 +130,47 @@ export default function LeaderboardView({
         </div>
       )}
 
-      {!data && !error && <div className="dash-loading">Counting everyone’s work…</div>}
+      {!data && !error && <div className="dash-loading">Loading the leaderboard…</div>}
 
-      {data && people.length === 0 && (
-        <div className="empty">
-          <Trophy size={28} />
-          <p>{lifetime ? 'No assigned issues yet.' : 'No activity in this period yet.'}</p>
-        </div>
-      )}
-
-      {data && people.length > 0 && (
+      {data && (
         <>
-          <div className="lb-summary">
-            <div>
-              <strong>{data.totals.completed}</strong>
-              <span>issues completed</span>
+          {data.stats.length > 0 && (
+            <div className="lb-summary">
+              {data.stats.map((s) => (
+                <div key={s.label} className={s.isRank ? 'lb-me' : undefined}>
+                  <strong>{s.value}</strong>
+                  <span>{s.label}</span>
+                </div>
+              ))}
             </div>
-            <div>
-              <strong>{lifetime ? data.totals.closed : data.totals.updates}</strong>
-              <span>{lifetime ? 'signed off (Closed)' : 'updates logged'}</span>
+          )}
+
+          {people.length === 0 && (
+            <div className="empty">
+              <Trophy size={28} />
+              <p>No activity in this period yet.</p>
             </div>
-            <div>
-              <strong>{data.totals.people}</strong>
-              <span>{lifetime ? 'people with issues' : 'people active'}</span>
-            </div>
-            {me ? (
-              <div className="lb-me">
-                <strong>#{me.rank}</strong>
-                <span>
-                  your rank
-                  {above
-                    ? ` · ${above.completed - me.completed + 1} more to pass ${above.name.split(' ')[0]}`
-                    : me.rank === 1
-                      ? ' · top of the board'
-                      : ''}
-                </span>
-              </div>
-            ) : lifetime ? (
-              <div>
-                <strong>{data.totals.open}</strong>
-                <span>still open</span>
-              </div>
-            ) : null}
-          </div>
+          )}
 
           {podium.length > 0 && (
             <section className={`podium count-${podium.length}`} aria-label="Top three">
-              {podium.map((person, i) => (
-                <PodiumCard
-                  key={person.name}
-                  person={person}
-                  place={i + 1}
-                  isMe={person.name === userName}
-                  lifetime={lifetime}
-                />
+              {podium.map((person) => (
+                <PodiumCard key={person.name} person={person} isMe={person.name === userName} />
               ))}
             </section>
           )}
 
           {rest.length > 0 && (
-            <section className={lifetime ? 'lb-table lifetime' : 'lb-table'} aria-label="Rankings">
+            <section className="lb-table" aria-label="Rankings">
               <div className="lb-head">
                 <span>#</span>
                 <span>Person</span>
                 <span>Completed</span>
-                {lifetime ? (
-                  <>
-                    <span>Signed off</span>
-                    <span>Open</span>
-                    <span>Projects</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Created</span>
-                    <span>Comments</span>
-                    <span>Status changes</span>
-                    <span>Updates</span>
-                    <span>Active days</span>
-                  </>
-                )}
+                <span>Created</span>
+                <span>Comments</span>
+                <span>Status changes</span>
+                <span>Updates</span>
+                <span>Active days</span>
               </div>
               {rest.map((p) => (
                 <div key={p.name} className={p.name === userName ? 'lb-row me' : 'lb-row'}>
@@ -301,33 +188,17 @@ export default function LeaderboardView({
                     </span>
                     <strong>{p.completed}</strong>
                   </span>
-                  {lifetime ? (
-                    <>
-                      <span className="lb-num">{p.closed}</span>
-                      <span className="lb-num">{p.open}</span>
-                      <span className="lb-num">{p.projects}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="lb-num">{p.created}</span>
-                      <span className="lb-num">{p.comments}</span>
-                      <span className="lb-num">{p.statusChanges}</span>
-                      <span className="lb-num">{p.updates}</span>
-                      <span className="lb-num">{p.activeDays}</span>
-                    </>
-                  )}
+                  <span className="lb-num">{p.created}</span>
+                  <span className="lb-num">{p.comments}</span>
+                  <span className="lb-num">{p.statusChanges}</span>
+                  <span className="lb-num">{p.updates}</span>
+                  <span className="lb-num">{p.activeDays}</span>
                 </div>
               ))}
             </section>
           )}
 
-          <p className="muted lb-note">
-            {lifetime
-              ? 'Every issue counted by its assignee, as on the PMS project dashboard. Done, Resolved, Completed, Feedback and Closed count as completed; “Signed off” is how many of those are Closed. Rejected and Cancelled are left out.'
-              : `Completed counts issues moved from an unfinished to a finished status (Done, Resolved, Completed, Feedback or Closed) in this period, credited to the issue’s assignee. A reviewer closing work that was finished earlier does not count again, and issues reopened since are left out. Updates, comments and status changes are credited to whoever made them. From the PMS activity log${
-                  data.truncated ? '; this period is very busy, so only the most recent activity was counted' : ''
-                }.`}
-          </p>
+          {data.note && <p className="muted lb-note">{data.note}</p>}
         </>
       )}
     </div>

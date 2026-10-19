@@ -438,22 +438,8 @@ export default function App() {
           ) : (
             <LeaderboardView
               period={route.period}
-              rangeFrom={route.lbFrom}
-              rangeTo={route.lbTo}
               projectId={route.lbProject}
-              onPeriodChange={(period) => {
-                if (period === 'custom') {
-                  const today = todayIso();
-                  patchRoute({
-                    period,
-                    lbFrom: route.lbFrom ?? `${today.slice(0, 7)}-01`,
-                    lbTo: route.lbTo ?? today,
-                  });
-                } else {
-                  patchRoute({ period, lbFrom: null, lbTo: null });
-                }
-              }}
-              onRangeChange={(lbFrom, lbTo) => patchRoute({ period: 'custom', lbFrom, lbTo })}
+              onPeriodChange={(period) => patchRoute({ period })}
               onProjectChange={(lbProject) => patchRoute({ lbProject })}
               userName={session.userName}
               onError={handlePanelError}

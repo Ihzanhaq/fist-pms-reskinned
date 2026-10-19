@@ -59,8 +59,6 @@ export function createApp() {
       await leaderboard({
         period: req.query.period || 'week',
         projectId: req.query.project || null,
-        from: req.query.from,
-        to: req.query.to,
         refresh: req.query.refresh === '1',
       }),
     ),
